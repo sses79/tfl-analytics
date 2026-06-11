@@ -1,0 +1,29 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+local.settings.json
+
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+
+# Node and Angular
+node_modules/
+dist/
+.angular/
+
+# IDE and OS
+.DS_Store
+.idea/
+.vscode/
+
+# Local infrastructure state
+.azure/
+.terraform/
+*.tfstate
+*.tfstate.*

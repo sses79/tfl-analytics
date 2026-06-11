@@ -1,0 +1,11 @@
+@TflAnalytics.Api_HostAddress = http://localhost:8080
+
+GET {{TflAnalytics.Api_HostAddress}}/health/live
+Accept: application/json
+
+###
+
+GET {{TflAnalytics.Api_HostAddress}}/api/tfl/line-status/victoria,circle
+Accept: application/json
+
+###

@@ -1,0 +1,38 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/Line/.+/Status"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "circle",
+        "name": "Circle",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 10,
+            "statusSeverityDescription": "Good Service",
+            "reason": null
+          }
+        ]
+      },
+      {
+        "id": "victoria",
+        "name": "Victoria",
+        "modeName": "tube",
+        "lineStatuses": [
+          {
+            "statusSeverity": 9,
+            "statusSeverityDescription": "Minor Delays",
+            "reason": "Fixture disruption for local integration tests."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "TflApi__BaseUrl": "https://api.tfl.gov.uk/",
+    "TflApi__AppKey": ""
+  }
+}
