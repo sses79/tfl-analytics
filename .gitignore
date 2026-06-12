@@ -27,3 +27,6 @@ dist/
 .terraform/
 *.tfstate
 *.tfstate.*
+
+# Generated Bicep templates
+infra/bicep/*.json

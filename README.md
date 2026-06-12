@@ -157,6 +157,9 @@ Local ports:
 Service-by-service verification commands are documented in
 [Local Smoke Tests](./docs/local-smoke-tests.md).
 
+Datadog logs, APM, DogStatsD, and current instrumentation status are documented
+in the [Datadog Agent guide](./docs/datadog-agent.md).
+
 Known local environment fixes are documented in
 [Troubleshooting](./docs/troubleshooting.md).
 
@@ -184,6 +187,9 @@ Deployed resources:
 | Event hub | `tfl-events` |
 | Log Analytics | `log-tfl-analytics-dev-nhkpyupi` |
 | Application Insights | `appi-tfl-analytics-dev-nhkpyupi` |
+
+Validation, deployment, output discovery, and Azure smoke tests are documented
+in the [Azure Bicep guide](./docs/azure-bicep.md).
 
 Validate Bicep:
 

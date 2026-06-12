@@ -125,6 +125,9 @@ curl --fail --output /dev/null \
 When the `observability` profile is running, check the Datadog Agent and its
 APM receiver:
 
+See the [Datadog Agent guide](./datadog-agent.md) for configuration, data flow,
+and current instrumentation limitations.
+
 ```bash
 docker compose \
   --env-file .env \
