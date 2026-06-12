@@ -75,6 +75,9 @@ npm install
 npm run build
 ```
 
+Dashboard development, testing, and Angular CLI commands are documented in the
+[Angular dashboard README](./web/tfl-analytics-dashboard/README.md).
+
 ## Local Containers
 
 Validate Compose:
@@ -133,20 +136,29 @@ docker compose \
 
 Local ports:
 
-| Service | Port |
-|---|---:|
-| API | `8080` |
-| Angular | `4200` |
-| WireMock | `8089` |
-| Azurite Blob | `10000` |
-| Azurite Queue | `10001` |
-| Azurite Table | `10002` |
-| Event Hubs AMQP | `5672` |
-| Event Hubs Kafka | `9092` |
-| Cosmos DB gateway | `8081` |
-| SQL Server | `1433` |
-| Datadog APM | `8126` |
-| DogStatsD | `8125/udp` |
+| Service | Port | Profile |
+|---|---:|---|
+| API | `8080` | default |
+| Angular | `4200` | `ui` |
+| WireMock | `8089` | default |
+| Azurite Blob | `10000` | default |
+| Azurite Queue | `10001` | default |
+| Azurite Table | `10002` | default |
+| Event Hubs health | `5300` | default |
+| Event Hubs AMQP | `5672` | default |
+| Event Hubs Kafka | `9092` | default |
+| Cosmos DB gateway | `8081` | default |
+| Cosmos DB readiness | `8082` | default |
+| Cosmos DB explorer | `1234` | default |
+| SQL Server | `1433` | default |
+| Datadog APM | `8126` | `observability` |
+| DogStatsD | `8125/udp` | `observability` |
+
+Service-by-service verification commands are documented in
+[Local Smoke Tests](./docs/local-smoke-tests.md).
+
+Known local environment fixes are documented in
+[Troubleshooting](./docs/troubleshooting.md).
 
 Stop containers while preserving volumes:
 
