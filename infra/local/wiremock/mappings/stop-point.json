@@ -1,0 +1,31 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/StopPoint/[^/]+"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "naptanId": "940GZZLUVIC",
+      "commonName": "Victoria Underground Station",
+      "stopType": "NaptanMetroStation",
+      "lines": [
+        {
+          "id": "circle",
+          "name": "Circle"
+        },
+        {
+          "id": "district",
+          "name": "District"
+        },
+        {
+          "id": "victoria",
+          "name": "Victoria"
+        }
+      ]
+    }
+  }
+}

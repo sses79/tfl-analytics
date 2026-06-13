@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/StopPoint/[^/]+/Arrivals"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "id": "fixture-arrival-1",
+        "vehicleId": "245",
+        "naptanId": "940GZZLUVIC",
+        "stationName": "Victoria Underground Station",
+        "lineId": "victoria",
+        "lineName": "Victoria",
+        "destinationName": "Walthamstow Central Underground Station",
+        "platformName": "Northbound - Platform 3",
+        "direction": "inbound",
+        "expectedArrival": "2026-06-13T12:00:45Z",
+        "timeToStation": 45,
+        "timestamp": "2026-06-13T12:00:00Z"
+      }
+    ]
+  }
+}

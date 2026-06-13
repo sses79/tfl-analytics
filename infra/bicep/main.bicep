@@ -21,6 +21,8 @@ var storageAccountName = 'sttfl${suffix}'
 var keyVaultName = 'kv-tfl-${suffix}'
 var logAnalyticsName = 'log-${projectName}-${environmentName}-${suffix}'
 var applicationInsightsName = 'appi-${projectName}-${environmentName}-${suffix}'
+var cosmosAccountName = 'cosmos-${projectName}-${environmentName}-${suffix}'
+var cosmosDatabaseName = 'tfl-analytics'
 var commonTags = {
   environment: environmentName
   project: projectName
@@ -74,6 +76,12 @@ module compute 'modules/compute.bicep' = {
     processingDeploymentContainerName: 'function-processing-deployments'
     applicationInsightsName: applicationInsightsName
     keyVaultName: keyVaultName
+    eventHubsNamespaceName: messaging.outputs.namespaceName
+    eventHubName: messaging.outputs.eventHubName
+    cosmosAccountName: cosmosAccountName
+    cosmosDatabaseName: cosmosDatabaseName
+    cosmosLiveEventsContainerName: 'live-events'
+    cosmosLineStatusContainerName: 'line-status'
     tags: commonTags
   }
   dependsOn: [
@@ -118,8 +126,8 @@ module cosmos 'modules/cosmos.bicep' = {
   name: 'cosmos'
   params: {
     location: location
-    accountName: 'cosmos-${projectName}-${environmentName}-${suffix}'
-    databaseName: 'tfl-analytics'
+    accountName: cosmosAccountName
+    databaseName: cosmosDatabaseName
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
     tags: commonTags

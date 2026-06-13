@@ -71,6 +71,11 @@ nc -z localhost 5672
 nc -z localhost 9092
 ```
 
+The ingestion Function publishes deterministic arrival observations every 30
+seconds and line-status observations every two minutes to the `tfl-events`
+event hub. WireMock serves the configured arrival, stop metadata, and
+line-status fixtures, so this path does not require a live TfL API key.
+
 ## Cosmos DB
 
 Check Cosmos DB emulator readiness:
@@ -98,8 +103,7 @@ docker compose \
 
 ## Azure Functions
 
-Check both Azure Functions hosts. These checks prove host liveness; trigger
-execution needs an integration test or trigger-specific log assertion:
+Check both Azure Functions hosts:
 
 ```bash
 docker compose \
@@ -109,6 +113,10 @@ docker compose \
 ```
 
 Each host should report `Application started` and `Now listening on`.
+
+After at least two minutes, ingestion logs should show successful arrival and
+line-status timer executions. Processing logs should show the Event Hubs archive
+trigger and queue processor completing for both event types.
 
 ## Angular
 
@@ -158,5 +166,23 @@ dotnet test TflAnalytics.sln \
   --disable-build-servers
 ```
 
-The local integration and Azure smoke-test projects currently contain skipped
-placeholders; the unit test project runs normally.
+The local integration test is opt-in so ordinary test runs remain independent
+of Docker. The Azure smoke-test project remains a placeholder.
+
+To verify the complete running ingestion path, provide host-reachable emulator
+connection strings and enable the opt-in local test:
+
+```bash
+RUN_LOCAL_STACK_TESTS=true \
+LOCAL_STORAGE_CONNECTION_STRING='<Azurite connection string using localhost>' \
+LOCAL_COSMOS_CONNECTION_STRING='<Cosmos emulator connection string using localhost>' \
+dotnet test \
+  tests/TflAnalytics.IntegrationTests/TflAnalytics.IntegrationTests.csproj \
+  --no-restore \
+  --no-build \
+  -m:1 \
+  --disable-build-servers
+```
+
+This asserts that compressed raw events exist in the `raw` Blob container and
+that arrival and line-status documents exist in their Cosmos DB containers.
