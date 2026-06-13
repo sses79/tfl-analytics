@@ -6,7 +6,7 @@ Phase 1 started on June 11, 2026.
 
 Completed:
 
-- Multi-project .NET 10 solution and Angular 21 application shell.
+- Multi-project .NET 10 solution and Angular 21 live line-status dashboard.
 - API, isolated Function hosts, contracts, application, infrastructure, and test
   project boundaries.
 - Dockerfiles and validated Docker Compose configuration.
@@ -21,10 +21,11 @@ Completed:
   Basic Azure Container Registry.
 - Azure API health and live TfL line-status smoke tests.
 - Ingestion and processing Function packages deployed with public health checks.
+- Angular dashboard deployed to Azure Static Web Apps with production API CORS,
+  security headers, and live TfL line-status smoke tests.
 
 Remaining Phase 1 work:
 
-- Deploy Angular content to the Static Web App.
 - Cosmos DB, Azure SQL, and SignalR modules.
 - Workload RBAC, diagnostic settings, and deployment automation.
 

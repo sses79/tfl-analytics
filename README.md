@@ -13,7 +13,8 @@ Completed:
 
 - Multi-project .NET solution with API, Functions, contracts, application,
   infrastructure, and test boundaries.
-- Angular 21 application shell.
+- Angular 21 live line-status dashboard with loading, error, refresh, and
+  disruption states.
 - Dockerfiles for the API, Function apps, and Angular application.
 - Docker Compose configuration for Azure emulators, SQL Server, WireMock, and
   optional Datadog Agent.
@@ -25,10 +26,11 @@ Completed:
   Consumption with scale-to-zero enabled.
 - Azure API health and live TfL line-status smoke tests completed.
 - Ingestion and processing Function packages deployed and health-checked.
+- Angular dashboard deployed to Azure Static Web Apps and connected to the
+  Container App API through an explicit CORS policy.
 
 Next Phase 1 slice:
 
-- Deploy the Angular dashboard content to Static Web Apps.
 - Add Cosmos DB, Azure SQL, and SignalR modules.
 - Add workload RBAC assignments and diagnostic settings.
 - Add CI deployment workflows.
@@ -212,6 +214,12 @@ Azure API:
 
 ```text
 https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io
+```
+
+Azure dashboard:
+
+```text
+https://blue-bush-0491f9503.7.azurestaticapps.net
 ```
 
 Validation, deployment, output discovery, and Azure smoke tests are documented

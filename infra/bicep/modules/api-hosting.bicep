@@ -5,6 +5,7 @@ param apiAppName string
 param apiIdentityName string
 param applicationInsightsName string
 param keyVaultName string
+param dashboardOrigin string
 param tags object
 
 param deployApiContainer bool = false
@@ -96,7 +97,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
-              value: 'Development'
+              value: 'Production'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -109,6 +110,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'TflApi__BaseUrl'
               value: 'https://api.tfl.gov.uk/'
+            }
+            {
+              name: 'Cors__AllowedOrigins__0'
+              value: dashboardOrigin
             }
             {
               name: 'DD_ENV'

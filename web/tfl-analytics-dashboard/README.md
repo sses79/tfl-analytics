@@ -1,59 +1,47 @@
-# TflAnalyticsDashboard
+# TfL Analytics Dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.15.
+Angular 21 dashboard for live Transport for London line status. The first
+dashboard slice monitors Victoria, Circle, Central, Jubilee, and Piccadilly
+lines and refreshes every 60 seconds.
 
-## Development server
+## Local Development
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Start the API on port `8080`, then run:
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open `http://localhost:4200`. Development builds use
+`src/environments/environment.development.ts` and call
+`http://localhost:8080`.
+
+## Build And Test
 
 ```bash
-ng generate --help
+npm run build
+npm test -- --watch=false
 ```
 
-## Building
+Production builds use `src/environments/environment.ts` and call the Azure
+Container App API. Static Web App routing and security headers are configured
+in `public/staticwebapp.config.json`.
 
-To build the project run:
+## Azure Deployment
+
+From the repository root:
 
 ```bash
-ng build
+./scripts/deploy-dashboard.sh
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The script performs a clean production build, reads the existing Azure resource
+names from Bicep outputs, deploys to Azure Static Web Apps, and smoke-tests the
+published root page.
 
-## Running unit tests
+Live dashboard:
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```text
+https://blue-bush-0491f9503.7.azurestaticapps.net
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

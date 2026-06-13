@@ -92,6 +92,7 @@ module apiHosting 'modules/api-hosting.bicep' = {
     apiIdentityName: 'id-${projectName}-api-${environmentName}-${suffix}'
     applicationInsightsName: applicationInsightsName
     keyVaultName: keyVaultName
+    dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
     deployApiContainer: deployApiContainer
     apiImageTag: apiImageTag
     tags: commonTags
