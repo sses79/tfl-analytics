@@ -21,6 +21,27 @@ The Bicep deployment currently creates:
 | Log Analytics | PerGB2018, 30-day retention |
 | Application Insights | Workspace-based, 30-day retention |
 
+The Phase 1 compute foundation is deployed:
+
+| Resource | Development configuration |
+|---|---|
+| Ingestion Functions | .NET 10 isolated, Flex Consumption, managed identity |
+| Processing Functions | .NET 10 isolated, Flex Consumption, managed identity |
+| Function host and deployment storage | Dedicated Blob containers plus identity-based Blob, Queue, and Table access |
+| Angular hosting | Static Web Apps Free tier in West Europe |
+| API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
+| Container registry | Private Basic ACR with managed-identity image pull |
+
+The Function hosts and their application packages are deployed. Static Web App
+infrastructure exists, but the Angular application has not yet been deployed.
+
+Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
+June 12, 2026, or approximately `$15.34` for seven continuous days. Although
+within budget, Azure rejects the deployment because this subscription offer has
+zero Microsoft.Web total regional VM quota. Container Apps Consumption avoids
+that dedicated App Service quota and can scale the API to zero. Basic ACR was
+`$0.1666` per day when checked on June 12, 2026.
+
 Default deployment settings:
 
 ```text
@@ -97,6 +118,13 @@ Pay particular attention to changes involving:
 
 These settings can affect cost, availability, or recovery behavior.
 
+On June 12, 2026, Azure's `what-if` service returned `InternalServerError` while
+previewing the conditional Container App even though Bicep compilation and ARM
+deployment validation succeeded. The preview was retried after correcting the
+resource name. Treat this as an Azure preview-service limitation, preserve the
+failed diagnostic tracking ID when reporting it, and do not skip compilation or
+deployment validation.
+
 ## Deploy
 
 Deploy only after reviewing the `what-if` result:
@@ -121,6 +149,49 @@ az deployment group show \
 ```
 
 The provisioning state should be `Succeeded`.
+
+## API Image Deployment
+
+ACR Tasks are disabled by this subscription offer, so build and push the Linux
+image locally:
+
+```bash
+az acr login --name "$CONTAINER_REGISTRY"
+
+docker buildx build \
+  --platform linux/amd64 \
+  --file src/TflAnalytics.Api/Dockerfile \
+  --tag "$CONTAINER_REGISTRY_LOGIN_SERVER/tfl-analytics-api:dev" \
+  --push .
+```
+
+Deploy Bicep after the image exists so the first Container App revision can pull
+it using its managed identity.
+
+## Function Package Deployment
+
+Publish, package, deploy, and smoke-test both Function applications:
+
+```bash
+./scripts/deploy-functions.sh
+```
+
+The script:
+
+1. Loads deployed resource names using `scripts/load-azure-outputs.sh`.
+2. Publishes Release builds under the ignored `artifacts/functions` directory.
+3. Creates one zip package per Function host.
+4. Deploys the packages using Azure Functions zip deployment.
+5. Verifies the anonymous health endpoints:
+
+```text
+https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/health
+https://func-tfl-analytics-processing-dev-nhkpyupi.azurewebsites.net/api/health
+```
+
+The ingestion package currently contains its timer heartbeat and health
+function. The processing package currently contains its health function; event
+processing triggers are implemented in a later delivery phase.
 
 ## Deployment Outputs
 
@@ -221,6 +292,36 @@ az monitor app-insights component show \
   --resource-group "$RESOURCE_GROUP" \
   --query "{name:name, state:provisioningState, kind:kind, retention:retentionInDays}" \
   --output table
+```
+
+Check the deployed compute resources:
+
+```bash
+az resource show \
+  --resource-group "$RESOURCE_GROUP" \
+  --resource-type Microsoft.Web/sites \
+  --name "$INGESTION_FUNCTION_APP" \
+  --api-version 2024-04-01 \
+  --query "{name:name, state:properties.state, host:properties.defaultHostName}" \
+  --output table
+
+az resource show \
+  --resource-group "$RESOURCE_GROUP" \
+  --resource-type Microsoft.Web/sites \
+  --name "$PROCESSING_FUNCTION_APP" \
+  --api-version 2024-04-01 \
+  --query "{name:name, state:properties.state, host:properties.defaultHostName}" \
+  --output table
+
+az containerapp revision list \
+  --name "$API_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "[].{name:name, active:properties.active, health:properties.healthState, replicas:properties.replicas}" \
+  --output table
+
+curl --fail --silent --show-error "https://$API_HOSTNAME/health/live"
+curl --fail --silent --show-error \
+  "https://$API_HOSTNAME/api/tfl/line-status/victoria"
 ```
 
 ## Data-Plane Smoke Tests
@@ -328,9 +429,9 @@ All should report `Registered`.
 
 The current Bicep foundation does not yet deploy:
 
-- Azure compute for the API or Functions.
-- Managed identities and workload RBAC assignments.
-- Cosmos DB, Azure SQL, SignalR, or Static Web Apps.
+- Angular application content to the deployed Static Web App.
+- Workload RBAC beyond Function host/deployment storage access.
+- Cosmos DB, Azure SQL, and SignalR.
 - Datadog Agent hosting or the Datadog Azure Native resource.
 - Resource diagnostic settings.
 

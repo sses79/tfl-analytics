@@ -66,6 +66,15 @@ export EVENT_HUBS_NAMESPACE="$(get_output eventHubsNamespaceName)"
 export EVENT_HUB="$(get_output eventHubName)"
 export LOG_ANALYTICS="$(get_output logAnalyticsWorkspaceName)"
 export APPLICATION_INSIGHTS="$(get_output applicationInsightsName)"
+export CONTAINER_REGISTRY="$(get_output containerRegistryName)"
+export CONTAINER_REGISTRY_LOGIN_SERVER="$(get_output containerRegistryLoginServer)"
+export CONTAINER_APPS_ENVIRONMENT="$(get_output containerAppsEnvironmentName)"
+export API_APP="$(get_output apiAppName)"
+export API_HOSTNAME="$(get_output apiAppHostname)"
+export INGESTION_FUNCTION_APP="$(get_output ingestionFunctionAppName)"
+export PROCESSING_FUNCTION_APP="$(get_output processingFunctionAppName)"
+export STATIC_WEB_APP="$(get_output staticWebAppName)"
+export STATIC_WEB_APP_HOSTNAME="$(get_output staticWebAppHostname)"
 
 unset -f get_output
 
@@ -78,4 +87,13 @@ printf '%s\n' \
   "  EVENT_HUBS_NAMESPACE=$EVENT_HUBS_NAMESPACE" \
   "  EVENT_HUB=$EVENT_HUB" \
   "  LOG_ANALYTICS=$LOG_ANALYTICS" \
-  "  APPLICATION_INSIGHTS=$APPLICATION_INSIGHTS"
+  "  APPLICATION_INSIGHTS=$APPLICATION_INSIGHTS" \
+  "  CONTAINER_REGISTRY=$CONTAINER_REGISTRY" \
+  "  CONTAINER_REGISTRY_LOGIN_SERVER=$CONTAINER_REGISTRY_LOGIN_SERVER" \
+  "  CONTAINER_APPS_ENVIRONMENT=$CONTAINER_APPS_ENVIRONMENT" \
+  "  API_APP=$API_APP" \
+  "  API_HOSTNAME=$API_HOSTNAME" \
+  "  INGESTION_FUNCTION_APP=$INGESTION_FUNCTION_APP" \
+  "  PROCESSING_FUNCTION_APP=$PROCESSING_FUNCTION_APP" \
+  "  STATIC_WEB_APP=$STATIC_WEB_APP" \
+  "  STATIC_WEB_APP_HOSTNAME=$STATIC_WEB_APP_HOSTNAME"

@@ -48,6 +48,10 @@ After signup:
    - `Microsoft.Insights`
    - `Microsoft.OperationalInsights`
    - `Microsoft.Datadog`
+   - `Microsoft.ManagedIdentity`
+   - `Microsoft.Quota`
+   - `Microsoft.App`
+   - `Microsoft.ContainerRegistry`
 
 Use a dedicated resource group:
 
@@ -55,7 +59,7 @@ Use a dedicated resource group:
 rg-tfl-analytics-dev-uk-south
 ```
 
-The Phase 1 foundation deployed on June 11, 2026 uses:
+The Phase 1 foundation and compute resources deployed by June 12, 2026 use:
 
 | Resource | Name |
 |---|---|
@@ -65,6 +69,12 @@ The Phase 1 foundation deployed on June 11, 2026 uses:
 | Event hub | `tfl-events` |
 | Log Analytics | `log-tfl-analytics-dev-nhkpyupi` |
 | Application Insights | `appi-tfl-analytics-dev-nhkpyupi` |
+| Container registry | `acrtflnhkpyupi` |
+| Container Apps environment | `cae-tfl-analytics-dev-nhkpyupi` |
+| API Container App | `ca-tfl-api-dev-nhkpyupi` |
+| Ingestion Function App | `func-tfl-analytics-ingestion-dev-nhkpyupi` |
+| Processing Function App | `func-tfl-analytics-processing-dev-nhkpyupi` |
+| Static Web App | `swa-tfl-analytics-dev-nhkpyupi` |
 
 Default deployment region:
 
@@ -125,7 +135,8 @@ Datadog log, APM, or custom-metric ingestion.
 | Cosmos DB | Free-tier serverless or free provisioned throughput | Recent operational events | Seven-day TTL and partition-aware queries |
 | Azure SQL | Serverless free offer where eligible | Alerts and aggregates | Auto-pause and 32 GB limit |
 | SignalR | Free tier where available | Dashboard updates | One unit and connection limits |
-| App Service or Container Apps | Lowest suitable development SKU | ASP.NET Core API | Stop or scale to zero when possible |
+| Container Apps | Consumption | ASP.NET Core API | Scale to zero; maximum two replicas |
+| Container Registry | Basic | Private API images | Remove unused tags and registry when the project is inactive |
 | Static Web Apps | Free | Angular hosting | Free-tier limits |
 | Azure Monitor | Minimal retention | Platform diagnostic source | Do not duplicate high-volume application logs |
 | Datadog Native resource | Trial/development plan | Unified observability | Exclusion filters, sampling, and retention |

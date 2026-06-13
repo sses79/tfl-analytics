@@ -15,11 +15,17 @@ Completed:
   Application Insights.
 - Azure foundation deployment to `rg-tfl-analytics-dev-uk-south`.
 - TfL and Datadog keys stored in `kv-tfl-nhkpyupi`.
+- Two .NET 10 Flex Consumption Function Apps with managed deployment identities.
+- Free Static Web App for the Angular dashboard.
+- ASP.NET Core API deployed to Azure Container Apps Consumption from a private
+  Basic Azure Container Registry.
+- Azure API health and live TfL line-status smoke tests.
+- Ingestion and processing Function packages deployed with public health checks.
 
 Remaining Phase 1 work:
 
-- Compute hosting and managed identities.
-- Cosmos DB, Azure SQL, SignalR, and Static Web Apps modules.
+- Deploy Angular content to the Static Web App.
+- Cosmos DB, Azure SQL, and SignalR modules.
 - Workload RBAC, diagnostic settings, and deployment automation.
 
 ## Summary

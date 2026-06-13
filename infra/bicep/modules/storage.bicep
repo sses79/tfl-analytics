@@ -40,6 +40,22 @@ resource rawContainer 'Microsoft.Storage/storageAccounts/blobServices/containers
   }
 }
 
+resource ingestionDeploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'function-ingestion-deployments'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+resource processingDeploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'function-processing-deployments'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource queueService 'Microsoft.Storage/storageAccounts/queueServices@2023-05-01' = {
   parent: storage
   name: 'default'

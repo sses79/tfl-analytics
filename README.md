@@ -20,11 +20,16 @@ Completed:
 - Deterministic TfL line-status fixture and API container smoke test.
 - Modular Bicep foundation deployed to UK South.
 - TfL and Datadog API keys stored in Azure Key Vault.
+- Two .NET 10 Flex Consumption Function Apps and a Free Static Web App deployed.
+- API image stored in a private Basic ACR and deployed to Azure Container Apps
+  Consumption with scale-to-zero enabled.
+- Azure API health and live TfL line-status smoke tests completed.
+- Ingestion and processing Function packages deployed and health-checked.
 
 Next Phase 1 slice:
 
-- Add Azure compute hosting and managed identities.
-- Add Cosmos DB, Azure SQL, SignalR, and Static Web Apps modules.
+- Deploy the Angular dashboard content to Static Web Apps.
+- Add Cosmos DB, Azure SQL, and SignalR modules.
 - Add workload RBAC assignments and diagnostic settings.
 - Add CI deployment workflows.
 
@@ -187,6 +192,18 @@ Deployed resources:
 | Event hub | `tfl-events` |
 | Log Analytics | `log-tfl-analytics-dev-nhkpyupi` |
 | Application Insights | `appi-tfl-analytics-dev-nhkpyupi` |
+| Container registry | `acrtflnhkpyupi` |
+| Container Apps environment | `cae-tfl-analytics-dev-nhkpyupi` |
+| API Container App | `ca-tfl-api-dev-nhkpyupi` |
+| Ingestion Function App | `func-tfl-analytics-ingestion-dev-nhkpyupi` |
+| Processing Function App | `func-tfl-analytics-processing-dev-nhkpyupi` |
+| Static Web App | `swa-tfl-analytics-dev-nhkpyupi` |
+
+Azure API:
+
+```text
+https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io
+```
 
 Validation, deployment, output discovery, and Azure smoke tests are documented
 in the [Azure Bicep guide](./docs/azure-bicep.md).
@@ -213,6 +230,12 @@ az deployment group create \
   --resource-group rg-tfl-analytics-dev-uk-south \
   --template-file infra/bicep/main.bicep \
   --parameters infra/bicep/environments/dev.bicepparam
+```
+
+Publish, deploy, and smoke-test both Function packages:
+
+```bash
+./scripts/deploy-functions.sh
 ```
 
 ## Secrets

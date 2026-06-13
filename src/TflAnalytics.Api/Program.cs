@@ -14,6 +14,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "TfL Analytics API",
+    status = "running",
+    endpoints = new
+    {
+        health = "/health/live",
+        openApi = "/openapi/v1.json",
+        lineStatusExample = "/api/tfl/line-status/victoria,circle"
+    }
+}));
 app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();
