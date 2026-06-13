@@ -72,6 +72,15 @@ dotnet build TflAnalytics.sln
 dotnet test TflAnalytics.sln --no-build -m:1 --disable-build-servers
 ```
 
+Run the local full-history secret and dependency scan:
+
+```bash
+./scripts/security-scan.sh
+```
+
+The scan redacts findings and never mounts the ignored local `.env` file into
+the scanner container.
+
 Build Angular:
 
 ```bash
