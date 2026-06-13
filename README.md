@@ -28,11 +28,14 @@ Completed:
 - Ingestion and processing Function packages deployed and health-checked.
 - Angular dashboard deployed to Azure Static Web Apps and connected to the
   Container App API through an explicit CORS policy.
+- Cosmos DB, Azure SQL, and Azure SignalR development services deployed with
+  free-tier guards and managed-identity access.
+- Event Hubs sender/receiver and Key Vault secret-reader roles assigned to the
+  API and Function workload identities.
 
 Next Phase 1 slice:
 
-- Add Cosmos DB, Azure SQL, and SignalR modules.
-- Add workload RBAC assignments and diagnostic settings.
+- Add selected resource diagnostic settings.
 - Add CI deployment workflows.
 
 ## Repository
@@ -209,6 +212,10 @@ Deployed resources:
 | Ingestion Function App | `func-tfl-analytics-ingestion-dev-nhkpyupi` |
 | Processing Function App | `func-tfl-analytics-processing-dev-nhkpyupi` |
 | Static Web App | `swa-tfl-analytics-dev-nhkpyupi` |
+| Cosmos DB account | `cosmos-tfl-analytics-dev-nhkpyupi` |
+| Azure SQL server | `sql-tfl-analytics-dev-nhkpyupi` |
+| Azure SQL database | `tfl-analytics` |
+| Azure SignalR Service | `sigr-tfl-analytics-dev-nhkpyupi` |
 
 Azure API:
 

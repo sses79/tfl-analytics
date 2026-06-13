@@ -100,6 +100,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
               value: 'Production'
             }
             {
+              name: 'AZURE_CLIENT_ID'
+              value: apiIdentity.properties.clientId
+            }
+            {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               value: applicationInsights.properties.ConnectionString
             }
@@ -170,4 +174,5 @@ output registryLoginServer string = registry.properties.loginServer
 output containerAppsEnvironmentName string = environment.name
 output apiContainerAppName string = apiApp.?name ?? ''
 output apiContainerAppFqdn string = apiApp.?properties.configuration.ingress.fqdn ?? ''
+output apiIdentityName string = apiIdentity.name
 output apiPrincipalId string = apiIdentity.properties.principalId

@@ -14,6 +14,7 @@ param projectName string = 'tfl-analytics'
 
 param deployApiContainer bool = false
 param apiImageTag string = 'dev'
+param sqlLocation string = 'centralus'
 
 var suffix = take(uniqueString(subscription().id, resourceGroup().id), 8)
 var storageAccountName = 'sttfl${suffix}'
@@ -113,6 +114,55 @@ module messaging 'modules/messaging.bicep' = {
   }
 }
 
+module cosmos 'modules/cosmos.bicep' = {
+  name: 'cosmos'
+  params: {
+    location: location
+    accountName: 'cosmos-${projectName}-${environmentName}-${suffix}'
+    databaseName: 'tfl-analytics'
+    apiPrincipalId: apiHosting.outputs.apiPrincipalId
+    processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
+    tags: commonTags
+  }
+}
+
+module sql 'modules/sql.bicep' = {
+  name: 'sql'
+  params: {
+    location: sqlLocation
+    serverName: 'sql-${projectName}-${environmentName}-${suffix}'
+    databaseName: 'tfl-analytics'
+    administratorLogin: 'id-${projectName}-api-${environmentName}-${suffix}'
+    administratorObjectId: apiHosting.outputs.apiPrincipalId
+    tenantId: subscription().tenantId
+    tags: commonTags
+  }
+}
+
+module realtime 'modules/realtime.bicep' = {
+  name: 'realtime'
+  params: {
+    location: location
+    name: 'sigr-${projectName}-${environmentName}-${suffix}'
+    dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
+    apiPrincipalId: apiHosting.outputs.apiPrincipalId
+    processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
+    tags: commonTags
+  }
+}
+
+module workloadRbac 'modules/workload-rbac.bicep' = {
+  name: 'workload-rbac'
+  params: {
+    eventHubsNamespaceName: messaging.outputs.namespaceName
+    eventHubName: messaging.outputs.eventHubName
+    keyVaultName: keyVault.outputs.keyVaultName
+    apiPrincipalId: apiHosting.outputs.apiPrincipalId
+    ingestionPrincipalId: compute.outputs.ingestionDeploymentIdentityPrincipalId
+    processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
+  }
+}
+
 output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultName string = keyVault.outputs.keyVaultName
 output eventHubsNamespaceName string = messaging.outputs.namespaceName
@@ -124,7 +174,20 @@ output containerRegistryLoginServer string = apiHosting.outputs.registryLoginSer
 output containerAppsEnvironmentName string = apiHosting.outputs.containerAppsEnvironmentName
 output apiAppName string = apiHosting.outputs.apiContainerAppName
 output apiAppHostname string = apiHosting.outputs.apiContainerAppFqdn
+output apiIdentityName string = apiHosting.outputs.apiIdentityName
 output ingestionFunctionAppName string = compute.outputs.ingestionAppName
+output ingestionIdentityName string = compute.outputs.ingestionIdentityName
 output processingFunctionAppName string = compute.outputs.processingAppName
+output processingIdentityName string = compute.outputs.processingIdentityName
 output staticWebAppName string = compute.outputs.staticWebAppName
 output staticWebAppHostname string = compute.outputs.staticWebAppHostname
+output cosmosAccountName string = cosmos.outputs.accountName
+output cosmosEndpoint string = cosmos.outputs.accountEndpoint
+output cosmosDatabaseName string = cosmos.outputs.databaseName
+output cosmosLiveEventsContainerName string = cosmos.outputs.liveEventsContainerName
+output cosmosLineStatusContainerName string = cosmos.outputs.lineStatusContainerName
+output sqlServerName string = sql.outputs.serverName
+output sqlServerFqdn string = sql.outputs.serverFqdn
+output sqlDatabaseName string = sql.outputs.databaseName
+output signalRName string = realtime.outputs.name
+output signalRHostname string = realtime.outputs.hostname

@@ -23,11 +23,19 @@ Completed:
 - Ingestion and processing Function packages deployed with public health checks.
 - Angular dashboard deployed to Azure Static Web Apps with production API CORS,
   security headers, and live TfL line-status smoke tests.
+- Cosmos DB free-tier account with shared throughput, seven-day TTL containers,
+  and managed-identity data access.
+- Azure SQL free-serverless database with Microsoft Entra-only administration
+  and automatic pause when the monthly free allowance is exhausted.
+- Azure SignalR Service Free F1 with key authentication disabled and
+  managed-identity app-server access.
+- Least-privilege Event Hubs and Key Vault workload RBAC for the API,
+  ingestion, and processing identities.
 
 Remaining Phase 1 work:
 
-- Cosmos DB, Azure SQL, and SignalR modules.
-- Workload RBAC, diagnostic settings, and deployment automation.
+- Selected diagnostic settings.
+- CI deployment automation.
 
 ## Summary
 

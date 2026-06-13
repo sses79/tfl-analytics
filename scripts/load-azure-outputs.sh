@@ -71,10 +71,23 @@ export CONTAINER_REGISTRY_LOGIN_SERVER="$(get_output containerRegistryLoginServe
 export CONTAINER_APPS_ENVIRONMENT="$(get_output containerAppsEnvironmentName)"
 export API_APP="$(get_output apiAppName)"
 export API_HOSTNAME="$(get_output apiAppHostname)"
+export API_IDENTITY="$(get_output apiIdentityName)"
 export INGESTION_FUNCTION_APP="$(get_output ingestionFunctionAppName)"
+export INGESTION_IDENTITY="$(get_output ingestionIdentityName)"
 export PROCESSING_FUNCTION_APP="$(get_output processingFunctionAppName)"
+export PROCESSING_IDENTITY="$(get_output processingIdentityName)"
 export STATIC_WEB_APP="$(get_output staticWebAppName)"
 export STATIC_WEB_APP_HOSTNAME="$(get_output staticWebAppHostname)"
+export COSMOS_ACCOUNT="$(get_output cosmosAccountName)"
+export COSMOS_ENDPOINT="$(get_output cosmosEndpoint)"
+export COSMOS_DATABASE="$(get_output cosmosDatabaseName)"
+export COSMOS_LIVE_EVENTS_CONTAINER="$(get_output cosmosLiveEventsContainerName)"
+export COSMOS_LINE_STATUS_CONTAINER="$(get_output cosmosLineStatusContainerName)"
+export SQL_SERVER="$(get_output sqlServerName)"
+export SQL_SERVER_FQDN="$(get_output sqlServerFqdn)"
+export SQL_DATABASE="$(get_output sqlDatabaseName)"
+export SIGNALR="$(get_output signalRName)"
+export SIGNALR_HOSTNAME="$(get_output signalRHostname)"
 
 unset -f get_output
 
@@ -93,7 +106,20 @@ printf '%s\n' \
   "  CONTAINER_APPS_ENVIRONMENT=$CONTAINER_APPS_ENVIRONMENT" \
   "  API_APP=$API_APP" \
   "  API_HOSTNAME=$API_HOSTNAME" \
+  "  API_IDENTITY=$API_IDENTITY" \
   "  INGESTION_FUNCTION_APP=$INGESTION_FUNCTION_APP" \
+  "  INGESTION_IDENTITY=$INGESTION_IDENTITY" \
   "  PROCESSING_FUNCTION_APP=$PROCESSING_FUNCTION_APP" \
+  "  PROCESSING_IDENTITY=$PROCESSING_IDENTITY" \
   "  STATIC_WEB_APP=$STATIC_WEB_APP" \
-  "  STATIC_WEB_APP_HOSTNAME=$STATIC_WEB_APP_HOSTNAME"
+  "  STATIC_WEB_APP_HOSTNAME=$STATIC_WEB_APP_HOSTNAME" \
+  "  COSMOS_ACCOUNT=$COSMOS_ACCOUNT" \
+  "  COSMOS_ENDPOINT=$COSMOS_ENDPOINT" \
+  "  COSMOS_DATABASE=$COSMOS_DATABASE" \
+  "  COSMOS_LIVE_EVENTS_CONTAINER=$COSMOS_LIVE_EVENTS_CONTAINER" \
+  "  COSMOS_LINE_STATUS_CONTAINER=$COSMOS_LINE_STATUS_CONTAINER" \
+  "  SQL_SERVER=$SQL_SERVER" \
+  "  SQL_SERVER_FQDN=$SQL_SERVER_FQDN" \
+  "  SQL_DATABASE=$SQL_DATABASE" \
+  "  SIGNALR=$SIGNALR" \
+  "  SIGNALR_HOSTNAME=$SIGNALR_HOSTNAME"
