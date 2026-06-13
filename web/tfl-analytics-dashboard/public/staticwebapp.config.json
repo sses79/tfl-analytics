@@ -1,0 +1,14 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "*.{css,ico,js,json,png,svg,webp}"
+    ]
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY"
+  }
+}

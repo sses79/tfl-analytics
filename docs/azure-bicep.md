@@ -32,8 +32,9 @@ The Phase 1 compute foundation is deployed:
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
 | Container registry | Private Basic ACR with managed-identity image pull |
 
-The Function hosts and their application packages are deployed. Static Web App
-infrastructure exists, but the Angular application has not yet been deployed.
+The Function hosts and their application packages are deployed. The Angular
+line-status dashboard is deployed to the Static Web App and calls the Container
+App API through an origin-restricted CORS policy.
 
 Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
 June 12, 2026, or approximately `$15.34` for seven continuous days. Although
@@ -118,12 +119,11 @@ Pay particular attention to changes involving:
 
 These settings can affect cost, availability, or recovery behavior.
 
-On June 12, 2026, Azure's `what-if` service returned `InternalServerError` while
-previewing the conditional Container App even though Bicep compilation and ARM
-deployment validation succeeded. The preview was retried after correcting the
-resource name. Treat this as an Azure preview-service limitation, preserve the
-failed diagnostic tracking ID when reporting it, and do not skip compilation or
-deployment validation.
+On June 13, 2026, `what-if` completed but marked the nested Container App
+deployment as ignored because its dashboard-origin parameter contains a
+resource reference that cannot be fully evaluated during preview. Review the
+remaining changes, then use ARM deployment validation as the additional gate.
+Do not skip compilation, `what-if`, or deployment validation.
 
 ## Deploy
 
@@ -192,6 +192,31 @@ https://func-tfl-analytics-processing-dev-nhkpyupi.azurewebsites.net/api/health
 The ingestion package currently contains its timer heartbeat and health
 function. The processing package currently contains its health function; event
 processing triggers are implemented in a later delivery phase.
+
+## Dashboard Deployment
+
+Build and deploy the Angular production bundle:
+
+```bash
+./scripts/deploy-dashboard.sh
+```
+
+The script:
+
+1. Loads the latest successful Bicep outputs.
+2. Runs `npm ci` and the Angular production build.
+3. Retrieves the Static Web App deployment token without printing it.
+4. Deploys `dist/tfl-analytics-dashboard/browser`.
+5. Verifies the deployed root page.
+
+The production dashboard is:
+
+```text
+https://blue-bush-0491f9503.7.azurestaticapps.net
+```
+
+The token is used only as a process environment variable and must never be
+written to `.env`, documentation, logs, or source control.
 
 ## Deployment Outputs
 
@@ -322,7 +347,19 @@ az containerapp revision list \
 curl --fail --silent --show-error "https://$API_HOSTNAME/health/live"
 curl --fail --silent --show-error \
   "https://$API_HOSTNAME/api/tfl/line-status/victoria"
+
+curl --fail --silent --show-error \
+  "https://$STATIC_WEB_APP_HOSTNAME/" \
+  --output /dev/null
+
+curl --fail --silent --show-error --include --request OPTIONS \
+  "https://$API_HOSTNAME/api/tfl/line-status/victoria" \
+  --header "Origin: https://$STATIC_WEB_APP_HOSTNAME" \
+  --header "Access-Control-Request-Method: GET"
 ```
+
+The preflight response should be `204` and include
+`Access-Control-Allow-Origin` for the exact Static Web App origin.
 
 ## Data-Plane Smoke Tests
 
@@ -429,7 +466,6 @@ All should report `Registered`.
 
 The current Bicep foundation does not yet deploy:
 
-- Angular application content to the deployed Static Web App.
 - Workload RBAC beyond Function host/deployment storage access.
 - Cosmos DB, Azure SQL, and SignalR.
 - Datadog Agent hosting or the Datadog Azure Native resource.
