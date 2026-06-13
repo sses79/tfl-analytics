@@ -31,10 +31,19 @@ The Phase 1 compute foundation is deployed:
 | Angular hosting | Static Web Apps Free tier in West Europe |
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
 | Container registry | Private Basic ACR with managed-identity image pull |
+| Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two seven-day TTL containers |
+| Azure SQL | Free serverless allowance, 0.5 minimum vCore, auto-pause at free-limit exhaustion |
+| Azure SignalR | Free F1, local key authentication disabled |
 
 The Function hosts and their application packages are deployed. The Angular
 line-status dashboard is deployed to the Static Web App and calls the Container
 App API through an origin-restricted CORS policy.
+
+Cosmos DB and SignalR are deployed in UK South. This subscription is restricted
+from provisioning every Azure SQL SKU in UK South and the tested European
+regions, so the SQL server is deployed in Central US, where the subscription's
+free serverless offer is available. The database automatically pauses after 60
+minutes of inactivity and when its monthly free allowance is exhausted.
 
 Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
 June 12, 2026, or approximately `$15.34` for seven continuous days. Although
@@ -217,6 +226,58 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 The token is used only as a process environment variable and must never be
 written to `.env`, documentation, logs, or source control.
+
+## Data-Service Deployment
+
+The main Bicep deployment creates:
+
+- Cosmos DB database `tfl-analytics`.
+- `live-events` container partitioned by `/stationId`.
+- `line-status` container partitioned by `/lineId`.
+- Seven-day default TTL on both containers.
+- Azure SQL database `tfl-analytics` with Microsoft Entra-only authentication.
+- Azure SignalR Service Free F1 with managed-identity access.
+
+Run the focused management-plane smoke tests after deployment:
+
+```bash
+./scripts/smoke-azure-data-services.sh
+```
+
+The script verifies free-tier controls, Cosmos throughput and TTL, partition
+keys, SQL auto-pause behavior, disabled local authentication, and the expected
+managed-identity role assignments. It does not retrieve account keys or
+connection strings.
+
+## Workload RBAC
+
+The `workload-rbac` module grants only the data-plane roles needed by each
+workload:
+
+| Workload identity | Scope | Role |
+|---|---|---|
+| Ingestion Function | `tfl-events` Event Hub | Azure Event Hubs Data Sender |
+| Processing Function | `tfl-events` Event Hub | Azure Event Hubs Data Receiver |
+| API | Key Vault | Key Vault Secrets User |
+| Ingestion Function | Key Vault | Key Vault Secrets User |
+| Processing Function | Key Vault | Key Vault Secrets User |
+
+The Event Hubs roles are scoped to the individual event hub rather than the
+namespace. Key Vault roles permit reading secret values but not creating,
+updating, or deleting secrets.
+
+Each host sets `AZURE_CLIENT_ID` to the matching user-assigned identity. This is
+required for the Function Apps because they also have a system-assigned
+identity.
+
+Verify the assignments and identity selection:
+
+```bash
+./scripts/smoke-azure-workload-rbac.sh
+```
+
+The script checks role, principal, and scope tuples without reading any Key
+Vault secret values.
 
 ## Deployment Outputs
 
@@ -466,8 +527,6 @@ All should report `Registered`.
 
 The current Bicep foundation does not yet deploy:
 
-- Workload RBAC beyond Function host/deployment storage access.
-- Cosmos DB, Azure SQL, and SignalR.
 - Datadog Agent hosting or the Datadog Azure Native resource.
 - Resource diagnostic settings.
 

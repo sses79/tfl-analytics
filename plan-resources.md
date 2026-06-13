@@ -133,7 +133,7 @@ Datadog log, APM, or custom-metric ingestion.
 | Event Hubs | Basic or lowest compatible tier | Streaming event transport | One namespace and one hub |
 | Functions | Consumption/Flex Consumption after compatibility validation | Polling, processing, Durable workflows | Execution limits and low polling volume |
 | Cosmos DB | Free-tier serverless or free provisioned throughput | Recent operational events | Seven-day TTL and partition-aware queries |
-| Azure SQL | Serverless free offer where eligible | Alerts and aggregates | Auto-pause and 32 GB limit |
+| Azure SQL | Serverless free offer in Central US | Alerts and aggregates | Auto-pause at free-limit exhaustion and 32 GB limit |
 | SignalR | Free tier where available | Dashboard updates | One unit and connection limits |
 | Container Apps | Consumption | ASP.NET Core API | Scale to zero; maximum two replicas |
 | Container Registry | Basic | Private API images | Remove unused tags and registry when the project is inactive |

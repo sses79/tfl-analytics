@@ -194,6 +194,10 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: ingestionIdentity.properties.clientId
         }
         {
+          name: 'AZURE_CLIENT_ID'
+          value: ingestionIdentity.properties.clientId
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
         }
@@ -275,6 +279,10 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: processingIdentity.properties.clientId
         }
         {
+          name: 'AZURE_CLIENT_ID'
+          value: processingIdentity.properties.clientId
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
         }
@@ -317,9 +325,11 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
 
 output ingestionAppName string = ingestionApp.name
 output ingestionPrincipalId string = ingestionApp.identity.principalId
+output ingestionIdentityName string = ingestionIdentity.name
 output ingestionDeploymentIdentityPrincipalId string = ingestionIdentity.properties.principalId
 output processingAppName string = processingApp.name
 output processingPrincipalId string = processingApp.identity.principalId
+output processingIdentityName string = processingIdentity.name
 output processingDeploymentIdentityPrincipalId string = processingIdentity.properties.principalId
 output staticWebAppName string = staticWebApp.name
 output staticWebAppHostname string = staticWebApp.properties.defaultHostname
