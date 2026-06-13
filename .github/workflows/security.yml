@@ -43,6 +43,9 @@ jobs:
           cache: npm
           cache-dependency-path: web/tfl-analytics-dashboard/package-lock.json
 
+      - name: Use repository npm version
+        run: npm install --global npm@11.6.2
+
       - name: Audit NuGet dependencies
         run: dotnet list TflAnalytics.sln package --vulnerable --include-transitive
 
