@@ -5,6 +5,10 @@ testing for the current Phase 1 Azure foundation.
 
 Run commands from the repository root.
 
+For the complete application release sequence, including API image, Function
+packages, dashboard content, smoke tests, and rollback, use the
+[manual deployment runbook](./manual-deployment.md).
+
 ## Current Foundation
 
 The Bicep deployment currently creates:
@@ -279,6 +283,29 @@ Verify the assignments and identity selection:
 The script checks role, principal, and scope tuples without reading any Key
 Vault secret values.
 
+## Diagnostic Settings
+
+The `diagnostics` module sends selected operational records to the existing Log
+Analytics workspace:
+
+| Resource | Categories |
+|---|---|
+| Key Vault | `AuditEvent` |
+| Event Hubs namespace | `DiagnosticErrorLogs`, `OperationalLogs` |
+| Cosmos DB | `ControlPlaneRequests` |
+| SignalR | `AllLogs` |
+| Azure SQL database | `Errors`, `Timeouts`, `Deadlocks`, `DevOpsOperationsAudit` |
+
+Verbose Cosmos data-plane requests, SQL query statistics, Function application
+logs, and broad storage transaction logs are intentionally excluded to control
+cost and avoid duplicate telemetry.
+
+Verify the settings:
+
+```bash
+./scripts/smoke-azure-diagnostics.sh
+```
+
 ## Deployment Outputs
 
 Display resource names without duplicating generated suffixes:
@@ -528,7 +555,6 @@ All should report `Registered`.
 The current Bicep foundation does not yet deploy:
 
 - Datadog Agent hosting or the Datadog Azure Native resource.
-- Resource diagnostic settings.
 
-Smoke testing those services belongs to a later Phase 1 slice after their Bicep
-modules are implemented.
+Smoke testing those services belongs to a future observability slice after
+their Bicep modules are implemented.

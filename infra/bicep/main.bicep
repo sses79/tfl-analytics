@@ -163,6 +163,19 @@ module workloadRbac 'modules/workload-rbac.bicep' = {
   }
 }
 
+module diagnostics 'modules/diagnostics.bicep' = {
+  name: 'diagnostics'
+  params: {
+    logAnalyticsWorkspaceId: observability.outputs.logAnalyticsWorkspaceId
+    keyVaultName: keyVault.outputs.keyVaultName
+    eventHubsNamespaceName: messaging.outputs.namespaceName
+    cosmosAccountName: cosmos.outputs.accountName
+    signalRName: realtime.outputs.name
+    sqlServerName: sql.outputs.serverName
+    sqlDatabaseName: sql.outputs.databaseName
+  }
+}
+
 output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultName string = keyVault.outputs.keyVaultName
 output eventHubsNamespaceName string = messaging.outputs.namespaceName

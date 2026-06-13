@@ -32,11 +32,16 @@ Completed:
   free-tier guards and managed-identity access.
 - Event Hubs sender/receiver and Key Vault secret-reader roles assigned to the
   API and Function workload identities.
+- Selected Azure diagnostic settings deployed to Log Analytics.
+- GitHub Actions validates .NET, Angular, Bicep, scripts, Compose, secrets, and
+  dependencies.
+- Manual Azure release and rollback workflow documented.
 
-Next Phase 1 slice:
+Phase 1 is complete.
 
-- Add selected resource diagnostic settings.
-- Add CI deployment workflows.
+Next phase:
+
+- Implement TfL ingestion polling and Event Hubs publication.
 
 ## Repository
 
@@ -231,6 +236,12 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 Validation, deployment, output discovery, and Azure smoke tests are documented
 in the [Azure Bicep guide](./docs/azure-bicep.md).
+
+The complete operator sequence is documented in the
+[manual Azure deployment runbook](./docs/manual-deployment.md).
+
+CI behavior is documented in the
+[continuous integration guide](./docs/continuous-integration.md).
 
 Validate Bicep:
 

@@ -2,7 +2,7 @@
 
 ## Implementation Status
 
-Phase 1 started on June 11, 2026.
+Phase 1 started on June 11, 2026 and completed on June 13, 2026.
 
 Completed:
 
@@ -31,11 +31,18 @@ Completed:
   managed-identity app-server access.
 - Least-privilege Event Hubs and Key Vault workload RBAC for the API,
   ingestion, and processing identities.
+- Selected low-volume diagnostic settings for Key Vault, Event Hubs, Cosmos DB,
+  SignalR, and Azure SQL.
+- GitHub Actions validation for .NET, Angular, Bicep, shell scripts, Docker
+  Compose, secrets, and dependency vulnerabilities.
+- Documented manual Azure deployment and rollback runbook.
 
-Remaining Phase 1 work:
+Phase 1 is complete.
 
-- Selected diagnostic settings.
-- CI deployment automation.
+Next delivery phase:
+
+- Phase 2 ingestion contracts, TfL polling operations, timer triggers, and
+  Event Hubs publication.
 
 ## Summary
 

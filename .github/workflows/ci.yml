@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore TflAnalytics.sln
+
+      - name: Build
+        run: dotnet build TflAnalytics.sln --no-restore -m:1 --disable-build-servers
+
+      - name: Test
+        run: dotnet test TflAnalytics.sln --no-restore --no-build -m:1 --disable-build-servers
+
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web/tfl-analytics-dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/tfl-analytics-dashboard/package-lock.json
+
+      - name: Use repository npm version
+        run: npm install --global npm@11.6.2
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test -- --watch=false
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile Bicep
+        run: az bicep build --file infra/bicep/main.bicep
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Validate shell scripts
+        run: |
+          bash -n \
+            scripts/deploy-dashboard.sh \
+            scripts/deploy-functions.sh \
+            scripts/load-azure-outputs.sh \
+            scripts/security-scan.sh \
+            scripts/smoke-azure-data-services.sh \
+            scripts/smoke-azure-diagnostics.sh \
+            scripts/smoke-azure-workload-rbac.sh
+
+      - name: Validate Docker Compose
+        env:
+          MSSQL_SA_PASSWORD: Compose_validation_only_123!
+        run: |
+          docker compose \
+            --env-file .env.example \
+            -f infra/local/compose.yaml \
+            config --quiet
