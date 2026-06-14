@@ -1,5 +1,7 @@
 using System.Text.Json;
+using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Processing;
+using TflAnalytics.Contracts.Alerts;
 using TflAnalytics.Contracts.Events;
 using TflAnalytics.Contracts.Processing;
 
@@ -37,7 +39,10 @@ public sealed class ProcessingTests
     {
         var json = CreateArrivalJson();
         var repository = new RecordingRepository();
-        var processor = new EventProcessor(new RecordingArchive(json), repository);
+        var processor = new EventProcessor(
+            new RecordingArchive(json),
+            repository,
+            new NoAlertDetector());
 
         var result = await processor.ProcessAsync(
             new ProcessingMessage(
@@ -57,7 +62,8 @@ public sealed class ProcessingTests
         var repository = new RecordingRepository { CreateResult = false };
         var processor = new EventProcessor(
             new RecordingArchive(CreateArrivalJson()),
-            repository);
+            repository,
+            new NoAlertDetector());
 
         var result = await processor.ProcessAsync(
             new ProcessingMessage(
@@ -74,7 +80,8 @@ public sealed class ProcessingTests
     {
         var processor = new EventProcessor(
             new RecordingArchive(CreateArrivalJson()),
-            new RecordingRepository());
+            new RecordingRepository(),
+            new NoAlertDetector());
 
         var exception = await Assert.ThrowsAsync<InvalidDataException>(
             () => processor.ProcessAsync(
@@ -203,5 +210,18 @@ public sealed class ProcessingTests
         }
 
         public override DateTimeOffset GetUtcNow() => _utcNow;
+    }
+
+    private sealed class NoAlertDetector : IAlertDetector
+    {
+        public Task<AlertCandidate?> DetectArrivalAsync(
+            EventEnvelope<ArrivalPredictionObserved> envelope,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<AlertCandidate?>(null);
+
+        public Task<AlertCandidate?> DetectLineStatusAsync(
+            EventEnvelope<LineStatusObserved> envelope,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<AlertCandidate?>(null);
     }
 }

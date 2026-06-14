@@ -23,6 +23,8 @@ var logAnalyticsName = 'log-${projectName}-${environmentName}-${suffix}'
 var applicationInsightsName = 'appi-${projectName}-${environmentName}-${suffix}'
 var cosmosAccountName = 'cosmos-${projectName}-${environmentName}-${suffix}'
 var cosmosDatabaseName = 'tfl-analytics'
+var sqlServerName = 'sql-${projectName}-${environmentName}-${suffix}'
+var sqlDatabaseName = 'tfl-analytics'
 var commonTags = {
   environment: environmentName
   project: projectName
@@ -82,6 +84,8 @@ module compute 'modules/compute.bicep' = {
     cosmosDatabaseName: cosmosDatabaseName
     cosmosLiveEventsContainerName: 'live-events'
     cosmosLineStatusContainerName: 'line-status'
+    sqlServerFqdn: '${sqlServerName}${environment().suffixes.sqlServerHostname}'
+    sqlDatabaseName: sqlDatabaseName
     tags: commonTags
   }
   dependsOn: [
@@ -138,10 +142,10 @@ module sql 'modules/sql.bicep' = {
   name: 'sql'
   params: {
     location: sqlLocation
-    serverName: 'sql-${projectName}-${environmentName}-${suffix}'
-    databaseName: 'tfl-analytics'
-    administratorLogin: 'id-${projectName}-api-${environmentName}-${suffix}'
-    administratorObjectId: apiHosting.outputs.apiPrincipalId
+    serverName: sqlServerName
+    databaseName: sqlDatabaseName
+    administratorLogin: compute.outputs.processingIdentityName
+    administratorObjectId: compute.outputs.processingDeploymentIdentityPrincipalId
     tenantId: subscription().tenantId
     tags: commonTags
   }

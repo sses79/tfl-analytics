@@ -18,6 +18,8 @@ param cosmosAccountName string
 param cosmosDatabaseName string
 param cosmosLiveEventsContainerName string
 param cosmosLineStatusContainerName string
+param sqlServerFqdn string
+param sqlDatabaseName string
 param tags object
 
 param maximumFunctionInstanceCount int = 20
@@ -415,6 +417,10 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'processing'
         }
         {
+          name: 'ProcessingStorage__AuditTableName'
+          value: 'audit'
+        }
+        {
           name: 'ProcessingStorage__Initialize'
           value: 'false'
         }
@@ -437,6 +443,26 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'Cosmos__Initialize'
           value: 'false'
+        }
+        {
+          name: 'AlertStorage__ServerFqdn'
+          value: sqlServerFqdn
+        }
+        {
+          name: 'AlertStorage__DatabaseName'
+          value: sqlDatabaseName
+        }
+        {
+          name: 'AlertStorage__Initialize'
+          value: 'true'
+        }
+        {
+          name: 'Alerts__ArrivalSlippageThresholdSeconds'
+          value: '120'
+        }
+        {
+          name: 'Alerts__GoodServiceSeverity'
+          value: '10'
         }
         {
           name: 'DD_ENV'

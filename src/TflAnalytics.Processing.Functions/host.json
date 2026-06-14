@@ -17,6 +17,9 @@
     "eventHubs": {
       "maxEventBatchSize": 64,
       "prefetchCount": 128
+    },
+    "durableTask": {
+      "hubName": "TflAnalyticsAlerts"
     }
   }
 }

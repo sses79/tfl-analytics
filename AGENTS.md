@@ -12,7 +12,7 @@ Read these files before substantial work:
 - `Plan.md` for architecture, delivery phases, and current implementation status.
 - `plan-resources.md` for Azure, security, cost, and Datadog decisions.
 
-The project is currently completing Phase 1. Do not implement later phases
+Phases 1 through 3 are complete and deployed. Do not implement later phases
 implicitly unless the user requests them.
 
 ## Architecture Boundaries
@@ -71,6 +71,12 @@ az deployment group what-if \
 
 Always run `what-if` before an Azure deployment. Summarize resources and likely
 cost impact before creating or changing billable services.
+
+After every Azure deployment, run the checks in
+`docs/post-deployment-verification.md` and update its deployment record with the
+date, commit, deployment name, result, cost impact, and event-flow evidence.
+Do not mark a deployment complete until that file reflects the verified Azure
+state.
 
 ## Local Development
 

@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Storage.Blobs;
@@ -7,10 +9,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Azure.Cosmos;
+using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Ingestion;
 using TflAnalytics.Application.Messaging;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Application.Tfl;
+using TflAnalytics.Infrastructure.Alerts;
 using TflAnalytics.Infrastructure.Messaging;
 using TflAnalytics.Infrastructure.Processing;
 using TflAnalytics.Infrastructure.Tfl;
@@ -84,6 +88,13 @@ public static class DependencyInjection
         services
             .AddOptions<CosmosOptions>()
             .Bind(configuration.GetSection(CosmosOptions.SectionName));
+        services
+            .AddOptions<AlertStorageOptions>()
+            .Bind(configuration.GetSection(AlertStorageOptions.SectionName));
+        services.AddSingleton(
+            configuration.GetSection(AlertOptions.SectionName).Get<AlertOptions>()
+            ?? new AlertOptions());
+        services.AddSingleton<TokenCredential>(_ => new DefaultAzureCredential());
 
         services.AddSingleton(serviceProvider =>
         {
@@ -117,6 +128,20 @@ public static class DependencyInjection
                     clientOptions);
 
             return serviceClient.GetQueueClient(options.QueueName);
+        });
+        services.AddSingleton(serviceProvider =>
+        {
+            var options = serviceProvider
+                .GetRequiredService<IOptions<ProcessingStorageOptions>>()
+                .Value;
+            var serviceClient = !string.IsNullOrWhiteSpace(options.ConnectionString)
+                ? new TableServiceClient(options.ConnectionString)
+                : new TableServiceClient(
+                    new Uri(
+                        $"https://{RequireAccountName(options.AccountName)}.table.core.windows.net"),
+                    serviceProvider.GetRequiredService<TokenCredential>());
+
+            return serviceClient.GetTableClient(options.AuditTableName);
         });
         services.AddSingleton(serviceProvider =>
         {
@@ -158,7 +183,15 @@ public static class DependencyInjection
 
         services.AddSingleton<IRawEventArchive, BlobRawEventArchive>();
         services.AddSingleton<IProcessingQueue, StorageProcessingQueue>();
-        services.AddSingleton<IEventRepository, CosmosEventRepository>();
+        services.AddSingleton<CosmosEventRepository>();
+        services.AddSingleton<IEventRepository>(
+            serviceProvider => serviceProvider.GetRequiredService<CosmosEventRepository>());
+        services.AddSingleton<IObservationHistory>(
+            serviceProvider => serviceProvider.GetRequiredService<CosmosEventRepository>());
+        services.AddSingleton<IAlertDetector, AlertDetector>();
+        services.AddSingleton<IAlertRepository, SqlAlertRepository>();
+        services.AddSingleton<IAuditRepository, TableAuditRepository>();
+        services.AddSingleton<INotificationSender, LoggingNotificationSender>();
         services.AddSingleton<IRawEventIngestor, RawEventIngestor>();
         services.AddSingleton<IEventProcessor, EventProcessor>();
 

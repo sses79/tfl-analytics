@@ -12,5 +12,7 @@ public sealed class ProcessingStorageOptions
 
     public string QueueName { get; set; } = "processing";
 
+    public string AuditTableName { get; set; } = "audit";
+
     public bool Initialize { get; set; }
 }

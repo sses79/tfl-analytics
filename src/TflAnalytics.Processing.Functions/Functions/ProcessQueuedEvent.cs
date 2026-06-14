@@ -1,5 +1,8 @@
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+using Microsoft.DurableTask;
+using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Contracts.Processing;
@@ -28,6 +31,7 @@ public sealed class ProcessQueuedEvent
             "%ProcessingQueueName%",
             Connection = "AzureWebJobsStorage")]
         string queueMessage,
+        [DurableClient] DurableTaskClient durableClient,
         CancellationToken cancellationToken)
     {
         var message = JsonSerializer.Deserialize<ProcessingMessage>(
@@ -37,10 +41,19 @@ public sealed class ProcessQueuedEvent
                 "Processing queue message could not be deserialized.");
 
         var result = await _processor.ProcessAsync(message, cancellationToken);
+        foreach (var alert in result.Alerts)
+        {
+            await durableClient.ScheduleNewOrchestrationInstanceAsync(
+                nameof(AlertOrchestration),
+                alert,
+                new StartOrchestrationOptions(alert.AlertId),
+                cancellationToken);
+        }
 
         _logger.LogInformation(
-            "Processed {EventType} event. Created: {Created}.",
+            "Processed {EventType} event. Created: {Created}. Alerts: {AlertCount}.",
             result.EventType,
-            result.Created);
+            result.Created,
+            result.Alerts.Count);
     }
 }

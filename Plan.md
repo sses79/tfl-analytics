@@ -57,11 +57,13 @@ Completed:
 - Phase 3 deployed to Azure on June 14, 2026 and verified through live raw
   archives, queue processing, and Cosmos DB persistence.
 
-Phases 1 through 3 are complete and deployed.
+Phase 4 alert processing was completed and verified locally on June 14, 2026.
+Phases 1 through 3 are complete and deployed; Phase 4 is awaiting Azure
+deployment and verification.
 
 Next delivery phase:
 
-- Phase 4 SignalR publication and Durable Functions alert workflows.
+- Deploy and verify Phase 4, then begin Phase 5 API, SignalR, and dashboard work.
 
 ## Summary
 
@@ -301,8 +303,9 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 9. The Web API queries Cosmos DB for live data and Azure SQL for alerts and
    aggregates.
 
-The current implementation completes steps 1 through 5. Steps 6 through 9 are
-planned for later phases.
+The current implementation completes steps 1 through 5 and the alert portions
+of steps 7 and 8. SignalR publication and API query paths remain planned for
+Phase 5.
 
 ## Event Contracts
 
@@ -372,12 +375,11 @@ A Durable Functions alert workflow starts when:
 
 The workflow will:
 
-1. Load recent observations from Cosmos DB.
-2. Confirm that the condition is new and not a duplicate alert.
-3. Store the alert in Azure SQL.
-4. Write an audit record to Table Storage.
-5. Send a mock notification.
-6. Broadcast `alertRaised` through SignalR.
+1. Receive a qualifying transition detected from recent Cosmos DB observations.
+2. Store the alert idempotently in Azure SQL.
+3. Write an audit record to Table Storage.
+4. Send a mock notification.
+5. Broadcast `alertRaised` through SignalR in Phase 5.
 
 ## API And SignalR Contracts
 
@@ -492,6 +494,8 @@ Status: completed June 13, 2026.
 - Implement prediction-slippage and line-status transition rules.
 - Add the Durable Functions alert orchestration.
 - Persist alerts in SQL and audit records in Table Storage.
+
+Status: completed and verified locally June 14, 2026; Azure deployment pending.
 
 ### Phase 5: API And Dashboard
 
