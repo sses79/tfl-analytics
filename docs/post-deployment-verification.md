@@ -18,10 +18,10 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | June 14, 2026 |
-| Git commit | `b98bee6` |
-| ARM deployment | `phase3-basic-20260614-0844` |
+| Git commit | `57f1aa0` |
+| ARM deployment | `phase4-alerts-20260614-202014` |
 | Provisioning state | `Succeeded` |
-| Scope | Phase 3 ingestion and processing |
+| Scope | Phase 4 alert rules and Durable workflow |
 | Cost impact | No SKU or capacity increase |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
@@ -29,11 +29,22 @@ Update this section after every deployment.
 Latest verification evidence:
 
 - Ingestion and processing Function health endpoints returned `healthy`.
-- All six expected Functions were indexed.
-- Raw Blob archive count was 2,537 and increasing.
-- Arrival and line-status documents existed in Cosmos DB.
-- The `processing` and `processing-poison` queues both contained zero messages.
+- API and Static Web App health checks passed.
+- All ten expected Functions were indexed.
+- The processing identity became the Azure SQL Entra administrator.
+- Controlled good-service and disruption events were archived in raw Blob
+  Storage and processed through Cosmos DB.
+- Durable instance
+  `e73bf0ad0b0fbc4e42a25f75326d6cfd1cd9f2a6e9038148c383b88de4eca844`
+  completed successfully.
+- The matching `LineStatusDisruption` SQL alert completed before an
+  `AlertRaised` Table Storage audit entity was written.
+- The `processing`, `processing-poison`, and Durable work-item queues contained
+  zero visible messages.
 - Data-service, workload RBAC, and diagnostic-setting smoke tests passed.
+- The top-level Azure what-if returned an Azure control-plane
+  `InternalServerError`; full ARM validation and the focused SQL what-if passed
+  before deployment.
 
 ## Load Resource Names
 

@@ -57,13 +57,14 @@ Completed:
 - Phase 3 deployed to Azure on June 14, 2026 and verified through live raw
   archives, queue processing, and Cosmos DB persistence.
 
-Phase 4 alert processing was completed and verified locally on June 14, 2026.
-Phases 1 through 3 are complete and deployed; Phase 4 is awaiting Azure
-deployment and verification.
+Phase 4 alert processing was completed locally and deployed to Azure on
+June 14, 2026. A controlled good-service-to-disruption transition verified the
+complete Durable Functions, Azure SQL, Table Storage, and mock-notification
+workflow.
 
 Next delivery phase:
 
-- Deploy and verify Phase 4, then begin Phase 5 API, SignalR, and dashboard work.
+- Phase 5 API, SignalR, and dashboard work.
 
 ## Summary
 
@@ -495,7 +496,7 @@ Status: completed June 13, 2026.
 - Add the Durable Functions alert orchestration.
 - Persist alerts in SQL and audit records in Table Storage.
 
-Status: completed and verified locally June 14, 2026; Azure deployment pending.
+Status: completed locally and deployed to Azure June 14, 2026.
 
 ### Phase 5: API And Dashboard
 
