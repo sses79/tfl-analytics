@@ -2,12 +2,13 @@ using System.Net;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Contracts.Events;
 
 namespace TflAnalytics.Infrastructure.Processing;
 
-public sealed class CosmosEventRepository : IEventRepository
+public sealed class CosmosEventRepository : IEventRepository, IObservationHistory
 {
     private readonly CosmosClient _cosmosClient;
     private readonly CosmosOptions _options;
@@ -54,6 +55,109 @@ public sealed class CosmosEventRepository : IEventRepository
                 envelope.Payload),
             new PartitionKey(envelope.LineId),
             cancellationToken);
+
+    public async Task<ArrivalObservation?> GetPreviousArrivalAsync(
+        EventEnvelope<ArrivalPredictionObserved> current,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(current.StationId)
+            || string.IsNullOrWhiteSpace(current.Payload.VehicleId))
+        {
+            return null;
+        }
+
+        var query = new QueryDefinition(
+                """
+                SELECT TOP 1
+                    c.id AS id,
+                    c.observedAtUtc AS observedAtUtc,
+                    c.payload.ExpectedArrivalUtc AS expectedArrivalUtc
+                FROM c
+                WHERE c.id != @eventId
+                    AND c.payload.VehicleId = @vehicleId
+                    AND c.lineId = @lineId
+                ORDER BY c.observedAtUtc DESC
+                """)
+            .WithParameter("@eventId", current.EventId)
+            .WithParameter("@vehicleId", current.Payload.VehicleId)
+            .WithParameter("@lineId", current.LineId);
+
+        var container = _cosmosClient.GetContainer(
+            _options.DatabaseName,
+            _options.LiveEventsContainerName);
+        using var iterator = container.GetItemQueryIterator<ArrivalHistoryDocument>(
+            query,
+            requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(current.StationId),
+                MaxItemCount = 1
+            });
+
+        if (!iterator.HasMoreResults)
+        {
+            return null;
+        }
+
+        var response = await iterator.ReadNextAsync(cancellationToken);
+        var previous = response.Resource.FirstOrDefault();
+        return previous is null
+            ? null
+            : new ArrivalObservation(
+                previous.Id,
+                previous.ObservedAtUtc,
+                previous.ExpectedArrivalUtc);
+    }
+
+    public async Task<LineStatusObservation?> GetPreviousLineStatusAsync(
+        EventEnvelope<LineStatusObserved> current,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(current.LineId))
+        {
+            return null;
+        }
+
+        var query = new QueryDefinition(
+                """
+                SELECT TOP 1
+                    c.id AS id,
+                    c.observedAtUtc AS observedAtUtc,
+                    c.payload.StatusSeverity AS statusSeverity,
+                    c.payload.StatusSeverityDescription AS statusSeverityDescription
+                FROM c
+                WHERE c.id != @eventId
+                ORDER BY c.observedAtUtc DESC
+                """)
+            .WithParameter("@eventId", current.EventId);
+
+        var container = _cosmosClient.GetContainer(
+            _options.DatabaseName,
+            _options.LineStatusContainerName);
+        using var iterator = container.GetItemQueryIterator<LineStatusHistoryDocument>(
+            query,
+            requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(current.LineId),
+                MaxItemCount = 1
+            });
+
+        if (!iterator.HasMoreResults)
+        {
+            return null;
+        }
+
+        var response = await iterator.ReadNextAsync(cancellationToken);
+        var previous = response.Resource.FirstOrDefault();
+        return previous is null
+            ? null
+            : new LineStatusObservation(
+                previous.Id,
+                previous.ObservedAtUtc,
+                previous.StatusSeverity,
+                previous.StatusSeverityDescription);
+    }
 
     private async Task<bool> CreateAsync<TDocument>(
         string containerName,
@@ -141,4 +245,15 @@ public sealed class CosmosEventRepository : IEventRepository
         [property: JsonProperty("lineId")] string LineId,
         [property: JsonProperty("schemaVersion")] int SchemaVersion,
         [property: JsonProperty("payload")] LineStatusObserved Payload);
+
+    private sealed record ArrivalHistoryDocument(
+        [property: JsonProperty("id")] string Id,
+        [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
+        [property: JsonProperty("expectedArrivalUtc")] DateTimeOffset? ExpectedArrivalUtc);
+
+    private sealed record LineStatusHistoryDocument(
+        [property: JsonProperty("id")] string Id,
+        [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
+        [property: JsonProperty("statusSeverity")] int StatusSeverity,
+        [property: JsonProperty("statusSeverityDescription")] string StatusSeverityDescription);
 }

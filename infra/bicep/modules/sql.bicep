@@ -11,18 +11,32 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
   location: location
   tags: tags
   properties: {
-    administrators: {
-      administratorType: 'ActiveDirectory'
-      azureADOnlyAuthentication: true
-      login: administratorLogin
-      principalType: 'Application'
-      sid: administratorObjectId
-      tenantId: tenantId
-    }
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
     restrictOutboundNetworkAccess: 'Disabled'
   }
+}
+
+resource sqlAdministrator 'Microsoft.Sql/servers/administrators@2023-08-01' = {
+  parent: sqlServer
+  name: 'ActiveDirectory'
+  properties: {
+    administratorType: 'ActiveDirectory'
+    login: administratorLogin
+    sid: administratorObjectId
+    tenantId: tenantId
+  }
+}
+
+resource azureAdOnlyAuthentication 'Microsoft.Sql/servers/azureADOnlyAuthentications@2023-08-01' = {
+  parent: sqlServer
+  name: 'Default'
+  properties: {
+    azureADOnlyAuthentication: true
+  }
+  dependsOn: [
+    sqlAdministrator
+  ]
 }
 
 resource allowAzureServices 'Microsoft.Sql/servers/firewallRules@2023-08-01' = {

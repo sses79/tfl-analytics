@@ -7,7 +7,7 @@ analytics.
 The detailed architecture is in [Plan.md](./Plan.md). Azure account, resource,
 and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 
-## Phase 3 Status
+## Phase 4 Status
 
 Completed:
 
@@ -31,6 +31,12 @@ Completed:
   containers against the running Docker stack.
 - Azure deployment verified with live timer polling, raw Blob archives, queue
   processing, and arrival and line-status documents in Cosmos DB.
+- Prediction-slippage and good-to-disrupted line-status alert rules.
+- Durable Functions orchestration with retried SQL persistence, Table Storage
+  audit, and mock-notification activities.
+- Idempotent SQL alert inserts and deterministic orchestration instance IDs.
+- Opt-in local end-to-end coverage from Event Hubs through Cosmos history,
+  Durable Functions, SQL Server, and Azurite Table Storage.
 - Multi-project .NET solution with API, Functions, contracts, application,
   infrastructure, and test boundaries.
 - Angular 21 live line-status dashboard with loading, error, refresh, and
@@ -57,11 +63,13 @@ Completed:
   dependencies.
 - Manual Azure release and rollback workflow documented.
 
-Phases 1 through 3 are complete and deployed.
+Phases 1 through 3 are complete and deployed. Phase 4 is complete locally and
+awaiting Azure deployment.
 
 Next phase:
 
-- Broadcast live updates through SignalR and add alert workflow processing.
+- Deploy and verify Phase 4, then implement Phase 5 API, SignalR, and dashboard
+  features.
 
 ## Repository
 

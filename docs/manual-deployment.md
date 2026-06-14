@@ -203,6 +203,10 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 ## 8. Run Azure Smoke Tests
 
+Use the complete
+[Azure post-deployment verification checklist](./post-deployment-verification.md)
+and update its deployment record before marking the release complete.
+
 Load the newest successful deployment outputs:
 
 ```bash
@@ -254,6 +258,7 @@ Before each deployment, verify that the preview preserves:
 
 - Cosmos DB lifetime free tier.
 - Azure SQL free-limit auto-pause.
+- The processing managed identity as Azure SQL Entra administrator for Phase 4.
 - SignalR Free F1.
 - Static Web Apps Free.
 - Container Apps scale-to-zero and maximum two replicas.
