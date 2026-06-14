@@ -7,10 +7,28 @@ analytics.
 The detailed architecture is in [Plan.md](./Plan.md). Azure account, resource,
 and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 
-## Phase 1 Status
+## Phase 3 Status
 
 Completed:
 
+- Versioned arrival and line-status observation contracts with deterministic
+  event IDs.
+- Typed TfL arrivals, stop metadata, and line-status operations with bounded
+  transient retries.
+- Configurable 30-second arrival and two-minute line-status timer triggers.
+- Event Hubs publication through connection strings for the local emulator and
+  managed identity in Azure.
+- Deterministic WireMock fixtures for arrivals, stop metadata, and line status.
+- Azure ingestion settings for monitored stations, Tube lines, schedules,
+  Event Hubs, and the Key Vault-backed TfL API key.
+- Event Hub-triggered raw event archiving as compressed JSON with Hive-style
+  event, date, station, and line partitions.
+- Lightweight Storage Queue processing messages and queue-triggered validation.
+- Idempotent Cosmos DB persistence for arrivals and line status with seven-day
+  TTL and duplicate conflict handling.
+- Queue retry and poison-message behavior through the Functions host.
+- Opt-in local integration coverage that verifies raw archives and both Cosmos
+  containers against the running Docker stack.
 - Multi-project .NET solution with API, Functions, contracts, application,
   infrastructure, and test boundaries.
 - Angular 21 live line-status dashboard with loading, error, refresh, and
@@ -32,11 +50,16 @@ Completed:
   free-tier guards and managed-identity access.
 - Event Hubs sender/receiver and Key Vault secret-reader roles assigned to the
   API and Function workload identities.
+- Selected Azure diagnostic settings deployed to Log Analytics.
+- GitHub Actions validates .NET, Angular, Bicep, scripts, Compose, secrets, and
+  dependencies.
+- Manual Azure release and rollback workflow documented.
 
-Next Phase 1 slice:
+Phases 1 through 3 are complete.
 
-- Add selected resource diagnostic settings.
-- Add CI deployment workflows.
+Next phase:
+
+- Broadcast live updates through SignalR and add alert workflow processing.
 
 ## Repository
 
@@ -132,6 +155,12 @@ docker compose \
   -f infra/local/compose.yaml \
   up --build
 ```
+
+The ingestion Function polls the deterministic WireMock fixtures and publishes
+to the local `tfl-events` Event Hub. The processing Function archives each raw
+event to Azurite, queues it, validates it, and persists it to Cosmos DB. Station
+IDs, line IDs, schedules, and emulator settings are configured in
+`infra/local/compose.yaml`.
 
 Add Angular:
 
@@ -231,6 +260,12 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 Validation, deployment, output discovery, and Azure smoke tests are documented
 in the [Azure Bicep guide](./docs/azure-bicep.md).
+
+The complete operator sequence is documented in the
+[manual Azure deployment runbook](./docs/manual-deployment.md).
+
+CI behavior is documented in the
+[continuous integration guide](./docs/continuous-integration.md).
 
 Validate Bicep:
 

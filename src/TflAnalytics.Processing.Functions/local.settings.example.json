@@ -2,6 +2,20 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "EventHubs": "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+    "ProcessingEventHubName": "tfl-events",
+    "ProcessingConsumerGroup": "processing",
+    "ProcessingQueueName": "processing",
+    "ProcessingStorage__ConnectionString": "UseDevelopmentStorage=true",
+    "ProcessingStorage__RawContainerName": "raw",
+    "ProcessingStorage__QueueName": "processing",
+    "ProcessingStorage__Initialize": "true",
+    "Cosmos__ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=COSMOS_EMULATOR_KEY;",
+    "Cosmos__DatabaseName": "tfl-analytics",
+    "Cosmos__LiveEventsContainerName": "live-events",
+    "Cosmos__LineStatusContainerName": "line-status",
+    "Cosmos__Initialize": "true",
+    "Cosmos__DisableServerCertificateValidation": "true"
   }
 }

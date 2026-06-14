@@ -2,7 +2,8 @@
 
 ## Implementation Status
 
-Phase 1 started on June 11, 2026.
+Phase 1 started on June 11, 2026 and completed on June 13, 2026. Phases 2 and 3
+were completed on June 13, 2026.
 
 Completed:
 
@@ -31,11 +32,34 @@ Completed:
   managed-identity app-server access.
 - Least-privilege Event Hubs and Key Vault workload RBAC for the API,
   ingestion, and processing identities.
+- Selected low-volume diagnostic settings for Key Vault, Event Hubs, Cosmos DB,
+  SignalR, and Azure SQL.
+- GitHub Actions validation for .NET, Angular, Bicep, shell scripts, Docker
+  Compose, secrets, and dependency vulnerabilities.
+- Documented manual Azure deployment and rollback runbook.
+- Versioned arrival and line-status observation contracts with deterministic
+  event IDs.
+- Typed TfL arrivals, stop metadata, and line-status client operations with
+  bounded retries for transient failures.
+- Configurable arrival and line-status timer-triggered polling.
+- Event Hubs publication using the emulator connection string locally and
+  managed identity in Azure.
+- Deterministic WireMock fixtures and focused tests for polling, mappings,
+  event IDs, and retry behavior.
+- Key Vault-backed TfL API configuration for the Azure ingestion Function.
+- Event Hub-triggered gzip raw-event archiving with Hive-style Blob paths.
+- Storage Queue handoff with validation, normalization, retry, and poison queue
+  behavior.
+- Idempotent arrival and line-status persistence to partitioned Cosmos DB
+  containers with seven-day TTL.
+- A deterministic Docker full-run test covering WireMock, timers, Event Hubs,
+  Blob Storage, Queue Storage, and Cosmos DB.
 
-Remaining Phase 1 work:
+Phases 1 through 3 are complete.
 
-- Selected diagnostic settings.
-- CI deployment automation.
+Next delivery phase:
+
+- Phase 4 SignalR publication and Durable Functions alert workflows.
 
 ## Summary
 
@@ -275,6 +299,9 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 9. The Web API queries Cosmos DB for live data and Azure SQL for alerts and
    aggregates.
 
+The current implementation completes steps 1 through 5. Steps 6 through 9 are
+planned for later phases.
+
 ## Event Contracts
 
 Use a common event envelope:
@@ -447,12 +474,16 @@ retain and identify the last known state when TfL is temporarily unavailable.
 - Implement timer-triggered polling with configurable station IDs and cadence.
 - Publish versioned events to Event Hubs.
 
+Status: completed June 13, 2026.
+
 ### Phase 3: Processing And Storage
 
 - Archive raw responses to Data Lake Gen2.
 - Add queue-based normalization and deduplication.
 - Persist current and recent observations to Cosmos DB.
 - Add retries, poison-message handling, and telemetry.
+
+Status: completed June 13, 2026.
 
 ### Phase 4: Alerts
 

@@ -4,6 +4,25 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "TflApi__BaseUrl": "https://api.tfl.gov.uk/",
-    "TflApi__AppKey": ""
+    "TflApi__AppKey": "",
+    "EventHubs__ConnectionString": "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+    "EventHubs__EventHubName": "tfl-events",
+    "IngestionArrivalsSchedule": "*/30 * * * * *",
+    "IngestionLineStatusSchedule": "0 */2 * * * *",
+    "Ingestion__StationIds__0": "940GZZLUVIC",
+    "Ingestion__StationIds__1": "940GZZLUOXC",
+    "Ingestion__StationIds__2": "940GZZLUGPK",
+    "Ingestion__StationIds__3": "940GZZLUKSX",
+    "Ingestion__StationIds__4": "940GZZLULNB",
+    "Ingestion__LineIds__0": "bakerloo",
+    "Ingestion__LineIds__1": "central",
+    "Ingestion__LineIds__2": "circle",
+    "Ingestion__LineIds__3": "district",
+    "Ingestion__LineIds__4": "hammersmith-city",
+    "Ingestion__LineIds__5": "jubilee",
+    "Ingestion__LineIds__6": "metropolitan",
+    "Ingestion__LineIds__7": "northern",
+    "Ingestion__LineIds__8": "piccadilly",
+    "Ingestion__LineIds__9": "victoria"
   }
 }

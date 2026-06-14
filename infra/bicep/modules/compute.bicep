@@ -12,6 +12,12 @@ param ingestionDeploymentContainerName string
 param processingDeploymentContainerName string
 param applicationInsightsName string
 param keyVaultName string
+param eventHubsNamespaceName string
+param eventHubName string
+param cosmosAccountName string
+param cosmosDatabaseName string
+param cosmosLiveEventsContainerName string
+param cosmosLineStatusContainerName string
 param tags object
 
 param maximumFunctionInstanceCount int = 20
@@ -41,6 +47,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
 var ingestionDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${ingestionDeploymentContainerName}'
 var processingDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${processingDeploymentContainerName}'
 var applicationInsightsConnectionString = applicationInsights.properties.ConnectionString
+var tflApiKeyVaultReference = '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=TflApi--AppKey)'
 
 resource ingestionIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: ingestionIdentityName
@@ -155,6 +162,7 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
   }
   properties: {
     serverFarmId: ingestionPlan.id
+    keyVaultReferenceIdentity: ingestionIdentity.id
     httpsOnly: true
     publicNetworkAccess: 'Enabled'
     functionAppConfig: {
@@ -208,6 +216,86 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'TflApi__BaseUrl'
           value: 'https://api.tfl.gov.uk/'
+        }
+        {
+          name: 'TflApi__AppKey'
+          value: tflApiKeyVaultReference
+        }
+        {
+          name: 'EventHubs__FullyQualifiedNamespace'
+          value: '${eventHubsNamespaceName}.servicebus.windows.net'
+        }
+        {
+          name: 'EventHubs__EventHubName'
+          value: eventHubName
+        }
+        {
+          name: 'IngestionArrivalsSchedule'
+          value: '*/30 * * * * *'
+        }
+        {
+          name: 'IngestionLineStatusSchedule'
+          value: '0 */2 * * * *'
+        }
+        {
+          name: 'Ingestion__StationIds__0'
+          value: '940GZZLUVIC'
+        }
+        {
+          name: 'Ingestion__StationIds__1'
+          value: '940GZZLUOXC'
+        }
+        {
+          name: 'Ingestion__StationIds__2'
+          value: '940GZZLUGPK'
+        }
+        {
+          name: 'Ingestion__StationIds__3'
+          value: '940GZZLUKSX'
+        }
+        {
+          name: 'Ingestion__StationIds__4'
+          value: '940GZZLULNB'
+        }
+        {
+          name: 'Ingestion__LineIds__0'
+          value: 'bakerloo'
+        }
+        {
+          name: 'Ingestion__LineIds__1'
+          value: 'central'
+        }
+        {
+          name: 'Ingestion__LineIds__2'
+          value: 'circle'
+        }
+        {
+          name: 'Ingestion__LineIds__3'
+          value: 'district'
+        }
+        {
+          name: 'Ingestion__LineIds__4'
+          value: 'hammersmith-city'
+        }
+        {
+          name: 'Ingestion__LineIds__5'
+          value: 'jubilee'
+        }
+        {
+          name: 'Ingestion__LineIds__6'
+          value: 'metropolitan'
+        }
+        {
+          name: 'Ingestion__LineIds__7'
+          value: 'northern'
+        }
+        {
+          name: 'Ingestion__LineIds__8'
+          value: 'piccadilly'
+        }
+        {
+          name: 'Ingestion__LineIds__9'
+          value: 'victoria'
         }
         {
           name: 'DD_ENV'
@@ -289,6 +377,66 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'KeyVault__Name'
           value: keyVaultName
+        }
+        {
+          name: 'EventHubs__fullyQualifiedNamespace'
+          value: '${eventHubsNamespaceName}.servicebus.windows.net'
+        }
+        {
+          name: 'EventHubs__credential'
+          value: 'managedidentity'
+        }
+        {
+          name: 'EventHubs__clientId'
+          value: processingIdentity.properties.clientId
+        }
+        {
+          name: 'ProcessingEventHubName'
+          value: eventHubName
+        }
+        {
+          name: 'ProcessingConsumerGroup'
+          value: 'processing'
+        }
+        {
+          name: 'ProcessingQueueName'
+          value: 'processing'
+        }
+        {
+          name: 'ProcessingStorage__AccountName'
+          value: storageAccountName
+        }
+        {
+          name: 'ProcessingStorage__RawContainerName'
+          value: 'raw'
+        }
+        {
+          name: 'ProcessingStorage__QueueName'
+          value: 'processing'
+        }
+        {
+          name: 'ProcessingStorage__Initialize'
+          value: 'false'
+        }
+        {
+          name: 'Cosmos__Endpoint'
+          value: 'https://${cosmosAccountName}.documents.azure.com:443/'
+        }
+        {
+          name: 'Cosmos__DatabaseName'
+          value: cosmosDatabaseName
+        }
+        {
+          name: 'Cosmos__LiveEventsContainerName'
+          value: cosmosLiveEventsContainerName
+        }
+        {
+          name: 'Cosmos__LineStatusContainerName'
+          value: cosmosLineStatusContainerName
+        }
+        {
+          name: 'Cosmos__Initialize'
+          value: 'false'
         }
         {
           name: 'DD_ENV'

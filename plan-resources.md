@@ -96,8 +96,9 @@ az bicep install
 az bicep version
 ```
 
-Use personal interactive login only for development. CI/CD will use GitHub
-Actions workload identity federation instead of a stored Azure client secret.
+Use personal interactive login for the current script-driven deployments.
+If Azure deployment is automated later, use GitHub Actions workload identity
+federation instead of a stored Azure client secret.
 
 ### 3. Create or Link a Datadog Account
 
@@ -628,7 +629,7 @@ Controls:
 1. Deploy the development Azure resources using Bicep.
 2. Tag monitored resources consistently.
 3. Configure Datadog Native metric collection.
-4. Enable selected Azure diagnostic categories.
+4. Selected Azure diagnostic categories are deployed to Log Analytics.
 5. Install the supported Datadog App Service and Functions integrations.
 6. Verify end-to-end traces across API, Functions, Event Hubs, storage, and SQL.
 
