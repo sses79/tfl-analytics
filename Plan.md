@@ -54,8 +54,10 @@ Completed:
   containers with seven-day TTL.
 - A deterministic Docker full-run test covering WireMock, timers, Event Hubs,
   Blob Storage, Queue Storage, and Cosmos DB.
+- Phase 3 deployed to Azure on June 14, 2026 and verified through live raw
+  archives, queue processing, and Cosmos DB persistence.
 
-Phases 1 through 3 are complete.
+Phases 1 through 3 are complete and deployed.
 
 Next delivery phase:
 
@@ -474,7 +476,7 @@ retain and identify the last known state when TfL is temporarily unavailable.
 - Implement timer-triggered polling with configurable station IDs and cadence.
 - Publish versioned events to Event Hubs.
 
-Status: completed June 13, 2026.
+Status: completed locally June 13, 2026 and deployed to Azure June 14, 2026.
 
 ### Phase 3: Processing And Storage
 

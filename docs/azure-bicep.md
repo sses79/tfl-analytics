@@ -43,6 +43,10 @@ The Function hosts and their application packages are deployed. The Angular
 line-status dashboard is deployed to the Static Web App and calls the Container
 App API through an origin-restricted CORS policy.
 
+The Basic Event Hubs tier supports only the built-in `$Default` consumer group.
+The Azure processing Function uses `$Default`; the local emulator uses the
+dedicated `processing` consumer group for clearer local isolation.
+
 Cosmos DB and SignalR are deployed in UK South. This subscription is restricted
 from provisioning every Azure SQL SKU in UK South and the tested European
 regions, so the SQL server is deployed in Central US, where the subscription's
@@ -202,9 +206,12 @@ https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/health
 https://func-tfl-analytics-processing-dev-nhkpyupi.azurewebsites.net/api/health
 ```
 
-The ingestion package currently contains its timer heartbeat and health
-function. The processing package currently contains its health function; event
-processing triggers are implemented in a later delivery phase.
+The ingestion package contains arrival and line-status timer triggers plus its
+health function. The processing package contains the Event Hubs archive trigger,
+the Storage Queue processing trigger, and its health function.
+
+Phase 3 was deployed on June 14, 2026. The Azure smoke run verified raw Blob
+archives and documents in both Cosmos DB containers.
 
 ## Dashboard Deployment
 

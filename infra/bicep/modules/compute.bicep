@@ -396,7 +396,7 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'ProcessingConsumerGroup'
-          value: 'processing'
+          value: '$Default'
         }
         {
           name: 'ProcessingQueueName'
