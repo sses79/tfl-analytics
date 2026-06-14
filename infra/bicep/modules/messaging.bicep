@@ -16,7 +16,6 @@ resource eventHubsNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = {
     disableLocalAuth: false
     minimumTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
-    zoneRedundant: false
   }
 }
 
