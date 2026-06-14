@@ -63,13 +63,13 @@ Completed:
   dependencies.
 - Manual Azure release and rollback workflow documented.
 
-Phases 1 through 3 are complete and deployed. Phase 4 is complete locally and
-awaiting Azure deployment.
+Phases 1 through 4 are complete and deployed. The Azure Phase 4 workflow was
+verified with a controlled line-status transition through Event Hubs, Blob and
+Queue Storage, Cosmos DB, Durable Functions, Azure SQL, and Table Storage.
 
 Next phase:
 
-- Deploy and verify Phase 4, then implement Phase 5 API, SignalR, and dashboard
-  features.
+- Implement Phase 5 API, SignalR, and dashboard features.
 
 ## Repository
 
