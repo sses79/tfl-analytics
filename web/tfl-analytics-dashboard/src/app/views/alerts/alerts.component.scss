@@ -1,0 +1,85 @@
+.alert-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.alert-card {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid #dae1e7;
+  border-left: 0.38rem solid #f4a340;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0.65rem 1.8rem rgba(19, 34, 51, 0.05);
+
+  &--disruption {
+    border-left-color: #b9292f;
+  }
+}
+
+.alert-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
+}
+
+.alert-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rule-badge {
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  color: #8a2a00;
+  background: #fff0e0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.location {
+  color: #536273;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.alert-time {
+  color: #8a9bae;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.alert-title {
+  margin: 0 0 0.4rem;
+  color: #152234;
+  font-size: 1rem;
+}
+
+.alert-desc {
+  margin: 0 0 1rem;
+  color: #566474;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.alert-card__footer {
+  display: flex;
+  gap: 1.5rem;
+  color: #697788;
+  font-size: 0.78rem;
+
+  strong {
+    color: #152234;
+  }
+}
+
+.empty {
+  padding: 2.5rem 1.5rem;
+  color: #697788;
+  font-size: 0.92rem;
+  text-align: center;
+}

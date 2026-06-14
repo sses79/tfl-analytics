@@ -13,10 +13,12 @@ using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Ingestion;
 using TflAnalytics.Application.Messaging;
 using TflAnalytics.Application.Processing;
+using TflAnalytics.Application.Realtime;
 using TflAnalytics.Application.Tfl;
 using TflAnalytics.Infrastructure.Alerts;
 using TflAnalytics.Infrastructure.Messaging;
 using TflAnalytics.Infrastructure.Processing;
+using TflAnalytics.Infrastructure.Realtime;
 using TflAnalytics.Infrastructure.Tfl;
 
 namespace TflAnalytics.Infrastructure;
@@ -181,6 +183,10 @@ public static class DependencyInjection
                 clientOptions);
         });
 
+        services
+            .AddOptions<SignalROptions>()
+            .Bind(configuration.GetSection(SignalROptions.SectionName));
+
         services.AddSingleton<IRawEventArchive, BlobRawEventArchive>();
         services.AddSingleton<IProcessingQueue, StorageProcessingQueue>();
         services.AddSingleton<CosmosEventRepository>();
@@ -194,6 +200,23 @@ public static class DependencyInjection
         services.AddSingleton<INotificationSender, LoggingNotificationSender>();
         services.AddSingleton<IRawEventIngestor, RawEventIngestor>();
         services.AddSingleton<IEventProcessor, EventProcessor>();
+
+        services.AddSingleton<IRealtimeNotifier>(serviceProvider =>
+        {
+            var options = serviceProvider
+                .GetRequiredService<IOptions<SignalROptions>>()
+                .Value;
+
+            if (!string.IsNullOrWhiteSpace(options.Endpoint))
+            {
+                return new SignalRServiceNotifier(
+                    options.Endpoint,
+                    serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SignalRServiceNotifier>>());
+            }
+
+            return new LoggingRealtimeNotifier(
+                serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LoggingRealtimeNotifier>>());
+        });
 
         return services;
     }

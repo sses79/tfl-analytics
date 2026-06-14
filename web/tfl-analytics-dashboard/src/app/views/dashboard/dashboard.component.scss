@@ -1,0 +1,35 @@
+.summary {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.disrupted {
+  color: #b9292f;
+}
+
+.summary--loading article span {
+  display: block;
+  height: 0.85rem;
+  border-radius: 0.3rem;
+  background: linear-gradient(90deg, #e9edf1 25%, #f7f8f9 50%, #e9edf1 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+
+  &:first-child {
+    width: 60%;
+    margin-bottom: 0.5rem;
+  }
+
+  &:last-child {
+    width: 40%;
+  }
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 900px) {
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

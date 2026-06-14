@@ -1,0 +1,55 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Underground</p>
+    <h2>Line status</h2>
+  </div>
+  <div class="controls">
+    <p>Updated {{ updatedLabel() }}</p>
+    <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <strong>Connection interrupted</strong>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+<div class="line-grid" [attr.aria-busy]="loading()">
+  @if (lines().length === 0 && loading()) {
+    @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
+      <article class="line-card line-card--loading">
+        <span></span><span></span><span></span>
+      </article>
+    }
+  } @else {
+    @for (line of lines(); track line.lineId) {
+      <article class="line-card" [style.--line-colour]="lineColour(line.lineId)">
+        <div class="line-card__header">
+          <div class="line-name">
+            <span aria-hidden="true"></span>
+            <h3>{{ line.lineName }}</h3>
+          </div>
+          <span
+            class="status-pill"
+            [class]="'status-pill status-pill--' + statusTone(line.statusSeverity)"
+          >
+            {{ line.statusSeverityDescription }}
+          </span>
+        </div>
+
+        @if (line.reason) {
+          <p class="reason">{{ line.reason }}</p>
+        } @else {
+          <p class="reason">No service issues are currently reported.</p>
+        }
+
+        <div class="line-card__footer">
+          <span>Severity {{ line.statusSeverity }}/10</span>
+          <span>{{ updatedLabel() }}</span>
+        </div>
+      </article>
+    }
+  }
+</div>

@@ -1,4 +1,7 @@
+using TflAnalytics.Api.Hubs;
+using TflAnalytics.Application.Realtime;
 using TflAnalytics.Infrastructure;
+using TflAnalytics.Infrastructure.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,21 @@ var allowedOrigins = builder.Configuration
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddProcessingInfrastructure(builder.Configuration);
+
+// SignalR:ConnectionString supports the AAD connection-string format:
+// Endpoint=https://<name>.service.signalr.net;AuthType=aad;Version=1.0;
+var signalRConnectionString = builder.Configuration["SignalR:ConnectionString"];
+var signalRBuilder = builder.Services.AddSignalR();
+if (!string.IsNullOrWhiteSpace(signalRConnectionString))
+{
+    signalRBuilder.AddAzureSignalR(signalRConnectionString);
+}
+
+// Override the IRealtimeNotifier registered by AddProcessingInfrastructure with one backed
+// by the in-process hub context, so API-side code uses the same connection as clients.
+builder.Services.AddSingleton<IRealtimeNotifier, HubContextNotifier<DashboardHub>>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Dashboard", policy =>
@@ -22,7 +40,16 @@ builder.Services.AddCors(options =>
             policy
                 .WithOrigins(allowedOrigins)
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+        else
+        {
+            policy
+                .SetIsOriginAllowed(_ => true)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
     });
 });
@@ -36,6 +63,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Dashboard");
 app.MapControllers();
+app.MapHub<DashboardHub>("/hubs/dashboard");
 app.MapGet("/", () => Results.Ok(new
 {
     service = "TfL Analytics API",
@@ -43,7 +71,12 @@ app.MapGet("/", () => Results.Ok(new
     endpoints = new
     {
         health = "/health/live",
-        lineStatusExample = "/api/tfl/line-status/victoria,circle"
+        stations = "/api/stations",
+        arrivals = "/api/stations/{stationId}/arrivals",
+        lineStatus = "/api/lines/status",
+        alerts = "/api/alerts",
+        dashboard = "/api/dashboard/summary",
+        signalR = "/hubs/dashboard"
     }
 }));
 app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" }));

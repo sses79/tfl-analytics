@@ -55,7 +55,8 @@ public sealed class EventProcessor : IEventProcessor
             rawEvent.EventId,
             rawEvent.EventType,
             result.Created,
-            result.Alert is null ? [] : [result.Alert]);
+            result.Alert is null ? [] : [result.Alert],
+            result.Envelope);
     }
 
     private async Task<EventCreationResult> CreateArrivalAsync(
@@ -82,7 +83,7 @@ public sealed class EventProcessor : IEventProcessor
         var alert = await _alertDetector.DetectArrivalAsync(
             envelope,
             cancellationToken);
-        return new EventCreationResult(true, alert);
+        return new EventCreationResult(true, alert, envelope);
     }
 
     private async Task<EventCreationResult> CreateLineStatusAsync(
@@ -109,7 +110,7 @@ public sealed class EventProcessor : IEventProcessor
         var alert = await _alertDetector.DetectLineStatusAsync(
             envelope,
             cancellationToken);
-        return new EventCreationResult(true, alert);
+        return new EventCreationResult(true, alert, envelope);
     }
 
     private static EventEnvelope<TPayload> Deserialize<TPayload>(string json) =>
@@ -118,5 +119,6 @@ public sealed class EventProcessor : IEventProcessor
 
     private sealed record EventCreationResult(
         bool Created,
-        AlertCandidate? Alert);
+        AlertCandidate? Alert,
+        object? Envelope = null);
 }

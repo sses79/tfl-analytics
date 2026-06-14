@@ -15,6 +15,7 @@ param projectName string = 'tfl-analytics'
 param deployApiContainer bool = false
 param apiImageTag string = 'dev'
 param sqlLocation string = 'centralus'
+param apiIdentityPrincipalId string = ''
 
 var suffix = take(uniqueString(subscription().id, resourceGroup().id), 8)
 var storageAccountName = 'sttfl${suffix}'
@@ -25,6 +26,11 @@ var cosmosAccountName = 'cosmos-${projectName}-${environmentName}-${suffix}'
 var cosmosDatabaseName = 'tfl-analytics'
 var sqlServerName = 'sql-${projectName}-${environmentName}-${suffix}'
 var sqlDatabaseName = 'tfl-analytics'
+var signalRName = 'sigr-${projectName}-${environmentName}-${suffix}'
+var signalRHostname = '${signalRName}.service.signalr.net'
+var cosmosEndpoint = 'https://${cosmosAccountName}.documents.azure.com:443/'
+var sqlServerFqdn = '${sqlServerName}${environment().suffixes.sqlServerHostname}'
+var apiIdentityName = 'id-${projectName}-api-${environmentName}-${suffix}'
 var commonTags = {
   environment: environmentName
   project: projectName
@@ -84,8 +90,10 @@ module compute 'modules/compute.bicep' = {
     cosmosDatabaseName: cosmosDatabaseName
     cosmosLiveEventsContainerName: 'live-events'
     cosmosLineStatusContainerName: 'line-status'
-    sqlServerFqdn: '${sqlServerName}${environment().suffixes.sqlServerHostname}'
+    sqlServerFqdn: sqlServerFqdn
     sqlDatabaseName: sqlDatabaseName
+    apiIdentityName: apiIdentityName
+    apiIdentityPrincipalId: apiIdentityPrincipalId
     tags: commonTags
   }
   dependsOn: [
@@ -106,6 +114,10 @@ module apiHosting 'modules/api-hosting.bicep' = {
     applicationInsightsName: applicationInsightsName
     keyVaultName: keyVaultName
     dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
+    signalRHostname: signalRHostname
+    cosmosEndpoint: cosmosEndpoint
+    storageAccountName: storageAccountName
+    sqlServerFqdn: sqlServerFqdn
     deployApiContainer: deployApiContainer
     apiImageTag: apiImageTag
     tags: commonTags
@@ -155,7 +167,7 @@ module realtime 'modules/realtime.bicep' = {
   name: 'realtime'
   params: {
     location: location
-    name: 'sigr-${projectName}-${environmentName}-${suffix}'
+    name: signalRName
     dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId

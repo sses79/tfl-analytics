@@ -10,6 +10,9 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01' = {
   name: serverName
   location: location
   tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'

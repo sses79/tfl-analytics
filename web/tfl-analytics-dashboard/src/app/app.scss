@@ -88,6 +88,41 @@
   box-shadow: 0 0 0 0.22rem rgba(57, 183, 110, 0.14);
 }
 
+.header-status {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.mainnav {
+  display: flex;
+  gap: 0;
+  padding: 0 clamp(1.25rem, 4vw, 4.5rem);
+  background: #152437;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mainnav__link {
+  padding: 0.78rem 1rem;
+  color: #8faac4;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  border-bottom: 0.18rem solid transparent;
+  transition: color 0.15s;
+}
+
+.mainnav__link:hover {
+  color: #fff;
+}
+
+.mainnav__link--active {
+  color: #fff;
+  border-bottom-color: #0098d4;
+}
+
 main {
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;

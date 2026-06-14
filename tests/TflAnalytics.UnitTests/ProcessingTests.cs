@@ -2,6 +2,7 @@ using System.Text.Json;
 using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Contracts.Alerts;
+using TflAnalytics.Contracts.Dashboard;
 using TflAnalytics.Contracts.Events;
 using TflAnalytics.Contracts.Processing;
 
@@ -198,6 +199,14 @@ public sealed class ProcessingTests
             LineStatuses.Add(envelope);
             return Task.FromResult(CreateResult);
         }
+
+        public Task<IReadOnlyList<ArrivalSummary>> GetRecentArrivalsAsync(
+            string stationId, int maxCount = 20, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ArrivalSummary>>([]);
+
+        public Task<IReadOnlyList<LineStatusSummary>> GetCurrentLineStatusAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<LineStatusSummary>>([]);
     }
 
     private sealed class FixedTimeProvider : TimeProvider

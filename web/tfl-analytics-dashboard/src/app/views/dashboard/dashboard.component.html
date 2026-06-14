@@ -1,0 +1,48 @@
+<section class="hero">
+  <div>
+    <p class="eyebrow">Live service overview</p>
+    <h1>How is London moving?</h1>
+    <p class="hero-copy">
+      Real-time Tube conditions from the TfL Unified API, pushed live via SignalR.
+    </p>
+  </div>
+  <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
+</section>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <strong>Connection interrupted</strong>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+@if (summary(); as s) {
+  <section class="summary" aria-label="Network summary">
+    <article>
+      <span>Lines monitored</span>
+      <strong>{{ s.linesMonitored }}</strong>
+    </article>
+    <article>
+      <span>Lines disrupted</span>
+      <strong [class.disrupted]="s.linesDisrupted > 0">{{ s.linesDisrupted }}</strong>
+    </article>
+    <article>
+      <span>Stations monitored</span>
+      <strong>{{ s.stationsMonitored }}</strong>
+    </article>
+    <article>
+      <span>Alerts (24 h)</span>
+      <strong>{{ s.recentAlertCount }}</strong>
+    </article>
+    <article>
+      <span>Last event</span>
+      <strong class="summary-time">{{ formatTime(s.lastEventUtc) }}</strong>
+    </article>
+  </section>
+} @else if (loading()) {
+  <div class="summary summary--loading" aria-busy="true">
+    @for (i of [1,2,3,4,5]; track i) {
+      <article><span></span><span></span></article>
+    }
+  </div>
+}

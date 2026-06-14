@@ -20,6 +20,8 @@ param cosmosLiveEventsContainerName string
 param cosmosLineStatusContainerName string
 param sqlServerFqdn string
 param sqlDatabaseName string
+param apiIdentityName string
+param apiIdentityPrincipalId string = ''
 param tags object
 
 param maximumFunctionInstanceCount int = 20
@@ -455,6 +457,14 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'AlertStorage__Initialize'
           value: 'true'
+        }
+        {
+          name: 'AlertStorage__ApiIdentityName'
+          value: apiIdentityName
+        }
+        {
+          name: 'AlertStorage__ApiObjectId'
+          value: apiIdentityPrincipalId
         }
         {
           name: 'Alerts__ArrivalSlippageThresholdSeconds'

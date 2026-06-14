@@ -1,0 +1,56 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Predictions</p>
+    <h2>Arrivals</h2>
+  </div>
+  <div class="controls">
+    <select
+      [value]="selectedStation()"
+      (change)="onStationChange($any($event.target).value)"
+      aria-label="Select station"
+    >
+      @for (station of stations(); track station.stationId) {
+        <option [value]="station.stationId">{{ station.name ?? station.stationId }}</option>
+      }
+    </select>
+    <button type="button" (click)="loadArrivals()" [disabled]="loading()">Refresh</button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <strong>Error</strong>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+<div class="arrivals-table-wrap" [attr.aria-busy]="loading()">
+  @if (arrivals().length === 0 && !loading()) {
+    <p class="empty">No recent arrivals recorded for this station. Predictions are stored as they arrive every 30 seconds.</p>
+  } @else {
+    <table class="arrivals-table">
+      <thead>
+        <tr>
+          <th>Line</th>
+          <th>Destination</th>
+          <th>Platform</th>
+          <th>Arrives in</th>
+          <th>Expected</th>
+          <th>Observed</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (arrival of arrivals(); track arrival.observedAtUtc + arrival.lineId) {
+          <tr>
+            <td>{{ arrival.lineName ?? arrival.lineId }}</td>
+            <td>{{ arrival.destinationName ?? '—' }}</td>
+            <td>{{ arrival.platformName ?? '—' }}</td>
+            <td class="mono">{{ secondsLabel(arrival.secondsToStation) }}</td>
+            <td class="mono">{{ formatTime(arrival.expectedArrivalUtc) }}</td>
+            <td class="mono muted">{{ formatTime(arrival.observedAtUtc) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

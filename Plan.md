@@ -500,10 +500,18 @@ Status: completed locally and deployed to Azure June 14, 2026.
 
 ### Phase 5: API And Dashboard
 
-- Implement dashboard query endpoints.
-- Add SignalR negotiation and live broadcasts.
-- Build the Angular arrivals, status, alert, and summary views.
-- Add Entra ID authentication and authorization.
+Implemented locally on June 14, 2026. Entra ID authentication deferred to Phase 6.
+
+- Dashboard query endpoints: `/api/stations`, `/api/stations/{id}/arrivals`, `/api/lines/status`,
+  `/api/alerts`, `/api/dashboard/summary`.
+- `DashboardHub` SignalR hub with `/hubs/dashboard` negotiation endpoint.
+- `IRealtimeNotifier` interface with Azure SignalR REST broadcast (`SignalRServiceNotifier`)
+  and `HubContextNotifier` (API in-process) and `LoggingRealtimeNotifier` (local dev no-op).
+- Processing Functions broadcast arrivals and line-status updates after Cosmos persistence;
+  alert workflow broadcasts via `BroadcastAlert` activity.
+- Angular dashboard refactored into four lazy-loaded views: Dashboard, Line status, Arrivals,
+  Alerts; services for API and SignalR; `@microsoft/signalr` npm package added.
+- Bicep: SignalR AAD connection string and endpoint env vars added to API Container App.
 
 ### Phase 6: Delivery And Validation
 

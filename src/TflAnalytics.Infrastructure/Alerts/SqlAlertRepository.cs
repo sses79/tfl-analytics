@@ -1,8 +1,10 @@
 using Azure.Core;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TflAnalytics.Application.Alerts;
 using TflAnalytics.Contracts.Alerts;
+using TflAnalytics.Contracts.Dashboard;
 
 namespace TflAnalytics.Infrastructure.Alerts;
 
@@ -13,15 +15,18 @@ public sealed class SqlAlertRepository : IAlertRepository
 
     private readonly AlertStorageOptions _options;
     private readonly TokenCredential _credential;
+    private readonly ILogger<SqlAlertRepository> _logger;
     private readonly SemaphoreSlim _initializationLock = new(1, 1);
     private bool _initialized;
 
     public SqlAlertRepository(
         IOptions<AlertStorageOptions> options,
-        TokenCredential credential)
+        TokenCredential credential,
+        ILogger<SqlAlertRepository> logger)
     {
         _options = options.Value;
         _credential = credential;
+        _logger = logger;
     }
 
     public async Task EnsureInitializedAsync(
@@ -70,6 +75,24 @@ public sealed class SqlAlertRepository : IAlertRepository
             await command.ExecuteNonQueryAsync(cancellationToken);
 
             _initialized = true;
+
+            if (!string.IsNullOrWhiteSpace(_options.ApiIdentityName))
+            {
+                try
+                {
+                    await GrantApiIdentityAccessAsync(
+                        connection,
+                        _options.ApiIdentityName,
+                        _options.ApiObjectId,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Could not grant SQL access to API identity '{Identity}'; API read endpoints may fail.",
+                        _options.ApiIdentityName);
+                }
+            }
         }
         finally
         {
@@ -144,6 +167,67 @@ public sealed class SqlAlertRepository : IAlertRepository
         {
             return false;
         }
+    }
+
+    public async Task<IReadOnlyList<AlertSummary>> GetRecentAlertsAsync(
+        int maxCount = 50,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken);
+        await using var connection = await OpenConnectionAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT TOP {maxCount}
+                AlertId, RuleType, SourceEventId, DetectedAtUtc, ObservedAtUtc,
+                StationId, LineId, VehicleId, Title, Description, PreviousValue, CurrentValue
+            FROM dbo.Alerts
+            ORDER BY DetectedAtUtc DESC
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var results = new List<AlertSummary>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(new AlertSummary(
+                reader.GetString(reader.GetOrdinal("AlertId")),
+                reader.GetString(reader.GetOrdinal("RuleType")),
+                reader.IsDBNull(reader.GetOrdinal("StationId"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("StationId")),
+                reader.IsDBNull(reader.GetOrdinal("LineId"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("LineId")),
+                reader.GetString(reader.GetOrdinal("Title")),
+                reader.GetString(reader.GetOrdinal("Description")),
+                reader.GetString(reader.GetOrdinal("PreviousValue")),
+                reader.GetString(reader.GetOrdinal("CurrentValue")),
+                reader.GetDateTimeOffset(reader.GetOrdinal("DetectedAtUtc")),
+                reader.GetDateTimeOffset(reader.GetOrdinal("ObservedAtUtc"))));
+        }
+
+        return results;
+    }
+
+    private static async Task GrantApiIdentityAccessAsync(
+        SqlConnection connection,
+        string identityName,
+        string? objectId,
+        CancellationToken cancellationToken)
+    {
+        var quoted = $"[{identityName.Replace("]", "]]", StringComparison.Ordinal)}]";
+        var escaped = EscapeSqlLiteral(identityName);
+        var createUser = string.IsNullOrWhiteSpace(objectId)
+            ? $"CREATE USER {quoted} FROM EXTERNAL PROVIDER"
+            : $"CREATE USER {quoted} FROM EXTERNAL PROVIDER WITH OBJECT_ID='{EscapeSqlLiteral(objectId)}'";
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'{escaped}')
+                EXEC('{EscapeSqlLiteral(createUser)}')
+            IF IS_ROLEMEMBER('db_datareader', N'{escaped}') = 0
+                EXEC('ALTER ROLE db_datareader ADD MEMBER {EscapeSqlLiteral(quoted)}')
+            """;
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private async Task<SqlConnection> OpenConnectionAsync(
