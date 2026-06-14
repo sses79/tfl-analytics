@@ -29,6 +29,8 @@ Completed:
 - Queue retry and poison-message behavior through the Functions host.
 - Opt-in local integration coverage that verifies raw archives and both Cosmos
   containers against the running Docker stack.
+- Azure deployment verified with live timer polling, raw Blob archives, queue
+  processing, and arrival and line-status documents in Cosmos DB.
 - Multi-project .NET solution with API, Functions, contracts, application,
   infrastructure, and test boundaries.
 - Angular 21 live line-status dashboard with loading, error, refresh, and
@@ -55,7 +57,7 @@ Completed:
   dependencies.
 - Manual Azure release and rollback workflow documented.
 
-Phases 1 through 3 are complete.
+Phases 1 through 3 are complete and deployed.
 
 Next phase:
 

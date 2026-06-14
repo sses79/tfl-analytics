@@ -179,6 +179,11 @@ This updates:
 - `func-tfl-analytics-ingestion-dev-nhkpyupi`
 - `func-tfl-analytics-processing-dev-nhkpyupi`
 
+The development namespace uses Event Hubs Basic, so the Azure processing
+trigger must use the built-in `$Default` consumer group. Creating additional
+consumer groups requires Standard tier and must not be introduced without a
+separate cost review.
+
 ## 7. Deploy The Dashboard
 
 Build and deploy the Angular production bundle:

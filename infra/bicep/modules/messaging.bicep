@@ -29,12 +29,6 @@ resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = {
   }
 }
 
-resource processingConsumerGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01' = {
-  parent: eventHub
-  name: 'processing'
-  properties: {}
-}
-
 output namespaceName string = eventHubsNamespace.name
 output namespaceId string = eventHubsNamespace.id
 output eventHubName string = eventHub.name
