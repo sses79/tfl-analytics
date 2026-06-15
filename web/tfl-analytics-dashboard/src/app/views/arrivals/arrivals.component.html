@@ -35,6 +35,13 @@
   </div>
 </div>
 
+<app-data-flow-explainer
+  title="Arrival prediction event flow"
+  description="This page demonstrates the highest-frequency ingestion path. TfL predictions are archived, normalized and stored by station, then served through the API with SignalR updates for newly processed arrivals."
+  eventType="ArrivalObserved"
+  [steps]="flowSteps"
+/>
+
 @if (error()) {
   <div class="error-banner" role="alert">
     <strong>Error</strong>

@@ -16,6 +16,13 @@
   </button>
 </div>
 
+<app-data-flow-explainer
+  title="End-to-end network overview"
+  description="This page combines both ingestion streams with persisted operational state. The API reads the latest Cosmos DB observations and Azure SQL alerts, while SignalR carries new processing updates to the browser."
+  eventType="ArrivalObserved + LineStatusObserved"
+  [steps]="flowSteps"
+/>
+
 @if (error()) {
   <div class="error-banner" role="alert">
     <strong>Connection interrupted</strong>

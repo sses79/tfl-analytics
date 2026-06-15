@@ -24,6 +24,13 @@
   </div>
 </div>
 
+<app-data-flow-explainer
+  title="Line status event flow"
+  description="This page demonstrates the lower-frequency line-status stream. Each observation is published through Event Hubs, persisted in Cosmos DB, and pushed to connected dashboards when a line changes."
+  eventType="LineStatusObserved"
+  [steps]="flowSteps"
+/>
+
 @if (error()) {
   <div class="error-banner" role="alert">
     <strong>Connection interrupted</strong>

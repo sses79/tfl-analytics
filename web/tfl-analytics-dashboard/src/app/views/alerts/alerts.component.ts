@@ -2,9 +2,14 @@ import { Component, OnInit, effect, inject, signal } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { SignalRService } from '../../services/signalr.service';
 import { AlertSummary } from '../../models';
+import {
+  DataFlowExplainerComponent,
+  DataFlowStep
+} from '../../components/data-flow-explainer/data-flow-explainer.component';
 
 @Component({
   selector: 'app-alerts',
+  imports: [DataFlowExplainerComponent],
   templateUrl: './alerts.component.html',
   styleUrl: './alerts.component.scss'
 })
@@ -15,6 +20,15 @@ export class AlertsComponent implements OnInit {
   protected readonly alerts = signal<AlertSummary[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly flowSteps: readonly DataFlowStep[] = [
+    { service: 'Processed TfL event', detail: 'Arrival slip or line-status transition', tone: 'source' },
+    { service: 'Alert detector', detail: 'Applies disruption and slippage rules', tone: 'compute' },
+    { service: 'Durable Functions', detail: 'Coordinates retryable alert activities', tone: 'compute' },
+    { service: 'Azure SQL', detail: 'Exactly-once alert record', tone: 'storage' },
+    { service: 'Table Storage', detail: 'AlertRaised audit entity', tone: 'storage' },
+    { service: 'API + SignalR', detail: 'History query and live alert push', tone: 'api' },
+    { service: 'Alerts page', detail: 'Operational workflow outcome', tone: 'ui' }
+  ];
 
   constructor() {
     effect(() => {

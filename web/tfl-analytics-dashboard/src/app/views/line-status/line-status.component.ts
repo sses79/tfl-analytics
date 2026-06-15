@@ -2,9 +2,14 @@ import { Component, OnInit, effect, inject, signal } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { SignalRService } from '../../services/signalr.service';
 import { LineStatusSummary } from '../../models';
+import {
+  DataFlowExplainerComponent,
+  DataFlowStep
+} from '../../components/data-flow-explainer/data-flow-explainer.component';
 
 @Component({
   selector: 'app-line-status',
+  imports: [DataFlowExplainerComponent],
   templateUrl: './line-status.component.html',
   styleUrl: './line-status.component.scss'
 })
@@ -16,6 +21,15 @@ export class LineStatusComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly lastUpdated = signal<Date | null>(null);
+  protected readonly flowSteps: readonly DataFlowStep[] = [
+    { service: 'TfL Line API', detail: 'Current Underground service status', tone: 'source' },
+    { service: 'PollLineStatus', detail: 'Runs approximately every two minutes', tone: 'compute' },
+    { service: 'Event Hubs', detail: 'LineStatusObserved event', tone: 'messaging' },
+    { service: 'ProcessQueuedEvent', detail: 'Normalizes and compares status', tone: 'compute' },
+    { service: 'Cosmos DB', detail: 'line-status container', tone: 'storage' },
+    { service: 'API + SignalR', detail: 'Query response and live change push', tone: 'api' },
+    { service: 'Line status page', detail: 'Service cards update in the browser', tone: 'ui' }
+  ];
 
   private static readonly LineColours: Record<string, string> = {
     bakerloo: '#894e24',

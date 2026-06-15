@@ -3,10 +3,14 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { SignalRService } from '../../services/signalr.service';
 import { ArrivalSummary, StationSummary } from '../../models';
+import {
+  DataFlowExplainerComponent,
+  DataFlowStep
+} from '../../components/data-flow-explainer/data-flow-explainer.component';
 
 @Component({
   selector: 'app-arrivals',
-  imports: [FormsModule],
+  imports: [FormsModule, DataFlowExplainerComponent],
   templateUrl: './arrivals.component.html',
   styleUrl: './arrivals.component.scss'
 })
@@ -19,6 +23,15 @@ export class ArrivalsComponent implements OnInit {
   protected readonly selectedStation = signal<string>('');
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly flowSteps: readonly DataFlowStep[] = [
+    { service: 'TfL Arrivals API', detail: 'Predictions for five monitored stations', tone: 'source' },
+    { service: 'PollArrivals', detail: 'Runs approximately every 30 seconds', tone: 'compute' },
+    { service: 'Event Hubs', detail: 'ArrivalObserved event', tone: 'messaging' },
+    { service: 'ProcessQueuedEvent', detail: 'Normalizes and tracks predictions', tone: 'compute' },
+    { service: 'Cosmos DB', detail: 'live-events container', tone: 'storage' },
+    { service: 'API + SignalR', detail: 'Station query and fresh arrival push', tone: 'api' },
+    { service: 'Arrivals page', detail: 'Selected station prediction board', tone: 'ui' }
+  ];
 
   private static readonly StationNames: Record<string, string> = {
     '940GZZLUVIC': 'Victoria',

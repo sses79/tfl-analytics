@@ -21,6 +21,13 @@
   </button>
 </div>
 
+<app-data-flow-explainer
+  title="Durable alert workflow"
+  description="This page demonstrates business rules and workflow orchestration after ingestion. Qualifying events start a Durable Functions instance that persists the alert, writes an audit record and publishes the outcome to the dashboard."
+  eventType="AlertCandidate -> AlertRaised"
+  [steps]="flowSteps"
+/>
+
 @if (error()) {
   <div class="error-banner" role="alert">
     <strong>Error</strong>
