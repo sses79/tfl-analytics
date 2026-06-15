@@ -411,6 +411,14 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: storageAccountName
         }
         {
+          name: 'ProcessingStorage__credential'
+          value: 'managedidentity'
+        }
+        {
+          name: 'ProcessingStorage__clientId'
+          value: processingIdentity.properties.clientId
+        }
+        {
           name: 'ProcessingStorage__RawContainerName'
           value: 'raw'
         }

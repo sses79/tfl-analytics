@@ -7,6 +7,7 @@
     "ProcessingEventHubName": "tfl-events",
     "ProcessingConsumerGroup": "processing",
     "ProcessingQueueName": "processing",
+    "ProcessingStorage": "UseDevelopmentStorage=true",
     "ProcessingStorage__ConnectionString": "UseDevelopmentStorage=true",
     "ProcessingStorage__RawContainerName": "raw",
     "ProcessingStorage__QueueName": "processing",

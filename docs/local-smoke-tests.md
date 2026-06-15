@@ -16,14 +16,22 @@ docker compose \
 
 ## API
 
-Test the API health endpoint, OpenAPI document, and the API-to-WireMock TfL
-request:
+Test the API health endpoint, OpenAPI document, API-to-WireMock request, and
+Phase 5 query endpoints:
 
 ```bash
 curl --fail http://localhost:8080/health/live
 curl --fail http://localhost:8080/openapi/v1.json
 curl --fail http://localhost:8080/api/tfl/line-status/victoria,circle
+curl --fail http://localhost:8080/api/stations
+curl --fail http://localhost:8080/api/lines/status
+curl --fail http://localhost:8080/api/stations/940GZZLUVIC/arrivals
+curl --fail http://localhost:8080/api/alerts
+curl --fail http://localhost:8080/api/dashboard/summary
 ```
+
+The query endpoints read from the local Cosmos DB and SQL Server containers,
+not from Azure.
 
 ## WireMock
 
@@ -127,6 +135,11 @@ curl --fail --output /dev/null \
   --write-out 'Angular HTTP %{http_code}\n' \
   http://localhost:4200/
 ```
+
+Open `http://localhost:4200` and confirm the header reports both the API and
+live updates as online. Arrival, line-status, and alert messages are relayed
+from the processing Function to development-only API endpoints and then
+broadcast through the self-hosted SignalR hub.
 
 ## Datadog
 

@@ -15,6 +15,16 @@ services:
     networks:
       - tfl-analytics
 
+  functions-storage:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    command:
+      azurite --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0
+      --tableHost 0.0.0.0 --skipApiVersionCheck
+    tmpfs:
+      - /data
+    networks:
+      - tfl-analytics
+
   eventhubs-emulator:
     image: mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest
     environment:
@@ -85,6 +95,25 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       TflApi__BaseUrl: http://wiremock:8080/
       TflApi__AppKey: ""
+      Ingestion__StationIds__0: 940GZZLUVIC
+      Ingestion__StationIds__1: 940GZZLUOXC
+      Ingestion__StationIds__2: 940GZZLUGPK
+      Ingestion__StationIds__3: 940GZZLUKSX
+      Ingestion__StationIds__4: 940GZZLULNB
+      ProcessingStorage__ConnectionString: ${AZURITE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
+      ProcessingStorage__RawContainerName: raw
+      ProcessingStorage__QueueName: processing
+      ProcessingStorage__AuditTableName: audit
+      ProcessingStorage__Initialize: "true"
+      Cosmos__ConnectionString: AccountEndpoint=https://cosmos:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;
+      Cosmos__DatabaseName: tfl-analytics
+      Cosmos__LiveEventsContainerName: live-events
+      Cosmos__LineStatusContainerName: line-status
+      Cosmos__Initialize: "true"
+      Cosmos__DisableServerCertificateValidation: "true"
+      AlertStorage__ConnectionString: Server=sql,1433;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True
+      AlertStorage__DatabaseName: tfl-analytics
+      AlertStorage__Initialize: "true"
       DD_AGENT_HOST: datadog-agent
       DD_ENV: local
       DD_SERVICE: tfl-analytics-api
@@ -92,7 +121,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - wiremock
+      cosmos:
+        condition: service_healthy
+      sql:
+        condition: service_started
+      wiremock:
+        condition: service_started
     networks:
       - tfl-analytics
 
@@ -101,6 +135,8 @@ services:
     build:
       context: ../..
       dockerfile: web/tfl-analytics-dashboard/Dockerfile
+      args:
+        BUILD_CONFIGURATION: development
     ports:
       - "4200:80"
     depends_on:
@@ -114,7 +150,7 @@ services:
       context: ../..
       dockerfile: src/TflAnalytics.Ingestion.Functions/Dockerfile
     environment:
-      AzureWebJobsStorage: ${AZURITE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
+      AzureWebJobsStorage: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://functions-storage:10000/devstoreaccount1;QueueEndpoint=http://functions-storage:10001/devstoreaccount1;TableEndpoint=http://functions-storage:10002/devstoreaccount1;
       AzureFunctionsJobHost__Logging__Console__IsEnabled: "true"
       FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
       TflApi__BaseUrl: http://wiremock:8080/
@@ -143,7 +179,7 @@ services:
       DD_SERVICE: tfl-analytics-ingestion
       DD_VERSION: dev
     depends_on:
-      - azurite
+      - functions-storage
       - eventhubs-emulator
       - wiremock
     networks:
@@ -155,7 +191,7 @@ services:
       context: ../..
       dockerfile: src/TflAnalytics.Processing.Functions/Dockerfile
     environment:
-      AzureWebJobsStorage: ${AZURITE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
+      AzureWebJobsStorage: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://functions-storage:10000/devstoreaccount1;QueueEndpoint=http://functions-storage:10001/devstoreaccount1;TableEndpoint=http://functions-storage:10002/devstoreaccount1;
       AzureFunctionsJobHost__Logging__Console__IsEnabled: "true"
       FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
       WEBSITE_HOSTNAME: processing-functions
@@ -163,6 +199,7 @@ services:
       ProcessingEventHubName: tfl-events
       ProcessingConsumerGroup: processing
       ProcessingQueueName: processing
+      ProcessingStorage: ${AZURITE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
       ProcessingStorage__ConnectionString: ${AZURITE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;}
       ProcessingStorage__RawContainerName: raw
       ProcessingStorage__QueueName: processing
@@ -179,6 +216,7 @@ services:
       AlertStorage__Initialize: "true"
       Alerts__ArrivalSlippageThresholdSeconds: "120"
       Alerts__GoodServiceSeverity: "10"
+      SignalR__RelayBaseUrl: http://api:8080/internal/realtime
       DD_AGENT_HOST: datadog-agent
       DD_ENV: local
       DD_SERVICE: tfl-analytics-processing
@@ -186,11 +224,15 @@ services:
     depends_on:
       azurite:
         condition: service_started
+      functions-storage:
+        condition: service_started
       eventhubs-emulator:
         condition: service_started
       cosmos:
         condition: service_healthy
       sql:
+        condition: service_started
+      api:
         condition: service_started
     networks:
       - tfl-analytics
