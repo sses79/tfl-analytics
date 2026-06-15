@@ -16,11 +16,22 @@
         (change)="onStationChange($any($event.target).value)"
       >
         @for (station of stations(); track station.stationId) {
-          <option [value]="station.stationId">{{ station.name ?? station.stationId }}</option>
+          <option [value]="station.stationId">{{ stationLabel(station) }}</option>
         }
       </select>
     </div>
-    <button type="button" (click)="loadArrivals()" [disabled]="loading()">Refresh</button>
+    <button type="button" (click)="loadArrivals()" [disabled]="loading()">
+      <svg
+        class="btn-icon"
+        [class.btn-icon--spinning]="loading()"
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+      >
+        <path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/>
+        <path d="M12.4 2.7V5.5H9.6"/>
+      </svg>
+      Refresh
+    </button>
   </div>
 </div>
 

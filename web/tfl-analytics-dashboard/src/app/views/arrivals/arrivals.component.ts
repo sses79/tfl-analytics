@@ -20,6 +20,14 @@ export class ArrivalsComponent implements OnInit {
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  private static readonly StationNames: Record<string, string> = {
+    '940GZZLUVIC': 'Victoria',
+    '940GZZLUOXC': 'Oxford Circus',
+    '940GZZLUGPK': 'Green Park',
+    '940GZZLUKSX': "King's Cross St. Pancras",
+    '940GZZLULNB': 'London Bridge'
+  };
+
   constructor() {
     effect(() => {
       const update = this.signalR.lastArrivalsUpdate();
@@ -56,6 +64,12 @@ export class ArrivalsComponent implements OnInit {
   protected onStationChange(stationId: string): void {
     this.selectedStation.set(stationId);
     this.loadArrivals();
+  }
+
+  protected stationLabel(station: StationSummary): string {
+    return station.name
+      ?? ArrivalsComponent.StationNames[station.stationId]
+      ?? station.stationId;
   }
 
   protected loadArrivals(): void {
