@@ -2,17 +2,24 @@
   <div>
     <p class="eyebrow">Predictions</p>
     <h2>Arrivals</h2>
+    <p class="page-intro">
+      The latest platform predictions captured for each monitored station,
+      ordered by observation time.
+    </p>
   </div>
   <div class="controls">
-    <select
-      [value]="selectedStation()"
-      (change)="onStationChange($any($event.target).value)"
-      aria-label="Select station"
-    >
-      @for (station of stations(); track station.stationId) {
-        <option [value]="station.stationId">{{ station.name ?? station.stationId }}</option>
-      }
-    </select>
+    <div class="control-group">
+      <label for="station">Station</label>
+      <select
+        id="station"
+        [value]="selectedStation()"
+        (change)="onStationChange($any($event.target).value)"
+      >
+        @for (station of stations(); track station.stationId) {
+          <option [value]="station.stationId">{{ station.name ?? station.stationId }}</option>
+        }
+      </select>
+    </div>
     <button type="button" (click)="loadArrivals()" [disabled]="loading()">Refresh</button>
   </div>
 </div>
@@ -26,7 +33,9 @@
 
 <div class="arrivals-table-wrap" [attr.aria-busy]="loading()">
   @if (arrivals().length === 0 && !loading()) {
-    <p class="empty">No recent arrivals recorded for this station. Predictions are stored as they arrive every 30 seconds.</p>
+    <div class="empty-state">
+      <p>No recent arrivals recorded for this station. Predictions are stored as they arrive every 30 seconds.</p>
+    </div>
   } @else {
     <table class="arrivals-table">
       <thead>
@@ -42,12 +51,14 @@
       <tbody>
         @for (arrival of arrivals(); track arrival.observedAtUtc + arrival.lineId) {
           <tr>
-            <td>{{ arrival.lineName ?? arrival.lineId }}</td>
-            <td>{{ arrival.destinationName ?? '—' }}</td>
-            <td>{{ arrival.platformName ?? '—' }}</td>
-            <td class="mono">{{ secondsLabel(arrival.secondsToStation) }}</td>
-            <td class="mono">{{ formatTime(arrival.expectedArrivalUtc) }}</td>
-            <td class="mono muted">{{ formatTime(arrival.observedAtUtc) }}</td>
+            <td data-label="Line"><strong>{{ arrival.lineName ?? arrival.lineId }}</strong></td>
+            <td data-label="Destination">{{ arrival.destinationName ?? '—' }}</td>
+            <td data-label="Platform">{{ arrival.platformName ?? '—' }}</td>
+            <td data-label="Arrives in" class="mono">
+              <span class="arrival-time">{{ secondsLabel(arrival.secondsToStation) }}</span>
+            </td>
+            <td data-label="Expected" class="mono">{{ formatTime(arrival.expectedArrivalUtc) }}</td>
+            <td data-label="Observed" class="mono muted">{{ formatTime(arrival.observedAtUtc) }}</td>
           </tr>
         }
       </tbody>

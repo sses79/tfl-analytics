@@ -2,9 +2,13 @@
   <div>
     <p class="eyebrow">Underground</p>
     <h2>Line status</h2>
+    <p class="page-intro">
+      Current service conditions across the monitored TfL network, updated as
+      new status events arrive.
+    </p>
   </div>
   <div class="controls">
-    <p>Updated {{ updatedLabel() }}</p>
+    <p class="updated-label"><span></span>Updated {{ updatedLabel() }}</p>
     <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
   </div>
 </div>

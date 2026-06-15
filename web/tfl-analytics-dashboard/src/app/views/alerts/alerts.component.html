@@ -1,7 +1,11 @@
 <div class="section-heading">
   <div>
     <p class="eyebrow">History</p>
-    <h2>Alerts</h2>
+    <h2>Operational alerts</h2>
+    <p class="page-intro">
+      Durable workflow outcomes for service disruptions and material arrival
+      prediction changes.
+    </p>
   </div>
   <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
 </div>
@@ -14,7 +18,9 @@
 }
 
 @if (alerts().length === 0 && !loading()) {
-  <p class="empty">No alerts recorded yet. Alerts are raised when a line status worsens or an arrival slips by more than 120 seconds.</p>
+  <div class="empty-state">
+    <p>No alerts recorded yet. Alerts are raised when a line status worsens or an arrival slips by more than 120 seconds.</p>
+  </div>
 } @else {
   <div class="alert-list">
     @for (alert of alerts(); track alert.alertId) {

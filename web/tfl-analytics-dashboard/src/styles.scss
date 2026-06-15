@@ -1,19 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
+:root {
+  color-scheme: light;
+  --ink-950: #09182b;
+  --ink-900: #10233d;
+  --ink-700: #405269;
+  --ink-500: #6b7d91;
+  --ink-300: #aeb9c5;
+  --surface: #ffffff;
+  --surface-soft: #f4f7fa;
+  --line: #dbe3ea;
+  --blue: #0067b1;
+  --blue-deep: #003f7d;
+  --blue-soft: #e6f3fb;
+  --red: #dc241f;
+  --green: #16834f;
+  --amber: #a86500;
+  --shadow-sm: 0 0.35rem 1rem rgba(14, 34, 57, 0.06);
+  --shadow-md: 0 1.2rem 3rem rgba(14, 34, 57, 0.09);
+  --radius-sm: 0.7rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.35rem;
+}
+
 html {
   min-width: 320px;
-  background: #eef2f5;
+  background: #edf2f6;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  color: var(--ink-950);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
+}
+
+button,
+select {
+  font: inherit;
 }
 
 button,
@@ -22,6 +53,174 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid #f4a340;
+  outline: 3px solid #f6a800;
   outline-offset: 3px;
+}
+
+.eyebrow {
+  margin: 0 0 0.55rem;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.section-heading,
+.page-header {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+
+.section-heading h2,
+.page-header h2 {
+  margin: 0;
+  color: var(--ink-950);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 780;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.page-intro {
+  max-width: 42rem;
+  margin: 0.75rem 0 0;
+  color: var(--ink-500);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.control-group {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.control-group label {
+  color: var(--ink-500);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.72rem 1.05rem;
+  border: 1px solid var(--blue);
+  border-radius: 0.65rem;
+  color: #fff;
+  background: var(--blue);
+  box-shadow: 0 0.45rem 1rem rgba(0, 103, 177, 0.18);
+  font-size: 0.84rem;
+  font-weight: 780;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--blue-deep);
+  background: var(--blue-deep);
+  box-shadow: 0 0.65rem 1.25rem rgba(0, 63, 125, 0.22);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.btn-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.btn-icon--spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+.error-banner {
+  display: grid;
+  gap: 0.28rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #f0c3c5;
+  border-left: 0.3rem solid var(--red);
+  border-radius: var(--radius-sm);
+  color: #7f2024;
+  background: #fff4f4;
+  box-shadow: var(--shadow-sm);
+}
+
+.error-banner span {
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 13rem;
+  place-items: center;
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed #c9d4de;
+  border-radius: var(--radius-md);
+  color: var(--ink-500);
+  background: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+.empty-state p {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 700px) {
+  .section-heading,
+  .page-header {
+    gap: 1.25rem;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-heading h2,
+  .page-header h2 {
+    font-size: clamp(2rem, 12vw, 2.75rem);
+  }
+
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
 }
