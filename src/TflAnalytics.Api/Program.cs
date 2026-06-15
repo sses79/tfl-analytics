@@ -1,5 +1,6 @@
 using TflAnalytics.Api.Hubs;
 using TflAnalytics.Application.Realtime;
+using TflAnalytics.Contracts.Realtime;
 using TflAnalytics.Infrastructure;
 using TflAnalytics.Infrastructure.Realtime;
 
@@ -59,6 +60,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapPost(
+        "/internal/realtime/arrivals",
+        (ArrivalsUpdated message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
+            notifier.BroadcastArrivalsAsync(message, cancellationToken));
+    app.MapPost(
+        "/internal/realtime/line-status",
+        (LineStatusChanged message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
+            notifier.BroadcastLineStatusAsync(message, cancellationToken));
+    app.MapPost(
+        "/internal/realtime/alerts",
+        (AlertRaised message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
+            notifier.BroadcastAlertAsync(message, cancellationToken));
 }
 
 app.UseCors("Dashboard");

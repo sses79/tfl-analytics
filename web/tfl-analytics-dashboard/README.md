@@ -6,27 +6,45 @@ lines and refreshes every 60 seconds.
 
 ## Local Development
 
-Start the API on port `8080`, then run:
+Use the repository Docker Compose stack for local development and verification.
+The dashboard image builds inside Linux and avoids the macOS/Node 24 esbuild
+deadlock seen with host `npm run build`.
 
 ```bash
-npm install
-npm start
+docker compose \
+  --env-file .env \
+  -f infra/local/compose.yaml \
+  --profile ui \
+  up --build
 ```
 
-Open `http://localhost:4200`. Development builds use
-`src/environments/environment.development.ts` and call
+Run the command from the repository root, not from this directory. Open
+`http://localhost:4200`. The Docker build uses the Angular development
+configuration, so browser calls go to the local API and SignalR hub at
 `http://localhost:8080`.
 
 ## Build And Test
 
+Recommended local build:
+
 ```bash
-npm run build
+docker compose \
+  --env-file .env \
+  -f infra/local/compose.yaml \
+  --profile ui \
+  build web
+```
+
+Host npm commands are useful for package maintenance and tests only:
+
+```bash
+npm install
 npm test -- --watch=false
 ```
 
-Production builds use `src/environments/environment.ts` and call the Azure
-Container App API. Static Web App routing and security headers are configured
-in `public/staticwebapp.config.json`.
+Do not use host `npm run build` as the local verification path on macOS. Static
+Web App routing and security headers are configured in
+`public/staticwebapp.config.json`.
 
 ## Azure Deployment
 

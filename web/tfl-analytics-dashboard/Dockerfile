@@ -5,7 +5,8 @@ COPY web/tfl-analytics-dashboard/package*.json ./
 RUN npm ci
 
 COPY web/tfl-analytics-dashboard/ ./
-RUN npm run build
+ARG BUILD_CONFIGURATION=production
+RUN npm run build -- --configuration "$BUILD_CONFIGURATION"
 
 FROM nginx:1.29-alpine
 COPY web/tfl-analytics-dashboard/nginx.conf /etc/nginx/conf.d/default.conf

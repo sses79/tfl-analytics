@@ -62,9 +62,20 @@ June 14, 2026. A controlled good-service-to-disruption transition verified the
 complete Durable Functions, Azure SQL, Table Storage, and mock-notification
 workflow.
 
-Next delivery phase:
+Phase 5 API, SignalR, and dashboard work was implemented on June 14, 2026 and
+deployed to Azure on June 15, 2026. The deployed dashboard exposes summary,
+line-status, arrivals, and alert views backed by Cosmos DB and Azure SQL query
+endpoints. Processing Functions publish arrival, line-status, and alert
+notifications through Azure SignalR Service.
 
-- Phase 5 API, SignalR, and dashboard work.
+Remaining Phase 5 validation:
+
+- Capture Azure evidence of a browser receiving each SignalR message type and
+  meeting the arrival and line-status latency targets.
+- Add focused automated coverage for dashboard API queries and SignalR
+  publication.
+
+Microsoft Entra ID authentication and authorization remain deferred to Phase 6.
 
 ## Summary
 
@@ -180,7 +191,7 @@ flowchart LR
         COSMOS_LOCAL[Cosmos DB Emulator vNext]
         SQL_LOCAL[SQL Server Container]
         SIGNALR_LOCAL[Self-hosted SignalR Hub]
-        OTEL[OpenTelemetry Collector]
+        DD[Datadog Agent<br/>Optional profile]
     end
 
     TESTS[Integration Test Runner]
@@ -192,15 +203,15 @@ flowchart LR
     PROCESS --> AZURITE
     PROCESS --> COSMOS_LOCAL
     PROCESS --> SQL_LOCAL
-    PROCESS --> SIGNALR_LOCAL
+    PROCESS -- Development relay --> API_LOCAL
     API_LOCAL --> COSMOS_LOCAL
     API_LOCAL --> SQL_LOCAL
     API_LOCAL --> SIGNALR_LOCAL
     SIGNALR_LOCAL --> WEB
     API_LOCAL --> WEB
-    INGEST -. Telemetry .-> OTEL
-    PROCESS -. Telemetry .-> OTEL
-    API_LOCAL -. Telemetry .-> OTEL
+    INGEST -. Telemetry .-> DD
+    PROCESS -. Telemetry .-> DD
+    API_LOCAL -. Telemetry .-> DD
     TESTS --> FIXTURE
     TESTS --> API_LOCAL
     TESTS --> AZURITE
@@ -219,21 +230,19 @@ flowchart LR
 | Cosmos DB for NoSQL | Official Linux Cosmos DB emulator vNext | Runs in Docker and supports the NoSQL API in gateway mode. It implements only a subset of cloud features. |
 | Azure SQL Database | SQL Server Linux container | Tests EF Core mappings, migrations, and queries. On Apple Silicon it uses `linux/amd64` emulation and may be slower. |
 | Durable Functions | Local Functions host backed by Azurite | Tests orchestration, activity, retry, and idempotency behavior. Azure scale and hosting behavior require cloud tests. |
-| Azure SignalR Service | Self-hosted ASP.NET Core SignalR for the normal application path | Preferred local replacement for Default mode. The Azure SignalR emulator is limited to serverless transient transport and may be used only for extension-specific tests. |
+| Azure SignalR Service | Self-hosted ASP.NET Core SignalR with a development-only HTTP relay from the processing Function | Exercises hub negotiation, browser delivery, and all three realtime contracts without requiring Azure SignalR. Managed identity, service scale, and the Azure REST endpoint require cloud tests. |
 | Key Vault | Environment variables or mounted Docker secrets through `ISecretProvider` | Tests configuration flow, not Key Vault authentication, RBAC, rotation, or network controls. |
 | Microsoft Entra ID | Development authentication handler issuing fixed test identities | Tests authorization policies and roles. Token validation and tenant configuration require cloud smoke tests. |
-| Application Insights | OpenTelemetry Collector plus console/OTLP export | Tests trace and metric instrumentation. Azure ingestion, alert rules, and workbooks require cloud validation. |
+| Application Insights | Optional Datadog Agent profile plus application console logs | Tests local log and APM forwarding paths when the profile is enabled. Azure ingestion, alert rules, and workbooks require cloud validation. |
 
 ### Compose Profiles
 
-Provide the following Docker Compose profiles:
+Docker Compose uses the following service groups:
 
-- `core`: Azurite, Event Hubs emulator, Cosmos DB emulator, SQL Server, TfL
+- Default: Azurite, Event Hubs emulator, Cosmos DB emulator, SQL Server, TfL
   fixture server, Functions, and Web API.
-- `ui`: adds Angular and the self-hosted SignalR path.
-- `observability`: adds OpenTelemetry Collector and a local trace viewer.
-- `live-tfl`: uses the real TfL API instead of fixtures and requires the TfL key
-  from an uncommitted environment file.
+- `ui` profile: adds Angular and the self-hosted SignalR browser path.
+- `observability` profile: adds the Datadog Agent.
 
 The default integration-test profile must use deterministic recorded TfL fixtures,
 not the live API. This avoids rate limits, network dependency, changing arrival
@@ -253,8 +262,9 @@ or emulator endpoints:
 - `ITflApiClient`
 
 Production configuration selects Azure SDK implementations and managed identity.
-The local environment selects emulator endpoints, self-hosted SignalR, and
-environment-backed secrets. Business logic and event contracts remain identical.
+The local environment selects emulator connection strings, a development-only
+relay into the API's self-hosted SignalR hub, and environment-backed secrets.
+Business logic and event contracts remain identical.
 
 ## Repository Structure
 
@@ -310,9 +320,10 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 9. The Web API queries Cosmos DB for live data and Azure SQL for alerts and
    aggregates.
 
-The current implementation completes steps 1 through 5 and the alert portions
-of steps 7 and 8. SignalR publication and API query paths remain planned for
-Phase 5.
+The current implementation covers all nine steps. The REST-backed dashboard
+paths have been verified in Azure. Azure SignalR resources, managed-identity
+access, publishers, hub negotiation, and Angular consumers are deployed; live
+browser receipt and latency evidence remains to be recorded.
 
 ## Event Contracts
 
@@ -386,7 +397,7 @@ The workflow will:
 2. Store the alert idempotently in Azure SQL.
 3. Write an audit record to Table Storage.
 4. Send a mock notification.
-5. Broadcast `alertRaised` through SignalR in Phase 5.
+5. Broadcast `alertRaised` through SignalR.
 
 ## API And SignalR Contracts
 
@@ -406,13 +417,14 @@ SignalR messages:
 - `lineStatusChanged`
 - `alertRaised`
 
-The Angular dashboard will show:
+The Angular dashboard shows:
 
-- Live arrivals grouped by station.
+- Live arrivals filtered by monitored station.
 - Current line status and disruption reasons.
 - Alert history.
-- Event processing rate and recent trends.
-- Station and line filters.
+- Summary counts for monitored lines and stations, disruptions, recent alerts,
+  and the latest line-status observation.
+- API and SignalR connection health.
 
 ## Security
 
@@ -504,9 +516,16 @@ Status: completed June 13, 2026.
 
 Status: completed locally and deployed to Azure June 14, 2026.
 
+Azure verification used a controlled good-service-to-disruption transition and
+confirmed the path through Event Hubs, raw Blob archive, Storage Queue, Cosmos
+DB history, Durable Functions, Azure SQL, Table Storage audit, and the mock
+notification activity. Local end-to-end coverage also exercises prediction
+slippage and line-status alert rules, idempotent SQL persistence, deterministic
+orchestration IDs, and audit writes.
+
 ### Phase 5: API And Dashboard
 
-Implemented locally on June 14, 2026. Entra ID authentication deferred to Phase 6.
+Status: implemented on June 14, 2026 and deployed to Azure June 15, 2026.
 
 - Dashboard query endpoints: `/api/stations`, `/api/stations/{id}/arrivals`, `/api/lines/status`,
   `/api/alerts`, `/api/dashboard/summary`.
@@ -518,6 +537,16 @@ Implemented locally on June 14, 2026. Entra ID authentication deferred to Phase 
 - Angular dashboard refactored into four lazy-loaded views: Dashboard, Line status, Arrivals,
   Alerts; services for API and SignalR; `@microsoft/signalr` npm package added.
 - Bicep: SignalR AAD connection string and endpoint env vars added to API Container App.
+- Azure verification confirms all four dashboard routes, API health, live query
+  results from Cosmos DB and Azure SQL, workload RBAC, and diagnostic settings.
+
+Remaining validation:
+
+- Record successful Azure browser receipt of `arrivalsUpdated`,
+  `lineStatusChanged`, and `alertRaised`, including the acceptance latency.
+- Add focused automated API query and SignalR publication tests.
+
+Entra ID authentication and authorization are deferred to Phase 6.
 
 ### Phase 6: Delivery And Validation
 

@@ -64,12 +64,14 @@ Run the local full-history secret and dependency scan:
 The scan redacts findings and never mounts the ignored local `.env` file into
 the scanner container.
 
-Build Angular:
+Build Angular locally through the Docker/Linux dashboard image:
 
 ```bash
-cd web/tfl-analytics-dashboard
-npm install
-npm run build
+docker compose \
+  --env-file .env \
+  -f infra/local/compose.yaml \
+  --profile ui \
+  build web
 ```
 
 Dashboard development, testing, and Angular CLI commands are documented in the
@@ -113,9 +115,10 @@ docker compose \
 
 The ingestion Function polls the deterministic WireMock fixtures and publishes
 to the local `tfl-events` Event Hub. The processing Function archives each raw
-event to Azurite, queues it, validates it, and persists it to Cosmos DB. Station
-IDs, line IDs, schedules, and emulator settings are configured in
-`infra/local/compose.yaml`.
+event to Azurite, queues it, validates it, persists it to Cosmos DB, and writes
+alerts to SQL Server and Azurite Table Storage. The API queries those same local
+stores. Station IDs, line IDs, schedules, and emulator settings are configured
+in `infra/local/compose.yaml`.
 
 Add Angular:
 
@@ -126,6 +129,10 @@ docker compose \
   --profile ui \
   up --build
 ```
+
+The `ui` profile builds Angular with `http://localhost:8080` as its API and
+SignalR base URL. Processing Functions relay realtime messages to the API
+container, which broadcasts them through the self-hosted `/hubs/dashboard` hub.
 
 Add Datadog:
 
@@ -266,7 +273,8 @@ Datadog--ApiKey
 The double hyphen follows the convention used to map hierarchical .NET
 configuration keys into Key Vault secret names.
 
-## Phase 4 Status
+## Delivery Status
 
-The completed Phase 4 delivery record has moved to
-[docs/plan/phase-4-status.md](./docs/plan/phase-4-status.md).
+Current phase status and deployment evidence are maintained in
+[Plan.md](./Plan.md) and
+[Azure Post-Deployment Verification](./docs/post-deployment-verification.md).

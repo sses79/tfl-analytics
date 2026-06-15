@@ -207,6 +207,14 @@ public static class DependencyInjection
                 .GetRequiredService<IOptions<SignalROptions>>()
                 .Value;
 
+            if (!string.IsNullOrWhiteSpace(options.RelayBaseUrl))
+            {
+                return new LocalRelayRealtimeNotifier(
+                    options.RelayBaseUrl,
+                    new HttpClient(),
+                    serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LocalRelayRealtimeNotifier>>());
+            }
+
             if (!string.IsNullOrWhiteSpace(options.Endpoint))
             {
                 return new SignalRServiceNotifier(

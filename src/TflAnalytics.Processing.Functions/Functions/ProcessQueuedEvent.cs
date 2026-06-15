@@ -35,7 +35,7 @@ public sealed class ProcessQueuedEvent
     public async Task Run(
         [QueueTrigger(
             "%ProcessingQueueName%",
-            Connection = "AzureWebJobsStorage")]
+            Connection = "ProcessingStorage")]
         string queueMessage,
         [DurableClient] DurableTaskClient durableClient,
         CancellationToken cancellationToken)
