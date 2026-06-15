@@ -18,10 +18,10 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | June 15, 2026 |
-| Git commit | `8fdbc2a` |
+| Git commit | `60d365f` |
 | ARM deployment | Not applicable; Static Web Apps CLI production release |
 | Provisioning state | `Succeeded` |
-| Scope | Responsive visual redesign of all four Angular dashboard routes |
+| Scope | Dashboard global-style, station-label, and refresh-button correction |
 | Cost impact | None; existing Static Web Apps Free tier |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
@@ -31,7 +31,11 @@ Latest verification evidence:
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.
 - `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200
-  with production assets `main-CFL6ZV7T.js` and `styles-QDWHA3BV.css`.
+  with production assets `main-T2XVHQQW.js` and `styles-QDWHA3BV.css`.
+- The production HTML loads the global stylesheet with a normal blocking link,
+  avoiding the CSP-blocked inline `onload` handler from the previous release.
+- The arrivals page maps the five configured station IDs to display names when
+  the API returns a null name, and all refresh actions use the shared icon style.
 - The API health endpoint returned `healthy`.
 - Dashboard APIs returned 11 monitored lines, five monitored stations, and 50
   recent alerts; the summary endpoint reported live event data.
