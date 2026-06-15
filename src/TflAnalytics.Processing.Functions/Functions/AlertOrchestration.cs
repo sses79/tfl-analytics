@@ -33,6 +33,10 @@ public static class AlertOrchestration
             nameof(AlertActivities.SendMockAlertNotification),
             alert,
             ActivityOptions);
+        await context.CallActivityAsync(
+            nameof(AlertActivities.BroadcastAlert),
+            alert,
+            ActivityOptions);
 
         return new AlertWorkflowResult(alert.AlertId, created, true, true);
     }

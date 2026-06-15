@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Processing;
+using TflAnalytics.Contracts.Dashboard;
 using TflAnalytics.Contracts.Events;
 
 namespace TflAnalytics.Infrastructure.Processing;
@@ -159,6 +160,91 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
                 previous.StatusSeverityDescription);
     }
 
+    public async Task<IReadOnlyList<ArrivalSummary>> GetRecentArrivalsAsync(
+        string stationId,
+        int maxCount = 20,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken);
+        var query = new QueryDefinition(
+            "SELECT c.lineId, c.observedAtUtc, c.payload FROM c ORDER BY c.observedAtUtc DESC");
+
+        var container = _cosmosClient.GetContainer(
+            _options.DatabaseName,
+            _options.LiveEventsContainerName);
+        using var iterator = container.GetItemQueryIterator<ArrivalQueryDocument>(
+            query,
+            requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(stationId),
+                MaxItemCount = maxCount
+            });
+
+        var results = new List<ArrivalSummary>();
+        while (iterator.HasMoreResults && results.Count < maxCount)
+        {
+            var page = await iterator.ReadNextAsync(cancellationToken);
+            foreach (var doc in page)
+            {
+                results.Add(new ArrivalSummary(
+                    doc.LineId,
+                    doc.Payload.LineName,
+                    doc.Payload.DestinationName,
+                    doc.Payload.PlatformName,
+                    doc.Payload.Direction,
+                    doc.Payload.ExpectedArrivalUtc,
+                    doc.Payload.SecondsToStation,
+                    doc.ObservedAtUtc));
+
+                if (results.Count >= maxCount)
+                {
+                    break;
+                }
+            }
+        }
+
+        return results;
+    }
+
+    public async Task<IReadOnlyList<LineStatusSummary>> GetCurrentLineStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureInitializedAsync(cancellationToken);
+        var query = new QueryDefinition(
+            "SELECT c.lineId, c.observedAtUtc, c.payload FROM c ORDER BY c._ts DESC");
+
+        var container = _cosmosClient.GetContainer(
+            _options.DatabaseName,
+            _options.LineStatusContainerName);
+        using var iterator = container.GetItemQueryIterator<LineStatusQueryDocument>(
+            query,
+            requestOptions: new QueryRequestOptions { MaxItemCount = 50 });
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var results = new List<LineStatusSummary>();
+        while (iterator.HasMoreResults)
+        {
+            var page = await iterator.ReadNextAsync(cancellationToken);
+            foreach (var doc in page)
+            {
+                if (!seen.Add(doc.LineId))
+                {
+                    continue;
+                }
+
+                results.Add(new LineStatusSummary(
+                    doc.LineId,
+                    doc.Payload.LineName,
+                    doc.Payload.StatusSeverity,
+                    doc.Payload.StatusSeverityDescription,
+                    doc.Payload.Reason,
+                    doc.ObservedAtUtc));
+            }
+        }
+
+        return results;
+    }
+
     private async Task<bool> CreateAsync<TDocument>(
         string containerName,
         TDocument document,
@@ -256,4 +342,14 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
         [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
         [property: JsonProperty("statusSeverity")] int StatusSeverity,
         [property: JsonProperty("statusSeverityDescription")] string StatusSeverityDescription);
+
+    private sealed record ArrivalQueryDocument(
+        [property: JsonProperty("lineId")] string LineId,
+        [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
+        [property: JsonProperty("payload")] ArrivalPredictionObserved Payload);
+
+    private sealed record LineStatusQueryDocument(
+        [property: JsonProperty("lineId")] string LineId,
+        [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
+        [property: JsonProperty("payload")] LineStatusObserved Payload);
 }

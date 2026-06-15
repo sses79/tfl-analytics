@@ -86,19 +86,54 @@
 .api-state--online span {
   background: #39b76e;
   box-shadow: 0 0 0 0.22rem rgba(57, 183, 110, 0.14);
+  animation: pulse-live 2s ease-out infinite;
+}
+
+@keyframes pulse-live {
+  0%   { box-shadow: 0 0 0 0 rgba(57, 183, 110, 0.5); }
+  70%  { box-shadow: 0 0 0 0.45rem rgba(57, 183, 110, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(57, 183, 110, 0); }
+}
+
+.header-status {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.mainnav {
+  display: flex;
+  gap: 0;
+  padding: 0 clamp(1.25rem, 4vw, 4.5rem);
+  background: #152437;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mainnav__link {
+  padding: 0.78rem 1rem;
+  color: #8faac4;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  border-bottom: 0.18rem solid transparent;
+  transition: color 0.15s;
+}
+
+.mainnav__link:hover {
+  color: #fff;
+}
+
+.mainnav__link--active {
+  color: #fff;
+  border-bottom-color: #0098d4;
 }
 
 main {
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
   padding: clamp(2.4rem, 6vw, 5.3rem) 0 4rem;
-}
-
-.hero {
-  display: flex;
-  gap: 2rem;
-  align-items: end;
-  justify-content: space-between;
 }
 
 .eyebrow {
@@ -115,23 +150,6 @@ h2,
 h3,
 p {
   margin-top: 0;
-}
-
-h1 {
-  max-width: 760px;
-  margin-bottom: 0.8rem;
-  color: #101b2b;
-  font-size: clamp(2.7rem, 7vw, 5.2rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.hero-copy {
-  max-width: 620px;
-  margin-bottom: 0;
-  color: #5c6876;
-  font-size: clamp(1rem, 2vw, 1.18rem);
-  line-height: 1.65;
 }
 
 button {
@@ -160,7 +178,8 @@ button:disabled {
   opacity: 0.7;
 }
 
-.refresh-icon {
+.refresh-icon,
+.btn-icon {
   width: 1rem;
   height: 1rem;
   fill: none;
@@ -170,7 +189,8 @@ button:disabled {
   stroke-width: 2;
 }
 
-.refresh-icon--spinning {
+.refresh-icon--spinning,
+.btn-icon--spinning {
   animation: spin 0.9s linear infinite;
 }
 
@@ -381,7 +401,6 @@ footer {
 }
 
 @media (max-width: 700px) {
-  .hero,
   .section-heading {
     align-items: start;
     flex-direction: column;

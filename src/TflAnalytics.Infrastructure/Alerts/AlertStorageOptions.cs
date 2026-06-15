@@ -11,4 +11,8 @@ public sealed class AlertStorageOptions
     public string DatabaseName { get; set; } = "tfl-analytics";
 
     public bool Initialize { get; set; } = true;
+
+    public string? ApiIdentityName { get; set; }
+
+    public string? ApiObjectId { get; set; }
 }

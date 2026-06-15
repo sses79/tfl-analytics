@@ -6,6 +6,10 @@ param apiIdentityName string
 param applicationInsightsName string
 param keyVaultName string
 param dashboardOrigin string
+param signalRHostname string
+param cosmosEndpoint string
+param storageAccountName string
+param sqlServerFqdn string
 param tags object
 
 param deployApiContainer bool = false
@@ -118,6 +122,51 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'Cors__AllowedOrigins__0'
               value: dashboardOrigin
+            }
+            {
+              // ClientId selects the user-assigned identity when multiple are present.
+              name: 'SignalR__ConnectionString'
+              value: 'Endpoint=https://${signalRHostname};AuthType=aad;ClientId=${apiIdentity.properties.clientId};Version=1.0;'
+            }
+            {
+              name: 'SignalR__Endpoint'
+              value: 'https://${signalRHostname}'
+            }
+            {
+              name: 'Ingestion__StationIds__0'
+              value: '940GZZLUVIC'
+            }
+            {
+              name: 'Ingestion__StationIds__1'
+              value: '940GZZLUOXC'
+            }
+            {
+              name: 'Ingestion__StationIds__2'
+              value: '940GZZLUGPK'
+            }
+            {
+              name: 'Ingestion__StationIds__3'
+              value: '940GZZLUKSX'
+            }
+            {
+              name: 'Ingestion__StationIds__4'
+              value: '940GZZLULNB'
+            }
+            {
+              name: 'Cosmos__Endpoint'
+              value: cosmosEndpoint
+            }
+            {
+              name: 'ProcessingStorage__AccountName'
+              value: storageAccountName
+            }
+            {
+              name: 'AlertStorage__ServerFqdn'
+              value: sqlServerFqdn
+            }
+            {
+              name: 'AlertStorage__Initialize'
+              value: 'false'
             }
             {
               name: 'DD_ENV'

@@ -1,0 +1,47 @@
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">History</p>
+    <h2>Alerts</h2>
+  </div>
+  <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <strong>Error</strong>
+    <span>{{ error() }}</span>
+  </div>
+}
+
+@if (alerts().length === 0 && !loading()) {
+  <p class="empty">No alerts recorded yet. Alerts are raised when a line status worsens or an arrival slips by more than 120 seconds.</p>
+} @else {
+  <div class="alert-list">
+    @for (alert of alerts(); track alert.alertId) {
+      <article class="alert-card" [class.alert-card--disruption]="alert.ruleType === 'LineStatusDisruption'">
+        <div class="alert-card__header">
+          <div class="alert-meta">
+            <span class="rule-badge">{{ ruleLabel(alert.ruleType) }}</span>
+            @if (alert.lineId) {
+              <span class="location">{{ alert.lineId }}</span>
+            }
+            @if (alert.stationId) {
+              <span class="location">{{ stationLabel(alert.stationId) }}</span>
+            }
+          </div>
+          <time class="alert-time" [attr.datetime]="alert.detectedAtUtc">
+            {{ formatTime(alert.detectedAtUtc) }}
+          </time>
+        </div>
+
+        <h3 class="alert-title">{{ alert.title }}</h3>
+        <p class="alert-desc">{{ alert.description }}</p>
+
+        <div class="alert-card__footer">
+          <span>Before: <strong>{{ formatValue(alert.previousValue, alert.ruleType) }}</strong></span>
+          <span>After: <strong>{{ formatValue(alert.currentValue, alert.ruleType) }}</strong></span>
+        </div>
+      </article>
+    }
+  </div>
+}

@@ -6,4 +6,5 @@ public sealed record ProcessingResult(
     string EventId,
     string EventType,
     bool Created,
-    IReadOnlyList<AlertCandidate> Alerts);
+    IReadOnlyList<AlertCandidate> Alerts,
+    object? Envelope = null);

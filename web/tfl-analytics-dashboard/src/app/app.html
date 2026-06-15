@@ -1,6 +1,6 @@
 <div class="shell">
   <header class="masthead">
-    <a class="brand" href="/" aria-label="TfL Analytics home">
+    <a class="brand" routerLink="/" aria-label="TfL Analytics home">
       <span class="roundel" aria-hidden="true"><span></span></span>
       <span>
         <strong>TfL Analytics</strong>
@@ -8,102 +8,27 @@
       </span>
     </a>
 
-    <div class="api-state" [class.api-state--online]="apiOnline()">
-      <span aria-hidden="true"></span>
-      API {{ apiOnline() ? 'online' : 'checking' }}
+    <div class="header-status">
+      <div class="api-state" [class.api-state--online]="apiOnline()">
+        <span aria-hidden="true"></span>
+        API {{ apiOnline() ? 'online' : 'checking' }}
+      </div>
+      <div class="api-state" [class.api-state--online]="signalRConnected()">
+        <span aria-hidden="true"></span>
+        Live {{ signalRConnected() ? 'on' : 'off' }}
+      </div>
     </div>
   </header>
 
+  <nav class="mainnav" aria-label="Primary navigation">
+    <a routerLink="/dashboard" routerLinkActive="mainnav__link--active" class="mainnav__link">Dashboard</a>
+    <a routerLink="/status" routerLinkActive="mainnav__link--active" class="mainnav__link">Line status</a>
+    <a routerLink="/arrivals" routerLinkActive="mainnav__link--active" class="mainnav__link">Arrivals</a>
+    <a routerLink="/alerts" routerLinkActive="mainnav__link--active" class="mainnav__link">Alerts</a>
+  </nav>
+
   <main>
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Live service overview</p>
-        <h1>How is London moving?</h1>
-        <p class="hero-copy">
-          A focused view of current Tube conditions, refreshed from the TfL Unified API.
-        </p>
-      </div>
-
-      <button type="button" (click)="refresh()" [disabled]="loading()">
-        <svg
-          class="refresh-icon"
-          [class.refresh-icon--spinning]="loading()"
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-        >
-          <path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" />
-        </svg>
-        {{ loading() ? 'Refreshing' : 'Refresh now' }}
-      </button>
-    </section>
-
-    <section class="summary" aria-label="Network summary">
-      <article>
-        <span>Lines monitored</span>
-        <strong>{{ lines().length || 5 }}</strong>
-      </article>
-      <article>
-        <span>Reported disruptions</span>
-        <strong>{{ disruptions() }}</strong>
-      </article>
-      <article>
-        <span>Last update</span>
-        <strong class="summary-time">{{ updatedLabel() }}</strong>
-      </article>
-    </section>
-
-    @if (error()) {
-      <div class="error-banner" role="alert">
-        <strong>Connection interrupted</strong>
-        <span>{{ error() }}</span>
-      </div>
-    }
-
-    <section class="line-section" aria-labelledby="line-status-heading">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Underground</p>
-          <h2 id="line-status-heading">Line status</h2>
-        </div>
-        <p>Automatic refresh every 60 seconds</p>
-      </div>
-
-      <div class="line-grid" [attr.aria-busy]="loading()">
-        @if (lines().length === 0 && loading()) {
-          @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
-            <article class="line-card line-card--loading">
-              <span></span><span></span><span></span>
-            </article>
-          }
-        } @else {
-          @for (line of lines(); track line.id) {
-            <article class="line-card" [style.--line-colour]="lineColour(line.id)">
-              <div class="line-card__header">
-                <div class="line-name">
-                  <span aria-hidden="true"></span>
-                  <h3>{{ line.name }}</h3>
-                </div>
-                <span
-                  class="status-pill"
-                  [class]="'status-pill status-pill--' + statusTone(primaryStatus(line).statusSeverity)"
-                >
-                  {{ primaryStatus(line).statusSeverityDescription }}
-                </span>
-              </div>
-
-              <p class="reason">
-                {{ primaryStatus(line).reason || 'No service issues are currently reported.' }}
-              </p>
-
-              <div class="line-card__footer">
-                <span>{{ line.modeName }}</span>
-                <span>Severity {{ primaryStatus(line).statusSeverity }}/10</span>
-              </div>
-            </article>
-          }
-        }
-      </div>
-    </section>
+    <router-outlet />
   </main>
 
   <footer>
