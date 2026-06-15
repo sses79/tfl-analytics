@@ -26,7 +26,7 @@
               <span class="location">{{ alert.lineId }}</span>
             }
             @if (alert.stationId) {
-              <span class="location">{{ alert.stationId }}</span>
+              <span class="location">{{ stationLabel(alert.stationId) }}</span>
             }
           </div>
           <time class="alert-time" [attr.datetime]="alert.detectedAtUtc">
@@ -38,8 +38,8 @@
         <p class="alert-desc">{{ alert.description }}</p>
 
         <div class="alert-card__footer">
-          <span>Before: <strong>{{ alert.previousValue }}</strong></span>
-          <span>After: <strong>{{ alert.currentValue }}</strong></span>
+          <span>Before: <strong>{{ formatValue(alert.previousValue, alert.ruleType) }}</strong></span>
+          <span>After: <strong>{{ formatValue(alert.currentValue, alert.ruleType) }}</strong></span>
         </div>
       </article>
     }

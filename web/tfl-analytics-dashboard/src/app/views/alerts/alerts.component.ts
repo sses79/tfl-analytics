@@ -67,4 +67,38 @@ export class AlertsComponent implements OnInit {
       default: return ruleType;
     }
   }
+
+  private static readonly StationNames: Record<string, string> = {
+    '940GZZLUVIC': 'Victoria',
+    '940GZZLUOXC': 'Oxford Circus',
+    '940GZZLUGPK': 'Green Park',
+    '940GZZLUKSX': "King's Cross St. Pancras",
+    '940GZZLULNB': 'London Bridge'
+  };
+
+  protected stationLabel(stationId: string | null): string {
+    if (!stationId) return '';
+    return AlertsComponent.StationNames[stationId] ?? stationId;
+  }
+
+  protected formatValue(value: string, ruleType: string): string {
+    if (ruleType === 'ArrivalPredictionSlippage') {
+      const n = Number(value);
+      if (!isNaN(n)) {
+        const abs = Math.abs(n);
+        const sign = n < 0 ? '−' : '+';
+        if (abs < 60) return `${sign}${abs}s`;
+        const m = Math.floor(abs / 60);
+        const s = abs % 60;
+        return s > 0 ? `${sign}${m}m ${s}s` : `${sign}${m}m`;
+      }
+    }
+    const iso = Date.parse(value);
+    if (!isNaN(iso)) {
+      return new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).format(iso);
+    }
+    return value;
+  }
 }

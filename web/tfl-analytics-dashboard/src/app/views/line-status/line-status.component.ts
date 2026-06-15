@@ -22,7 +22,7 @@ export class LineStatusComponent implements OnInit {
     central: '#e32017',
     circle: '#ffd300',
     district: '#00782a',
-    hammersmith: '#f3a9bb',
+    'hammersmith-city': '#f3a9bb',
     jubilee: '#a0a5a9',
     metropolitan: '#9b0056',
     northern: '#000000',
