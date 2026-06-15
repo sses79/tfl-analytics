@@ -18,10 +18,10 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | June 15, 2026 |
-| Git commit | `60d365f` |
+| Git commit | `8f742bc` |
 | ARM deployment | Not applicable; Static Web Apps CLI production release |
 | Provisioning state | `Succeeded` |
-| Scope | Dashboard global-style, station-label, and refresh-button correction |
+| Scope | Expandable Azure event-flow explainers on all dashboard routes |
 | Cost impact | None; existing Static Web Apps Free tier |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
@@ -31,7 +31,11 @@ Latest verification evidence:
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.
 - `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200
-  with production assets `main-T2XVHQQW.js` and `styles-QDWHA3BV.css`.
+  with production assets `main-LPVKO4PA.js` and `styles-QDWHA3BV.css`.
+- Each route includes an expandable, accessible diagram describing its
+  demonstrated event contract and path through the relevant Azure services.
+- The reusable explainer component passed its expand/collapse interaction test,
+  and the production build emitted it as a shared lazy chunk.
 - The production HTML loads the global stylesheet with a normal blocking link,
   avoiding the CSP-blocked inline `onload` handler from the previous release.
 - The arrivals page maps the five configured station IDs to display names when
