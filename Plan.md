@@ -89,6 +89,12 @@ The live TfL Swagger contract will be used instead of the legacy
 
 ## Architecture Diagram
 
+An expanded, interactive version that identifies event contracts and storage
+landing zones is available at
+[docs/plan/architecture-diagram.html](./docs/plan/architecture-diagram.html).
+The Web API, Angular hosting, and SignalR runtime paths are detailed in
+[docs/plan/api-dashboard-architecture.html](./docs/plan/api-dashboard-architecture.html).
+
 ```mermaid
 flowchart LR
     TFL[TfL Unified API]

@@ -2,12 +2,34 @@
   <div>
     <p class="eyebrow">Underground</p>
     <h2>Line status</h2>
+    <p class="page-intro">
+      Current service conditions across the monitored TfL network, updated as
+      new status events arrive.
+    </p>
   </div>
   <div class="controls">
-    <p>Updated {{ updatedLabel() }}</p>
-    <button type="button" (click)="load()" [disabled]="loading()">Refresh</button>
+    <p class="updated-label"><span></span>Updated {{ updatedLabel() }}</p>
+    <button type="button" (click)="load()" [disabled]="loading()">
+      <svg
+        class="btn-icon"
+        [class.btn-icon--spinning]="loading()"
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+      >
+        <path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/>
+        <path d="M12.4 2.7V5.5H9.6"/>
+      </svg>
+      Refresh
+    </button>
   </div>
 </div>
+
+<app-data-flow-explainer
+  title="Line status event flow"
+  description="This page demonstrates the lower-frequency line-status stream. Each observation is published through Event Hubs, persisted in Cosmos DB, and pushed to connected dashboards when a line changes."
+  eventType="LineStatusObserved"
+  [steps]="flowSteps"
+/>
 
 @if (error()) {
   <div class="error-banner" role="alert">

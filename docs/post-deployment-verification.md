@@ -17,34 +17,36 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 14, 2026 |
-| Git commit | `57f1aa0` |
-| ARM deployment | `phase4-alerts-20260614-202014` |
+| Date | June 15, 2026 |
+| Git commit | `8f742bc` |
+| ARM deployment | Not applicable; Static Web Apps CLI production release |
 | Provisioning state | `Succeeded` |
-| Scope | Phase 4 alert rules and Durable workflow |
-| Cost impact | No SKU or capacity increase |
+| Scope | Expandable Azure event-flow explainers on all dashboard routes |
+| Cost impact | None; existing Static Web Apps Free tier |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
 Latest verification evidence:
 
+- Static Web Apps CLI deployed the production bundle successfully to
+  `https://blue-bush-0491f9503.7.azurestaticapps.net`.
+- `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200
+  with production assets `main-LPVKO4PA.js` and `styles-QDWHA3BV.css`.
+- Each route includes an expandable, accessible diagram describing its
+  demonstrated event contract and path through the relevant Azure services.
+- The reusable explainer component passed its expand/collapse interaction test,
+  and the production build emitted it as a shared lazy chunk.
+- The production HTML loads the global stylesheet with a normal blocking link,
+  avoiding the CSP-blocked inline `onload` handler from the previous release.
+- The arrivals page maps the five configured station IDs to display names when
+  the API returns a null name, and all refresh actions use the shared icon style.
+- The API health endpoint returned `healthy`.
+- Dashboard APIs returned 11 monitored lines, five monitored stations, and 50
+  recent alerts; the summary endpoint reported live event data.
 - Ingestion and processing Function health endpoints returned `healthy`.
-- API and Static Web App health checks passed.
-- All ten expected Functions were indexed.
-- The processing identity became the Azure SQL Entra administrator.
-- Controlled good-service and disruption events were archived in raw Blob
-  Storage and processed through Cosmos DB.
-- Durable instance
-  `e73bf0ad0b0fbc4e42a25f75326d6cfd1cd9f2a6e9038148c383b88de4eca844`
-  completed successfully.
-- The matching `LineStatusDisruption` SQL alert completed before an
-  `AlertRaised` Table Storage audit entity was written.
-- The `processing`, `processing-poison`, and Durable work-item queues contained
-  zero visible messages.
 - Data-service, workload RBAC, and diagnostic-setting smoke tests passed.
-- The top-level Azure what-if returned an Azure control-plane
-  `InternalServerError`; full ARM validation and the focused SQL what-if passed
-  before deployment.
+- No Bicep or Azure resource configuration changed, so an ARM what-if was not
+  required for this content-only release.
 
 ## Load Resource Names
 

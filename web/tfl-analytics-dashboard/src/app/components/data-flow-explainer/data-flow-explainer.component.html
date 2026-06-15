@@ -1,0 +1,59 @@
+<div class="flow-explainer">
+  <button
+    class="flow-toggle"
+    type="button"
+    (click)="toggle()"
+    [attr.aria-expanded]="expanded()"
+  >
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5"/>
+      <path d="M10 9.3v4.2"/>
+      <circle cx="10" cy="6.3" r="0.7" fill="currentColor" stroke="none"/>
+    </svg>
+    {{ expanded() ? 'Hide data flow' : 'How this data flows' }}
+    <svg
+      class="flow-toggle__chevron"
+      [class.flow-toggle__chevron--open]="expanded()"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+    >
+      <path d="m4 6 4 4 4-4"/>
+    </svg>
+  </button>
+
+  @if (expanded()) {
+    <section class="flow-panel" aria-label="Azure event and data flow">
+      <div class="flow-panel__intro">
+        <div>
+          <p class="flow-kicker">Architecture walkthrough</p>
+          <h3>{{ title() }}</h3>
+          <p>{{ description() }}</p>
+        </div>
+        <span class="event-badge">{{ eventType() }}</span>
+      </div>
+
+      <ol class="flow-diagram">
+        @for (step of steps(); track step.service; let last = $last) {
+          <li class="flow-step">
+            <div class="flow-node" [class]="'flow-node flow-node--' + step.tone">
+              <span class="flow-node__type">{{ step.tone }}</span>
+              <strong>{{ step.service }}</strong>
+              <small>{{ step.detail }}</small>
+            </div>
+            @if (!last) {
+              <div class="flow-arrow" aria-hidden="true">
+                <span></span>
+                <svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg>
+              </div>
+            }
+          </li>
+        }
+      </ol>
+
+      <p class="flow-note">
+        Arrows show the primary path demonstrated by this page. Managed identity
+        and Azure RBAC secure service-to-service access.
+      </p>
+    </section>
+  }
+</div>

@@ -1,7 +1,11 @@
 <div class="page-header">
   <div>
     <p class="eyebrow">Live service overview</p>
-    <h2>Network snapshot</h2>
+    <h2>London at a glance</h2>
+    <p class="page-intro">
+      A live pulse of the lines, stations and operational alerts moving through
+      the analytics platform.
+    </p>
   </div>
   <button type="button" (click)="load()" [disabled]="loading()">
     <svg class="btn-icon" [class.btn-icon--spinning]="loading()" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -11,6 +15,13 @@
     Refresh
   </button>
 </div>
+
+<app-data-flow-explainer
+  title="End-to-end network overview"
+  description="This page combines both ingestion streams with persisted operational state. The API reads the latest Cosmos DB observations and Azure SQL alerts, while SignalR carries new processing updates to the browser."
+  eventType="ArrivalObserved + LineStatusObserved"
+  [steps]="flowSteps"
+/>
 
 @if (error()) {
   <div class="error-banner" role="alert">

@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="description"
+    content="Detailed Azure hosting and runtime architecture for the TfL Analytics Web API, Angular dashboard, and Azure SignalR Service."
+  >
+  <title>TfL Analytics | API And Dashboard Architecture</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #0b1f38;
+      --muted: #61758a;
+      --line: #d6e1e9;
+      --canvas: #edf3f7;
+      --surface: #ffffff;
+      --angular: #c3002f;
+      --api: #512bd4;
+      --signalr: #008b83;
+      --storage: #16834f;
+      --azure: #0078d4;
+      --security: #a86500;
+      --shadow: 0 1rem 3rem rgba(11, 31, 56, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 86% 0, rgba(0, 120, 212, 0.13), transparent 31rem),
+        linear-gradient(180deg, #f9fcfe, var(--canvas));
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    header,
+    main,
+    footer {
+      width: min(1380px, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+
+    header {
+      padding: clamp(2.5rem, 6vw, 5.5rem) 0 2rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.65rem;
+      color: var(--azure);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 970px;
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.06em;
+    }
+
+    .intro {
+      max-width: 850px;
+      margin: 1.1rem 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    code {
+      color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.55rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tabs button {
+      padding: 0.58rem 0.85rem;
+      border: 1px solid #c6d5df;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.85);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .tabs button:hover,
+    .tabs button[aria-pressed="true"] {
+      border-color: var(--azure);
+      color: #fff;
+      background: var(--azure);
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 3px solid #f6a800;
+      outline-offset: 3px;
+    }
+
+    main {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .panel {
+      padding: clamp(1.1rem, 3vw, 1.7rem);
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .panel[hidden] {
+      display: none;
+    }
+
+    .panel-heading {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      letter-spacing: -0.04em;
+    }
+
+    .panel-heading p {
+      max-width: 780px;
+      margin: 0.5rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.6;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      padding: 0.38rem 0.65rem;
+      border: 1px solid color-mix(in srgb, var(--tone) 32%, white);
+      border-radius: 999px;
+      color: var(--tone);
+      background: color-mix(in srgb, var(--tone) 8%, white);
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .host-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .host-card {
+      --tone: var(--azure);
+      padding: 1.1rem;
+      border: 1px solid #d9e3ea;
+      border-top: 0.32rem solid var(--tone);
+      border-radius: 0.85rem;
+      background: #f9fbfc;
+    }
+
+    .host-card.angular {
+      --tone: var(--angular);
+    }
+
+    .host-card.api {
+      --tone: var(--api);
+    }
+
+    .host-card.signalr {
+      --tone: var(--signalr);
+    }
+
+    .host-card h3 {
+      margin: 0.35rem 0 0.5rem;
+      font-size: 1rem;
+    }
+
+    .type {
+      color: var(--tone);
+      font-size: 0.62rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .host-card p,
+    .host-card li {
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.5;
+    }
+
+    .host-card ul {
+      margin: 0.75rem 0 0;
+      padding-left: 1.1rem;
+    }
+
+    .host-card li + li {
+      margin-top: 0.35rem;
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    .zone {
+      min-height: 16rem;
+      padding: 1rem;
+      border: 1px solid #d7e2ea;
+      border-radius: 0.9rem;
+      background: #f9fbfc;
+    }
+
+    .zone h3 {
+      margin: 0 0 0.75rem;
+      font-size: 0.92rem;
+    }
+
+    .service {
+      --tone: var(--azure);
+      padding: 0.78rem;
+      border: 1px solid #dce4ea;
+      border-left: 0.3rem solid var(--tone);
+      border-radius: 0.65rem;
+      background: #fff;
+    }
+
+    .service + .service {
+      margin-top: 0.6rem;
+    }
+
+    .service.angular {
+      --tone: var(--angular);
+    }
+
+    .service.api {
+      --tone: var(--api);
+    }
+
+    .service.signalr {
+      --tone: var(--signalr);
+    }
+
+    .service.storage {
+      --tone: var(--storage);
+    }
+
+    .service.security {
+      --tone: var(--security);
+    }
+
+    .service strong,
+    .service small {
+      display: block;
+    }
+
+    .service strong {
+      font-size: 0.78rem;
+    }
+
+    .service small {
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.65rem;
+      line-height: 1.45;
+    }
+
+    .connector {
+      display: grid;
+      width: 4.2rem;
+      gap: 0.35rem;
+      place-items: center;
+      color: #758ba0;
+      font-size: 0.58rem;
+      font-weight: 750;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .connector i {
+      position: relative;
+      display: block;
+      width: 100%;
+      border-top: 2px solid currentColor;
+    }
+
+    .connector i::after {
+      position: absolute;
+      top: -0.32rem;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-top: 0.28rem solid transparent;
+      border-bottom: 0.28rem solid transparent;
+      border-left: 0.42rem solid currentColor;
+      content: "";
+    }
+
+    .sequence {
+      display: grid;
+      gap: 0.7rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: sequence;
+    }
+
+    .sequence li {
+      display: grid;
+      grid-template-columns: 2.2rem minmax(8rem, 0.8fr) 2.5rem minmax(0, 2fr);
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.8rem;
+      border: 1px solid #dce5eb;
+      border-radius: 0.75rem;
+      background: #f9fbfc;
+      counter-increment: sequence;
+    }
+
+    .sequence li::before {
+      display: grid;
+      width: 2rem;
+      height: 2rem;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--signalr);
+      content: counter(sequence);
+      font-size: 0.72rem;
+      font-weight: 850;
+    }
+
+    .actor {
+      color: var(--ink);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .direction {
+      color: var(--signalr);
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    .message {
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.5;
+    }
+
+    .benefits {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .benefit {
+      padding: 0.9rem;
+      border: 1px solid #dce5eb;
+      border-radius: 0.75rem;
+      background: #fff;
+    }
+
+    .benefit strong {
+      display: block;
+      margin-bottom: 0.3rem;
+      color: var(--signalr);
+      font-size: 0.76rem;
+    }
+
+    .benefit span {
+      color: var(--muted);
+      font-size: 0.69rem;
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      font-size: 0.75rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #e4ebf0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      background: #f4f8fa;
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .security-card {
+      padding: 1rem;
+      border: 1px solid #dce5eb;
+      border-radius: 0.8rem;
+      background: #f9fbfc;
+    }
+
+    .security-card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.85rem;
+    }
+
+    .security-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.73rem;
+      line-height: 1.55;
+    }
+
+    .tradeoff {
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border-left: 0.3rem solid var(--security);
+      border-radius: 0.55rem;
+      color: #6f4a08;
+      background: #fff7e8;
+      font-size: 0.75rem;
+      line-height: 1.55;
+    }
+
+    footer {
+      padding: 2rem 0 3rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.6;
+    }
+
+    footer a {
+      color: var(--azure);
+    }
+
+    @media (max-width: 980px) {
+      .host-grid,
+      .benefits {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .architecture {
+        grid-template-columns: 1fr;
+      }
+
+      .connector {
+        width: auto;
+        min-height: 2.5rem;
+        transform: rotate(90deg);
+        justify-self: center;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .host-grid,
+      .benefits,
+      .security-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-heading {
+        flex-direction: column;
+      }
+
+      .sequence li {
+        grid-template-columns: 2.2rem 1fr;
+      }
+
+      .direction {
+        display: none;
+      }
+
+      .message {
+        grid-column: 2;
+      }
+
+      table,
+      tbody,
+      tr,
+      td {
+        display: block;
+      }
+
+      thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      tr {
+        padding: 0.65rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      td {
+        padding: 0.35rem;
+        border: 0;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .tabs {
+        display: none;
+      }
+
+      .panel[hidden] {
+        display: block;
+      }
+
+      .panel {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">TfL Analytics Hosting Architecture</p>
+    <h1>Angular dashboard, Web API and Azure SignalR</h1>
+    <p class="intro">
+      The user interface and API are deployed independently so each can use the
+      Azure hosting model that fits it best. Angular is a globally served static
+      application, ASP.NET Core runs as a scale-to-zero container, and Azure
+      SignalR adds low-latency server push without making the browser repeatedly
+      poll the API.
+    </p>
+
+    <nav class="tabs" aria-label="Architecture views">
+      <button type="button" data-view="all" aria-pressed="true">All</button>
+      <button type="button" data-view="hosting" aria-pressed="false">Azure hosting</button>
+      <button type="button" data-view="rest" aria-pressed="false">REST query path</button>
+      <button type="button" data-view="realtime" aria-pressed="false">SignalR path</button>
+      <button type="button" data-view="security" aria-pressed="false">Security and scale</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel" data-panel="hosting">
+      <div class="panel-heading">
+        <div>
+          <h2>How the application is hosted in Azure</h2>
+          <p>
+            Static content, API compute and persistent real-time connections
+            have different operational needs, so they are hosted as separate
+            Azure resources.
+          </p>
+        </div>
+        <span class="pill" style="--tone: var(--azure)">Three hosting roles</span>
+      </div>
+
+      <div class="host-grid">
+        <article class="host-card angular">
+          <span class="type">Frontend hosting</span>
+          <h3>Azure Static Web Apps Free</h3>
+          <p>
+            Hosts the compiled Angular browser assets in West Europe and serves
+            the four lazy-loaded routes.
+          </p>
+          <ul>
+            <li>Production bundle deployed with Static Web Apps CLI.</li>
+            <li>SPA fallback rewrites route requests to <code>index.html</code>.</li>
+            <li>CSP restricts scripts, frames and API connection destinations.</li>
+            <li>No Angular server process is required in Azure.</li>
+          </ul>
+        </article>
+
+        <article class="host-card api">
+          <span class="type">API compute</span>
+          <h3>Azure Container Apps Consumption</h3>
+          <p>
+            Runs the ASP.NET Core 10 image from private Azure Container Registry
+            with public HTTPS ingress on container port 8080.
+          </p>
+          <ul>
+            <li>0.25 vCPU and 0.5 GiB memory per replica.</li>
+            <li>Scales from zero to two replicas.</li>
+            <li>HTTP scaling target: 20 concurrent requests.</li>
+            <li>Liveness probe calls <code>/health/live</code>.</li>
+          </ul>
+        </article>
+
+        <article class="host-card signalr">
+          <span class="type">Connection service</span>
+          <h3>Azure SignalR Service Free F1</h3>
+          <p>
+            Holds browser connections and fans out messages published by the
+            API or Processing Functions.
+          </p>
+          <ul>
+            <li>Default service mode with one Free F1 unit.</li>
+            <li>Local key authentication disabled.</li>
+            <li>API and processing identities receive App Server roles.</li>
+            <li>Dashboard origin is the only configured browser origin.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="hosting">
+      <div class="panel-heading">
+        <div>
+          <h2>Deployment topology</h2>
+          <p>
+            Angular and the API have separate hostnames. The browser downloads
+            static assets from Static Web Apps, then calls the Container App and
+            establishes a SignalR connection.
+          </p>
+        </div>
+      </div>
+
+      <div class="architecture">
+        <div class="zone">
+          <h3>Browser and frontend edge</h3>
+          <div class="service angular">
+            <strong>Azure Static Web Apps</strong>
+            <small><code>blue-bush-0491f9503.7.azurestaticapps.net</code></small>
+          </div>
+          <div class="service angular">
+            <strong>Angular 21 application</strong>
+            <small>Dashboard, Status, Arrivals and Alerts lazy routes.</small>
+          </div>
+          <div class="service security">
+            <strong>staticwebapp.config.json</strong>
+            <small>SPA fallback, CSP, frame denial and content-type protections.</small>
+          </div>
+        </div>
+
+        <div class="connector">
+          HTTPS + CORS
+          <i></i>
+        </div>
+
+        <div class="zone">
+          <h3>API and connection layer</h3>
+          <div class="service api">
+            <strong>Container Apps HTTPS ingress</strong>
+            <small>External TLS endpoint routes to port 8080.</small>
+          </div>
+          <div class="service api">
+            <strong>ASP.NET Core Web API</strong>
+            <small>Controllers, health endpoint and <code>DashboardHub</code>.</small>
+          </div>
+          <div class="service signalr">
+            <strong>Azure SignalR Service</strong>
+            <small>Negotiation, persistent connections and message fan-out.</small>
+          </div>
+        </div>
+
+        <div class="connector">
+          Managed identity
+          <i></i>
+        </div>
+
+        <div class="zone">
+          <h3>Data and platform services</h3>
+          <div class="service storage">
+            <strong>Cosmos DB</strong>
+            <small>Arrival and current line-status queries.</small>
+          </div>
+          <div class="service storage">
+            <strong>Azure SQL</strong>
+            <small>Alert history queried by the API identity.</small>
+          </div>
+          <div class="service storage">
+            <strong>Storage account</strong>
+            <small>Supporting platform storage and processing artifacts.</small>
+          </div>
+          <div class="service security">
+            <strong>Application Insights</strong>
+            <small>API request, dependency and failure telemetry.</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="rest">
+      <div class="panel-heading">
+        <div>
+          <h2>REST query path: authoritative page state</h2>
+          <p>
+            Every page begins with an HTTP query. This gives Angular a complete,
+            authoritative snapshot even when it opens after earlier SignalR
+            messages were sent.
+          </p>
+        </div>
+        <span class="pill" style="--tone: var(--api)">Request / response</span>
+      </div>
+
+      <div class="architecture">
+        <div class="zone">
+          <h3>Angular client</h3>
+          <div class="service angular">
+            <strong>ApiService</strong>
+            <small>Uses the production Container App base URL.</small>
+          </div>
+          <div class="service angular">
+            <strong>Route component signals</strong>
+            <small>Store loading, error and response state.</small>
+          </div>
+        </div>
+
+        <div class="connector">
+          JSON over HTTPS
+          <i></i>
+        </div>
+
+        <div class="zone">
+          <h3>Container App API</h3>
+          <div class="service api">
+            <strong>ASP.NET Core controllers</strong>
+            <small>Thin HTTP layer over application repository interfaces.</small>
+          </div>
+          <div class="service security">
+            <strong>CORS policy: Dashboard</strong>
+            <small>Allows the exact Static Web App origin with credentials.</small>
+          </div>
+        </div>
+
+        <div class="connector">
+          Repository query
+          <i></i>
+        </div>
+
+        <div class="zone">
+          <h3>Storage reads</h3>
+          <div class="service storage">
+            <strong>Cosmos DB repositories</strong>
+            <small>Station arrivals and line-status summaries.</small>
+          </div>
+          <div class="service storage">
+            <strong>SQL alert repository</strong>
+            <small>Recent alert history from <code>dbo.Alerts</code>.</small>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem; overflow-x: auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Angular route</th>
+              <th>API endpoint</th>
+              <th>Primary source</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/dashboard</code></td>
+              <td><code>GET /api/dashboard/summary</code></td>
+              <td>Cosmos DB + Azure SQL</td>
+              <td>Counts monitored lines, disruptions, stations, alerts and latest event.</td>
+            </tr>
+            <tr>
+              <td><code>/status</code></td>
+              <td><code>GET /api/lines/status</code></td>
+              <td>Cosmos DB <code>line-status</code></td>
+              <td>Returns the current service state for each monitored line.</td>
+            </tr>
+            <tr>
+              <td><code>/arrivals</code></td>
+              <td><code>GET /api/stations/{id}/arrivals</code></td>
+              <td>Cosmos DB <code>live-events</code></td>
+              <td>Returns recent predictions for the selected station.</td>
+            </tr>
+            <tr>
+              <td><code>/alerts</code></td>
+              <td><code>GET /api/alerts</code></td>
+              <td>Azure SQL <code>dbo.Alerts</code></td>
+              <td>Returns recent Durable workflow alert outcomes.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="realtime">
+      <div class="panel-heading">
+        <div>
+          <h2>How Azure SignalR improves the Angular dashboard</h2>
+          <p>
+            REST remains the source of a complete snapshot. SignalR complements
+            it with incremental updates, reducing stale screens and avoiding a
+            separate polling loop on every open dashboard.
+          </p>
+        </div>
+        <span class="pill" style="--tone: var(--signalr)">Server push</span>
+      </div>
+
+      <ol class="sequence">
+        <li>
+          <span class="actor">Angular SignalRService</span>
+          <span class="direction">→</span>
+          <span class="message">
+            Connects to <code>/hubs/dashboard</code> using the Microsoft SignalR
+            client and enables automatic reconnect.
+          </span>
+        </li>
+        <li>
+          <span class="actor">Container App API</span>
+          <span class="direction">→</span>
+          <span class="message">
+            ASP.NET Core Azure SignalR integration negotiates the client
+            connection using the API user-assigned managed identity.
+          </span>
+        </li>
+        <li>
+          <span class="actor">Azure SignalR Service</span>
+          <span class="direction">→</span>
+          <span class="message">
+            Holds the persistent client connection independently of Container
+            App replica lifetime and scale-to-zero cycles.
+          </span>
+        </li>
+        <li>
+          <span class="actor">Processing Functions</span>
+          <span class="direction">→</span>
+          <span class="message">
+            After persistence, publish <code>arrivalsUpdated</code>,
+            <code>lineStatusChanged</code>, or <code>alertRaised</code> through
+            Azure SignalR's REST endpoint using managed identity.
+          </span>
+        </li>
+        <li>
+          <span class="actor">Angular signals and effects</span>
+          <span class="direction">→</span>
+          <span class="message">
+            Update the relevant page immediately or trigger a focused API
+            refresh without reloading the application.
+          </span>
+        </li>
+      </ol>
+
+      <div class="benefits">
+        <article class="benefit">
+          <strong>Lower latency</strong>
+          <span>New arrivals, disruptions and alerts appear shortly after processing.</span>
+        </article>
+        <article class="benefit">
+          <strong>Less browser polling</strong>
+          <span>One connection replaces frequent per-page HTTP refresh loops.</span>
+        </article>
+        <article class="benefit">
+          <strong>Independent scaling</strong>
+          <span>SignalR retains client connections while API replicas scale separately.</span>
+        </article>
+        <article class="benefit">
+          <strong>Resilient UX</strong>
+          <span>Automatic reconnect plus manual refresh keeps the dashboard recoverable.</span>
+        </article>
+      </div>
+
+      <div class="tradeoff">
+        SignalR messages are transient notifications, not the system of record.
+        A newly opened or reconnected page still queries the Web API so Cosmos
+        DB and Azure SQL remain the authoritative state.
+      </div>
+    </section>
+
+    <section class="panel" data-panel="security">
+      <div class="panel-heading">
+        <div>
+          <h2>Security, scaling and operational boundaries</h2>
+          <p>
+            The browser is intentionally separated from Azure data services.
+            It receives public application data only through the API and
+            SignalR contracts.
+          </p>
+        </div>
+        <span class="pill" style="--tone: var(--security)">Managed identity first</span>
+      </div>
+
+      <div class="security-grid">
+        <article class="security-card">
+          <h3>Container image delivery</h3>
+          <p>
+            The API image is stored in private Basic ACR. The Container App's
+            user-assigned identity has <code>AcrPull</code>; ACR admin
+            credentials are disabled.
+          </p>
+        </article>
+        <article class="security-card">
+          <h3>Data-plane access</h3>
+          <p>
+            The API identity queries Cosmos DB and Azure SQL using Azure
+            credentials and RBAC/database grants rather than browser-visible
+            connection strings.
+          </p>
+        </article>
+        <article class="security-card">
+          <h3>SignalR publishing</h3>
+          <p>
+            API and Processing Function identities have the SignalR App Server
+            role. Local key authentication is disabled and AAD authentication
+            remains enabled.
+          </p>
+        </article>
+        <article class="security-card">
+          <h3>Browser boundaries</h3>
+          <p>
+            API CORS allows the exact Static Web App origin. Static Web Apps CSP
+            restricts scripts and <code>connect-src</code> to the API hostname.
+          </p>
+        </article>
+        <article class="security-card">
+          <h3>Cost-conscious API scaling</h3>
+          <p>
+            Container Apps Consumption scales to zero when idle and caps at two
+            replicas. The first request after idle may experience a cold start.
+          </p>
+        </article>
+        <article class="security-card">
+          <h3>Service health and telemetry</h3>
+          <p>
+            Container Apps probes <code>/health/live</code>. Application
+            Insights captures API requests and dependencies; SignalR
+            connectivity logs are available through diagnostics.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Implementation sources:
+    <code>infra/bicep/modules/api-hosting.bicep</code>,
+    <code>infra/bicep/modules/realtime.bicep</code>,
+    <code>TflAnalytics.Api/Program.cs</code>, and the Angular
+    <code>ApiService</code> and <code>SignalRService</code>.
+    Return to the broader
+    <a href="./architecture-diagram.html">event and data-flow diagram</a>.
+  </footer>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-view]");
+    const panels = document.querySelectorAll("[data-panel]");
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+
+        buttons.forEach(candidate => {
+          candidate.setAttribute(
+            "aria-pressed",
+            String(candidate === button)
+          );
+        });
+
+        panels.forEach(panel => {
+          panel.hidden = view !== "all" && panel.dataset.panel !== view;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

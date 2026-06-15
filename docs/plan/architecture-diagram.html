@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="description"
+    content="Interactive HTML architecture and event-flow diagram for the TfL Analytics platform."
+  >
+  <title>TfL Analytics | Azure Event And Data Flow</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #10233d;
+      --muted: #607389;
+      --line: #d7e1e9;
+      --surface: #ffffff;
+      --canvas: #eef3f7;
+      --azure: #0078d4;
+      --arrival: #0067b1;
+      --status: #6950a1;
+      --alert: #dc241f;
+      --audit: #a86500;
+      --realtime: #008b83;
+      --shadow: 0 1rem 2.8rem rgba(16, 35, 61, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 85% 0, rgba(0, 120, 212, 0.12), transparent 30rem),
+        linear-gradient(180deg, #f8fbfd, var(--canvas));
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    header,
+    main,
+    footer {
+      width: min(1440px, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+
+    header {
+      padding: clamp(2.5rem, 6vw, 5.5rem) 0 2rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.65rem;
+      color: var(--azure);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 850px;
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.06em;
+    }
+
+    .intro {
+      max-width: 780px;
+      margin: 1.1rem 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.55rem;
+      align-items: center;
+      margin-top: 1.6rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar span {
+      margin-right: 0.25rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    button {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid #c7d4de;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.8);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button[aria-pressed="true"] {
+      border-color: var(--azure);
+      color: #fff;
+      background: var(--azure);
+    }
+
+    button:focus-visible {
+      outline: 3px solid #f6a800;
+      outline-offset: 2px;
+    }
+
+    .diagram {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .shared-context,
+    .flow-lane,
+    .read-path {
+      border: 1px solid var(--line);
+      border-radius: 1.1rem;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .shared-context {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      overflow: hidden;
+      background: var(--line);
+    }
+
+    .context-card {
+      min-height: 7.5rem;
+      padding: 1.15rem;
+      background: #fff;
+    }
+
+    .context-card small,
+    .node small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .context-card strong,
+    .node strong {
+      display: block;
+      margin: 0.35rem 0;
+      line-height: 1.3;
+    }
+
+    .service-type {
+      color: var(--azure);
+      font-size: 0.62rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .flow-lane {
+      --flow: var(--arrival);
+      padding: clamp(1rem, 2.5vw, 1.5rem);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .flow-lane[data-flow="status"] {
+      --flow: var(--status);
+    }
+
+    .flow-lane[data-flow="alert"] {
+      --flow: var(--alert);
+    }
+
+    .flow-lane[data-flow="audit"] {
+      --flow: var(--audit);
+    }
+
+    .flow-lane[hidden] {
+      display: none;
+    }
+
+    .lane-heading {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .lane-heading h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.025em;
+    }
+
+    .lane-heading p {
+      max-width: 720px;
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.55;
+    }
+
+    .event-type {
+      flex: 0 0 auto;
+      padding: 0.38rem 0.62rem;
+      border: 1px solid color-mix(in srgb, var(--flow) 35%, white);
+      border-radius: 999px;
+      color: var(--flow);
+      background: color-mix(in srgb, var(--flow) 9%, white);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 750;
+    }
+
+    .flow {
+      display: flex;
+      padding: 0.1rem 0 0.55rem;
+      overflow-x: auto;
+      scrollbar-color: #b8c8d4 transparent;
+      scrollbar-width: thin;
+    }
+
+    .step {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: stretch;
+    }
+
+    .node {
+      position: relative;
+      width: 10rem;
+      min-height: 8.2rem;
+      padding: 0.85rem;
+      border: 1px solid #dbe4eb;
+      border-top: 0.3rem solid var(--flow);
+      border-radius: 0.8rem;
+      background: #f9fbfc;
+    }
+
+    .node.storage {
+      border-color: color-mix(in srgb, var(--flow) 32%, #dbe4eb);
+      background: color-mix(in srgb, var(--flow) 5%, white);
+    }
+
+    .node.storage::after {
+      position: absolute;
+      right: 0.7rem;
+      bottom: 0.55rem;
+      color: var(--flow);
+      content: "LANDS HERE";
+      font-size: 0.54rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .contract {
+      display: inline-block;
+      margin-top: 0.45rem;
+      padding: 0.2rem 0.35rem;
+      border-radius: 0.3rem;
+      color: var(--flow);
+      background: color-mix(in srgb, var(--flow) 8%, white);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.58rem;
+      overflow-wrap: anywhere;
+    }
+
+    .arrow {
+      display: flex;
+      width: 2.6rem;
+      align-items: center;
+      color: color-mix(in srgb, var(--flow) 70%, #7d8b99);
+    }
+
+    .arrow span {
+      width: 100%;
+      border-top: 2px solid currentColor;
+    }
+
+    .arrow::after {
+      width: 0;
+      height: 0;
+      border-top: 0.3rem solid transparent;
+      border-bottom: 0.3rem solid transparent;
+      border-left: 0.45rem solid currentColor;
+      content: "";
+    }
+
+    .branch-note {
+      margin: 0.7rem 0 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+
+    .read-path {
+      padding: clamp(1rem, 2.5vw, 1.5rem);
+    }
+
+    .read-path h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+    }
+
+    .read-path > p {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .read-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .read-card {
+      padding: 1rem;
+      border: 1px solid #dbe4eb;
+      border-radius: 0.8rem;
+      background: #f9fbfc;
+    }
+
+    .read-card strong {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 0.82rem;
+    }
+
+    .read-card span {
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.45;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      margin: 1.2rem 0 0;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    .legend i {
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 50%;
+      background: var(--colour);
+    }
+
+    footer {
+      padding: 2rem 0 3rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.6;
+    }
+
+    footer code {
+      color: var(--ink);
+    }
+
+    @media (max-width: 900px) {
+      .shared-context,
+      .read-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .lane-heading {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .shared-context,
+      .read-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar span {
+        width: 100%;
+      }
+
+      .node {
+        width: 8.8rem;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .flow-lane[hidden] {
+        display: block;
+      }
+
+      .shared-context,
+      .flow-lane,
+      .read-path {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">TfL Analytics Architecture</p>
+    <h1>Azure event and data flow</h1>
+    <p class="intro">
+      This diagram expands the architecture in <code>Plan.md</code> by showing
+      each implemented event contract, how it moves through the Azure services,
+      and the storage destination where each data product lands.
+    </p>
+
+    <div class="toolbar" aria-label="Filter event flows">
+      <span>Show flow</span>
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="arrival" aria-pressed="false">Live event</button>
+      <button type="button" data-filter="status" aria-pressed="false">Line status</button>
+      <button type="button" data-filter="alert" aria-pressed="false">Alert</button>
+      <button type="button" data-filter="audit" aria-pressed="false">Alert audit</button>
+    </div>
+
+    <div class="legend" aria-label="Flow colour legend">
+      <span><i style="--colour: var(--arrival)"></i>Arrival live event</span>
+      <span><i style="--colour: var(--status)"></i>Line status</span>
+      <span><i style="--colour: var(--alert)"></i>Alert workflow</span>
+      <span><i style="--colour: var(--audit)"></i>Alert audit</span>
+      <span><i style="--colour: var(--realtime)"></i>API and real-time delivery</span>
+    </div>
+  </header>
+
+  <main class="diagram">
+    <section class="shared-context" aria-label="Shared ingestion services">
+      <article class="context-card">
+        <span class="service-type">Source</span>
+        <strong>TfL Unified API</strong>
+        <small>Arrival predictions and Underground line status.</small>
+      </article>
+      <article class="context-card">
+        <span class="service-type">Security</span>
+        <strong>Azure Key Vault</strong>
+        <small>TfL API key read through managed identity.</small>
+      </article>
+      <article class="context-card">
+        <span class="service-type">Compute</span>
+        <strong>Ingestion Functions</strong>
+        <small><code>PollArrivals</code> every 30 seconds and <code>PollLineStatus</code> every two minutes.</small>
+      </article>
+      <article class="context-card">
+        <span class="service-type">Event backbone</span>
+        <strong>Azure Event Hubs</strong>
+        <small><code>tfl-events</code> carries versioned event envelopes.</small>
+      </article>
+    </section>
+
+    <section class="flow-lane" data-flow="arrival">
+      <div class="lane-heading">
+        <div>
+          <h2>Live event: arrival prediction</h2>
+          <p>
+            A station arrival prediction is archived unchanged, normalized for
+            fast queries, evaluated for prediction slippage, and pushed to the
+            live dashboard.
+          </p>
+        </div>
+        <span class="event-type">ArrivalPredictionObserved</span>
+      </div>
+      <div class="flow" aria-label="ArrivalPredictionObserved flow">
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Function</span>
+            <strong>PollArrivals</strong>
+            <small>Creates a deterministic versioned envelope.</small>
+            <span class="contract">EventEnvelope&lt;ArrivalPredictionObserved&gt;</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Messaging</span>
+            <strong>Event Hubs</strong>
+            <small>Publishes to <code>tfl-events</code>.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Function</span>
+            <strong>ArchiveEventHubEvents</strong>
+            <small>Archives raw JSON and queues a lightweight pointer.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">Raw storage</span>
+            <strong>Blob / Data Lake raw</strong>
+            <small>Gzip JSON partitioned by date and station.</small>
+            <span class="contract">eventType=arrival/.../stationId=...</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Queue + Function</span>
+            <strong>processing → ProcessQueuedEvent</strong>
+            <small>Validates, deduplicates and normalizes.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">Operational store</span>
+            <strong>Cosmos DB: live-events</strong>
+            <small>Partition key <code>/stationId</code>; seven-day TTL.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Real time</span>
+            <strong>Azure SignalR</strong>
+            <small>Broadcasts the browser update.</small>
+            <span class="contract">arrivalsUpdated</span>
+          </article>
+        </div>
+      </div>
+      <p class="branch-note">
+        Alert branch: a prediction slipping by more than 120 seconds creates an
+        <code>ArrivalPredictionSlippage</code> alert candidate.
+      </p>
+    </section>
+
+    <section class="flow-lane" data-flow="status">
+      <div class="lane-heading">
+        <div>
+          <h2>Line status</h2>
+          <p>
+            A line observation follows the same archive and queue backbone but
+            lands in a line-partitioned Cosmos container and can trigger a
+            disruption alert when status worsens.
+          </p>
+        </div>
+        <span class="event-type">LineStatusObserved</span>
+      </div>
+      <div class="flow" aria-label="LineStatusObserved flow">
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Function</span>
+            <strong>PollLineStatus</strong>
+            <small>Wraps the current status in a versioned envelope.</small>
+            <span class="contract">EventEnvelope&lt;LineStatusObserved&gt;</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Messaging</span>
+            <strong>Event Hubs</strong>
+            <small>Publishes to <code>tfl-events</code>.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Function</span>
+            <strong>ArchiveEventHubEvents</strong>
+            <small>Archives the raw event and queues processing.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">Raw storage</span>
+            <strong>Blob / Data Lake raw</strong>
+            <small>Gzip JSON partitioned by date and line.</small>
+            <span class="contract">eventType=line-status/.../lineId=...</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Queue + Function</span>
+            <strong>processing → ProcessQueuedEvent</strong>
+            <small>Compares the previous line observation.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">Operational store</span>
+            <strong>Cosmos DB: line-status</strong>
+            <small>Partition key <code>/lineId</code>; seven-day TTL.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Real time</span>
+            <strong>Azure SignalR</strong>
+            <small>Broadcasts the status change.</small>
+            <span class="contract">lineStatusChanged</span>
+          </article>
+        </div>
+      </div>
+      <p class="branch-note">
+        Alert branch: a good-to-disrupted transition creates a
+        <code>LineStatusDisruption</code> alert candidate.
+      </p>
+    </section>
+
+    <section class="flow-lane" data-flow="alert">
+      <div class="lane-heading">
+        <div>
+          <h2>Alert workflow</h2>
+          <p>
+            Qualifying arrival or line-status transitions start an idempotent
+            Durable Functions orchestration with retried activities.
+          </p>
+        </div>
+        <span class="event-type">AlertCandidate → AlertRaised</span>
+      </div>
+      <div class="flow" aria-label="Alert workflow">
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Rule output</span>
+            <strong>AlertCandidate</strong>
+            <small>Deterministic alert ID and source event ID.</small>
+            <span class="contract">ArrivalPredictionSlippage | LineStatusDisruption</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Orchestration</span>
+            <strong>AlertOrchestration</strong>
+            <small>Durable instance ID equals the alert ID.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Activity</span>
+            <strong>PersistAlert</strong>
+            <small>Idempotent insert; duplicate keys are accepted safely.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">System of record</span>
+            <strong>Azure SQL: dbo.Alerts</strong>
+            <small>Alert history keyed by <code>AlertId</code>.</small>
+            <span class="contract">SourceEventId, RuleType, DetectedAtUtc</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Activity</span>
+            <strong>BroadcastAlert</strong>
+            <small>Publishes the completed alert outcome.</small>
+            <span class="contract">AlertRaised</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Real time</span>
+            <strong>Azure SignalR</strong>
+            <small>Pushes the alert to connected clients.</small>
+            <span class="contract">alertRaised</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="flow-lane" data-flow="audit">
+      <div class="lane-heading">
+        <div>
+          <h2>Alert audit</h2>
+          <p>
+            The Durable workflow writes a separate low-cost audit entity after
+            SQL persistence, preserving the workflow action and source linkage.
+          </p>
+        </div>
+        <span class="event-type">Action: AlertRaised</span>
+      </div>
+      <div class="flow" aria-label="Alert audit flow">
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Orchestration</span>
+            <strong>AlertOrchestration</strong>
+            <small>Continues after the SQL activity.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Activity</span>
+            <strong>WriteAlertAudit</strong>
+            <small>Upserts an audit entity using the alert identity.</small>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node storage">
+            <span class="service-type">Audit store</span>
+            <strong>Table Storage: audit</strong>
+            <small>
+              Partition key is the rule type; row key is the alert ID.
+            </small>
+            <span class="contract">Action=AlertRaised, SourceEventId</span>
+          </article>
+          <div class="arrow"><span></span></div>
+        </div>
+        <div class="step">
+          <article class="node">
+            <span class="service-type">Activity</span>
+            <strong>Mock notification</strong>
+            <small>Logs the notification outcome for the portfolio workflow.</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="read-path" aria-label="API and dashboard read paths">
+      <h2>API and dashboard read paths</h2>
+      <p>
+        The write flows above create the stores. The Web API queries those
+        stores, while SignalR supplies low-latency updates between refreshes.
+      </p>
+      <div class="read-grid">
+        <article class="read-card">
+          <strong>Cosmos DB: live-events</strong>
+          <span><code>GET /api/stations/{stationId}/arrivals</code> → Arrivals page</span>
+        </article>
+        <article class="read-card">
+          <strong>Cosmos DB: line-status</strong>
+          <span><code>GET /api/lines/status</code> → Line status page</span>
+        </article>
+        <article class="read-card">
+          <strong>Azure SQL: dbo.Alerts</strong>
+          <span><code>GET /api/alerts</code> → Alerts page</span>
+        </article>
+        <article class="read-card">
+          <strong>Combined operational state</strong>
+          <span><code>GET /api/dashboard/summary</code> → Dashboard page</span>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Source of truth: <code>Plan.md</code>, event contracts in
+    <code>TflAnalytics.Contracts</code>, and the current Infrastructure and
+    Processing Functions implementations. Application Insights and Log
+    Analytics receive telemetry across the Functions and API but are omitted
+    from individual lanes to keep the primary data paths readable. See the
+    detailed
+    <a href="./api-dashboard-architecture.html">API, Angular and SignalR hosting diagram</a>.
+  </footer>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-filter]");
+    const lanes = document.querySelectorAll("[data-flow]");
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const filter = button.dataset.filter;
+
+        buttons.forEach(candidate => {
+          candidate.setAttribute(
+            "aria-pressed",
+            String(candidate === button)
+          );
+        });
+
+        lanes.forEach(lane => {
+          lane.hidden = filter !== "all" && lane.dataset.flow !== filter;
+        });
+      });
+    });
+  </script>
+</body>
+</html>
