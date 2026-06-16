@@ -17,7 +17,7 @@ export class DataFlowExplainerComponent {
   readonly eventType = input.required<string>();
   readonly steps = input.required<readonly DataFlowStep[]>();
 
-  protected readonly expanded = signal(false);
+  protected readonly expanded = signal(true);
 
   protected toggle(): void {
     this.expanded.update(value => !value);

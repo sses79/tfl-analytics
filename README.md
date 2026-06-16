@@ -9,12 +9,22 @@ and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 
 ## Architecture Diagrams
 
-- [Azure event and data flow](./docs/plan/architecture-diagram.html) shows how
+- [Azure event and data flow](./docs/plan/architecture-diagram.md) shows how
   arrival, line-status, alert, and audit data move through Functions, Event
   Hubs, Storage, Cosmos DB, Azure SQL, SignalR, and the dashboard.
-- [API and dashboard architecture](./docs/plan/api-dashboard-architecture.html)
+- [API and dashboard architecture](./docs/plan/api-dashboard-architecture.md)
   explains how Angular and the ASP.NET Core Web API are hosted in Azure, how
   REST queries reach the data stores, and how SignalR delivers live updates.
+
+## Azure Services
+
+![Angular dashboard static web app](docs/images/Angular-dashboad-static-web-app.png)
+
+![Web API Container App](docs/images/Web-api-Container-app.png)
+
+![Function App Processing Functions](docs/images/Function-App-processing-functions.png)
+
+![Storage Browser, queues/Blob containers](docs/images/storage-browser.png)
 
 ## Repository
 

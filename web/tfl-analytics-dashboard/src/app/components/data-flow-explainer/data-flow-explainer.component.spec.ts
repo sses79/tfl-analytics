@@ -25,14 +25,8 @@ describe('DataFlowExplainerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('reveals and hides the flow diagram', () => {
+  it('shows the flow diagram by default and allows hiding it', () => {
     const button = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
-
-    expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(fixture.nativeElement.querySelector('.flow-panel')).toBeNull();
-
-    button.click();
-    fixture.detectChanges();
 
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(fixture.nativeElement.querySelectorAll('.flow-node')).toHaveLength(2);
@@ -43,5 +37,11 @@ describe('DataFlowExplainerComponent', () => {
 
     expect(button.getAttribute('aria-expanded')).toBe('false');
     expect(fixture.nativeElement.querySelector('.flow-panel')).toBeNull();
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('.flow-node')).toHaveLength(2);
   });
 });
