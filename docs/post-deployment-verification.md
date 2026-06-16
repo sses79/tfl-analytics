@@ -17,11 +17,11 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 15, 2026 |
-| Git commit | `8f742bc` |
+| Date | June 16, 2026 |
+| Git commit | `afcfb29` plus local dashboard explainer and deployment-script changes |
 | ARM deployment | Not applicable; Static Web Apps CLI production release |
 | Provisioning state | `Succeeded` |
-| Scope | Expandable Azure event-flow explainers on all dashboard routes |
+| Scope | Data-flow explainers expanded by default on all dashboard routes; dashboard deployment uses Docker/Linux production build |
 | Cost impact | None; existing Static Web Apps Free tier |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
@@ -31,22 +31,21 @@ Latest verification evidence:
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.
 - `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200
-  with production assets `main-LPVKO4PA.js` and `styles-QDWHA3BV.css`.
-- Each route includes an expandable, accessible diagram describing its
-  demonstrated event contract and path through the relevant Azure services.
-- The reusable explainer component passed its expand/collapse interaction test,
-  and the production build emitted it as a shared lazy chunk.
-- The production HTML loads the global stylesheet with a normal blocking link,
-  avoiding the CSP-blocked inline `onload` handler from the previous release.
-- The arrivals page maps the five configured station IDs to display names when
-  the API returns a null name, and all refresh actions use the shared icon style.
+  with production assets `main-XKZNKGT2.js` and `styles-QDWHA3BV.css`.
+- The reusable data-flow explainer now renders expanded by default on each
+  route and can still be hidden or shown with the existing toggle control.
+- The reusable explainer component passed its default-expanded and
+  expand/collapse interaction test.
+- The dashboard deployment script built the production Angular bundle through
+  the Linux Docker image before publishing the copied Nginx artifact.
 - The API health endpoint returned `healthy`.
 - Dashboard APIs returned 11 monitored lines, five monitored stations, and 50
-  recent alerts; the summary endpoint reported live event data.
+  recent alerts; the summary endpoint reported live event data at
+  `2026-06-16T10:00:00.1351613+00:00`.
 - Ingestion and processing Function health endpoints returned `healthy`.
-- Data-service, workload RBAC, and diagnostic-setting smoke tests passed.
-- No Bicep or Azure resource configuration changed, so an ARM what-if was not
-  required for this content-only release.
+- Bicep build passed and ARM what-if was run before release. No ARM deployment
+  was applied; the what-if output showed existing template/drift noise only, no
+  intentional resource creates or deletes, and no cost impact.
 
 ## Load Resource Names
 

@@ -6,15 +6,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DASHBOARD_ROOT="$REPOSITORY_ROOT/web/tfl-analytics-dashboard"
 DASHBOARD_OUTPUT="$DASHBOARD_ROOT/dist/tfl-analytics-dashboard/browser"
+DASHBOARD_IMAGE="tfl-analytics-dashboard-deploy:latest"
 
 cd "$REPOSITORY_ROOT"
 source "$SCRIPT_DIR/load-azure-outputs.sh"
 
-(
-  cd "$DASHBOARD_ROOT"
-  npm ci
-  npm run build
-)
+docker build \
+  --build-arg BUILD_CONFIGURATION=production \
+  --file web/tfl-analytics-dashboard/Dockerfile \
+  --tag "$DASHBOARD_IMAGE" \
+  .
+
+container_id="$(docker create "$DASHBOARD_IMAGE")"
+cleanup() {
+  docker rm "$container_id" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+rm -rf "$DASHBOARD_OUTPUT"
+mkdir -p "$(dirname "$DASHBOARD_OUTPUT")"
+docker cp "$container_id:/usr/share/nginx/html" "$DASHBOARD_OUTPUT"
 
 deployment_token="$(az staticwebapp secrets list \
   --name "$STATIC_WEB_APP" \
