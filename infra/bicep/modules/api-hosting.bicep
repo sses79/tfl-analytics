@@ -3,7 +3,7 @@ param registryName string
 param environmentName string
 param apiAppName string
 param apiIdentityName string
-param applicationInsightsName string
+param applicationInsightsName string = ''
 param keyVaultName string
 param dashboardOrigin string
 param signalRHostname string
@@ -20,8 +20,10 @@ var acrPullRoleDefinitionId = subscriptionResourceId(
   '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 )
 
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: applicationInsightsName
+var observabilityEnabled = !empty(applicationInsightsName)
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (observabilityEnabled) {
+  name: observabilityEnabled ? applicationInsightsName : 'unused'
 }
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
@@ -59,9 +61,9 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   location: location
   tags: tags
   properties: {
-    appLogsConfiguration: {
+    appLogsConfiguration: observabilityEnabled ? {
       destination: 'azure-monitor'
-    }
+    } : null
     zoneRedundant: false
   }
 }
@@ -98,7 +100,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
         {
           name: 'api'
           image: '${registry.properties.loginServer}/tfl-analytics-api:${apiImageTag}'
-          env: [
+          env: concat([
             {
               name: 'ASPNETCORE_ENVIRONMENT'
               value: 'Production'
@@ -106,10 +108,6 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'AZURE_CLIENT_ID'
               value: apiIdentity.properties.clientId
-            }
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: applicationInsights.properties.ConnectionString
             }
             {
               name: 'KeyVault__Name'
@@ -176,7 +174,12 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
               name: 'DD_SERVICE'
               value: 'tfl-analytics-api'
             }
-          ]
+          ], observabilityEnabled ? [
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: applicationInsights.?properties.ConnectionString ?? ''
+            }
+          ] : [])
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'

@@ -214,7 +214,7 @@ services:
       AlertStorage__ConnectionString: Server=sql,1433;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True
       AlertStorage__DatabaseName: tfl-analytics
       AlertStorage__Initialize: "true"
-      Alerts__ArrivalSlippageThresholdSeconds: "120"
+      Alerts__ArrivalSlippageThresholdSeconds: "600"
       Alerts__GoodServiceSeverity: "10"
       SignalR__RelayBaseUrl: http://api:8080/internal/realtime
       DD_AGENT_HOST: datadog-agent
