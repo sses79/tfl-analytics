@@ -2,8 +2,14 @@
   "version": "2.0",
   "logging": {
     "logLevel": {
-      "Default": "Information",
+      "Default": "Warning",
       "System.Net.Http.HttpClient": "Warning"
+    },
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
     }
   },
   "extensions": {

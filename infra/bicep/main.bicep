@@ -13,6 +13,9 @@ param environmentName string = 'dev'
 param projectName string = 'tfl-analytics'
 
 param deployApiContainer bool = false
+
+@description('Deploy Log Analytics workspace and Application Insights. Disabled by default to avoid AppTraces ingestion cost.')
+param enableObservability bool = false
 param apiImageTag string = 'dev'
 param sqlLocation string = 'centralus'
 param apiIdentityPrincipalId string = ''
@@ -57,7 +60,7 @@ module keyVault 'modules/key-vault.bicep' = {
   }
 }
 
-module observability 'modules/observability.bicep' = {
+module observability 'modules/observability.bicep' = if (enableObservability) {
   name: 'observability'
   params: {
     location: location
@@ -82,7 +85,7 @@ module compute 'modules/compute.bicep' = {
     storageAccountName: storageAccountName
     ingestionDeploymentContainerName: 'function-ingestion-deployments'
     processingDeploymentContainerName: 'function-processing-deployments'
-    applicationInsightsName: applicationInsightsName
+    applicationInsightsName: observability.?outputs.applicationInsightsName ?? ''
     keyVaultName: keyVaultName
     eventHubsNamespaceName: messaging.outputs.namespaceName
     eventHubName: messaging.outputs.eventHubName
@@ -99,7 +102,6 @@ module compute 'modules/compute.bicep' = {
   dependsOn: [
     storage
     keyVault
-    observability
   ]
 }
 
@@ -111,7 +113,7 @@ module apiHosting 'modules/api-hosting.bicep' = {
     environmentName: 'cae-${projectName}-${environmentName}-${suffix}'
     apiAppName: 'ca-tfl-api-${environmentName}-${suffix}'
     apiIdentityName: 'id-${projectName}-api-${environmentName}-${suffix}'
-    applicationInsightsName: applicationInsightsName
+    applicationInsightsName: observability.?outputs.applicationInsightsName ?? ''
     keyVaultName: keyVaultName
     dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
     signalRHostname: signalRHostname
@@ -124,7 +126,6 @@ module apiHosting 'modules/api-hosting.bicep' = {
   }
   dependsOn: [
     keyVault
-    observability
   ]
 }
 
@@ -187,10 +188,10 @@ module workloadRbac 'modules/workload-rbac.bicep' = {
   }
 }
 
-module diagnostics 'modules/diagnostics.bicep' = {
+module diagnostics 'modules/diagnostics.bicep' = if (enableObservability) {
   name: 'diagnostics'
   params: {
-    logAnalyticsWorkspaceId: observability.outputs.logAnalyticsWorkspaceId
+    logAnalyticsWorkspaceId: observability.?outputs.logAnalyticsWorkspaceId ?? ''
     keyVaultName: keyVault.outputs.keyVaultName
     eventHubsNamespaceName: messaging.outputs.namespaceName
     cosmosAccountName: cosmos.outputs.accountName
@@ -204,8 +205,8 @@ output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultName string = keyVault.outputs.keyVaultName
 output eventHubsNamespaceName string = messaging.outputs.namespaceName
 output eventHubName string = messaging.outputs.eventHubName
-output applicationInsightsName string = observability.outputs.applicationInsightsName
-output logAnalyticsWorkspaceName string = observability.outputs.logAnalyticsWorkspaceName
+output applicationInsightsName string = observability.?outputs.applicationInsightsName ?? ''
+output logAnalyticsWorkspaceName string = observability.?outputs.logAnalyticsWorkspaceName ?? ''
 output containerRegistryName string = apiHosting.outputs.registryName
 output containerRegistryLoginServer string = apiHosting.outputs.registryLoginServer
 output containerAppsEnvironmentName string = apiHosting.outputs.containerAppsEnvironmentName

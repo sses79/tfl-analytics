@@ -10,7 +10,7 @@ param staticWebAppName string
 param storageAccountName string
 param ingestionDeploymentContainerName string
 param processingDeploymentContainerName string
-param applicationInsightsName string
+param applicationInsightsName string = ''
 param keyVaultName string
 param eventHubsNamespaceName string
 param eventHubName string
@@ -44,13 +44,15 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
   name: storageAccountName
 }
 
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: applicationInsightsName
+var observabilityEnabled = !empty(applicationInsightsName)
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (observabilityEnabled) {
+  name: observabilityEnabled ? applicationInsightsName : 'unused'
 }
 
 var ingestionDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${ingestionDeploymentContainerName}'
 var processingDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${processingDeploymentContainerName}'
-var applicationInsightsConnectionString = applicationInsights.properties.ConnectionString
+var applicationInsightsConnectionString = applicationInsights.?properties.ConnectionString ?? ''
 var tflApiKeyVaultReference = '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=TflApi--AppKey)'
 
 resource ingestionIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -192,7 +194,7 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
     siteConfig: {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
-      appSettings: [
+      appSettings: concat([
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageAccountName
@@ -208,10 +210,6 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'AZURE_CLIENT_ID'
           value: ingestionIdentity.properties.clientId
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsightsConnectionString
         }
         {
           name: 'KeyVault__Name'
@@ -309,7 +307,12 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'DD_SERVICE'
           value: 'tfl-analytics-ingestion'
         }
-      ]
+      ], observabilityEnabled ? [
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
+        }
+      ] : [])
     }
   }
   dependsOn: [
@@ -357,7 +360,7 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
     siteConfig: {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
-      appSettings: [
+      appSettings: concat([
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageAccountName
@@ -373,10 +376,6 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'AZURE_CLIENT_ID'
           value: processingIdentity.properties.clientId
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsightsConnectionString
         }
         {
           name: 'KeyVault__Name'
@@ -476,7 +475,7 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'Alerts__ArrivalSlippageThresholdSeconds'
-          value: '120'
+          value: '600'
         }
         {
           name: 'Alerts__GoodServiceSeverity'
@@ -490,7 +489,12 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'DD_SERVICE'
           value: 'tfl-analytics-processing'
         }
-      ]
+      ], observabilityEnabled ? [
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
+        }
+      ] : [])
     }
   }
   dependsOn: [
