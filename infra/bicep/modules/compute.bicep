@@ -194,6 +194,11 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
     siteConfig: {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
+      cors: {
+        allowedOrigins: [
+          'https://${staticWebApp.properties.defaultHostname}'
+        ]
+      }
       appSettings: concat([
         {
           name: 'AzureWebJobsStorage__accountName'
@@ -233,11 +238,11 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'IngestionArrivalsSchedule'
-          value: '*/30 * * * * *'
+          value: '0 */5 * * * *'
         }
         {
           name: 'IngestionLineStatusSchedule'
-          value: '0 */2 * * * *'
+          value: '0 */10 * * * *'
         }
         {
           name: 'Ingestion__StationIds__0'
@@ -475,7 +480,7 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'Alerts__ArrivalSlippageThresholdSeconds'
-          value: '600'
+          value: '1200'
         }
         {
           name: 'Alerts__GoodServiceSeverity'

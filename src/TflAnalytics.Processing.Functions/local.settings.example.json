@@ -22,7 +22,7 @@
     "AlertStorage__ConnectionString": "Server=localhost,1433;User Id=sa;Password=SET_IN_LOCAL_SETTINGS;Encrypt=True;TrustServerCertificate=True",
     "AlertStorage__DatabaseName": "tfl-analytics",
     "AlertStorage__Initialize": "true",
-    "Alerts__ArrivalSlippageThresholdSeconds": "600",
+    "Alerts__ArrivalSlippageThresholdSeconds": "1200",
     "Alerts__GoodServiceSeverity": "10"
   }
 }

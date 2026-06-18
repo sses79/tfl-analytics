@@ -14,6 +14,7 @@ import {
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiBaseUrl;
+  private readonly ingestionBase = environment.ingestionBaseUrl;
 
   getStations(): Observable<StationSummary[]> {
     return this.http.get<StationSummary[]>(`${this.base}/api/stations`);
@@ -38,5 +39,12 @@ export class ApiService {
 
   getDashboardSummary(): Observable<DashboardSummary> {
     return this.http.get<DashboardSummary>(`${this.base}/api/dashboard/summary`);
+  }
+
+  triggerPull(): Observable<{ arrivalsPublished: number; lineStatusPublished: number }> {
+    return this.http.post<{ arrivalsPublished: number; lineStatusPublished: number }>(
+      `${this.ingestionBase}/api/pull`,
+      {}
+    );
   }
 }
