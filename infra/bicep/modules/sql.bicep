@@ -64,7 +64,7 @@ resource database 'Microsoft.Sql/servers/databases@2023-08-01' = {
   }
   properties: {
     autoPauseDelay: 60
-    freeLimitExhaustionBehavior: 'AutoPause'
+    freeLimitExhaustionBehavior: 'BillOverUsage'
     maxSizeBytes: 34359738368
     minCapacity: json('0.5')
     readScale: 'Disabled'

@@ -149,6 +149,8 @@ services:
     build:
       context: ../..
       dockerfile: src/TflAnalytics.Ingestion.Functions/Dockerfile
+    ports:
+      - "7071:80"
     environment:
       AzureWebJobsStorage: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://functions-storage:10000/devstoreaccount1;QueueEndpoint=http://functions-storage:10001/devstoreaccount1;TableEndpoint=http://functions-storage:10002/devstoreaccount1;
       AzureFunctionsJobHost__Logging__Console__IsEnabled: "true"
@@ -157,8 +159,8 @@ services:
       TflApi__AppKey: ""
       EventHubs__ConnectionString: Endpoint=sb://eventhubs-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
       EventHubs__EventHubName: tfl-events
-      IngestionArrivalsSchedule: "*/30 * * * * *"
-      IngestionLineStatusSchedule: "0 */2 * * * *"
+      IngestionArrivalsSchedule: "0 */5 * * * *"
+      IngestionLineStatusSchedule: "0 */10 * * * *"
       Ingestion__StationIds__0: 940GZZLUVIC
       Ingestion__StationIds__1: 940GZZLUOXC
       Ingestion__StationIds__2: 940GZZLUGPK
@@ -214,7 +216,7 @@ services:
       AlertStorage__ConnectionString: Server=sql,1433;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True
       AlertStorage__DatabaseName: tfl-analytics
       AlertStorage__Initialize: "true"
-      Alerts__ArrivalSlippageThresholdSeconds: "600"
+      Alerts__ArrivalSlippageThresholdSeconds: "1200"
       Alerts__GoodServiceSeverity: "10"
       SignalR__RelayBaseUrl: http://api:8080/internal/realtime
       DD_AGENT_HOST: datadog-agent

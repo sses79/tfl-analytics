@@ -1,3 +1,9 @@
+.pull-result {
+  color: var(--ink-500);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

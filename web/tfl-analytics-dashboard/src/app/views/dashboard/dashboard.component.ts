@@ -20,6 +20,8 @@ export class DashboardComponent implements OnInit {
   protected readonly summary = signal<DashboardSummary | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly pulling = signal(false);
+  protected readonly pullResult = signal<string | null>(null);
   protected readonly flowSteps: readonly DataFlowStep[] = [
     { service: 'TfL Unified API', detail: 'Arrival and line status observations', tone: 'source' },
     { service: 'Ingestion Functions', detail: 'Timer-triggered polling', tone: 'compute' },
@@ -51,6 +53,24 @@ export class DashboardComponent implements OnInit {
       error: () => {
         this.error.set('Unable to load summary data.');
         this.loading.set(false);
+      }
+    });
+  }
+
+  protected pull(): void {
+    this.pulling.set(true);
+    this.pullResult.set(null);
+    this.api.triggerPull().subscribe({
+      next: r => {
+        this.pullResult.set(
+          `Pulled ${r.arrivalsPublished} arrivals, ${r.lineStatusPublished} line updates.`
+        );
+        this.pulling.set(false);
+        this.load();
+      },
+      error: () => {
+        this.pullResult.set('Pull failed — ingestion service unavailable.');
+        this.pulling.set(false);
       }
     });
   }
