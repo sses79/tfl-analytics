@@ -16,6 +16,7 @@ var allowedOrigins = builder.Configuration
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddMemoryCache();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddProcessingInfrastructure(builder.Configuration);
 
