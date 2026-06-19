@@ -1,0 +1,129 @@
+# Custom Domain CORS Incident — demo.ti5g.com
+
+## Context
+
+A custom domain `https://demo.ti5g.com` was added as an alias for the
+deployed dashboard (Azure Static Web App `swa-tfl-analytics-dev-nhkpyupi`,
+default hostname `blue-bush-0491f9503.7.azurestaticapps.net`), via a CNAME
+record in Route 53 (`ti5g.com` hosted zone) and
+`az staticwebapp hostname set`.
+
+After the custom domain went live, the dashboard at
+`https://demo.ti5g.com/dashboard` failed to load data:
+
+- "Unable to load summary data."
+- "Connection interrupted." / "Unable to load alert history."
+
+The original `https://blue-bush-0491f9503.7.azurestaticapps.net` URL
+continued to work normally.
+
+## Root Cause
+
+CORS. Both backend services only allowed the original Static Web App
+hostname as an origin — `https://demo.ti5g.com` was not in either allowlist,
+so the browser blocked the API responses (see `pi-cors.md` for how the API's
+CORS policy works in code).
+
+Confirmed via preflight requests:
+
+```bash
+# New domain — no Access-Control-Allow-Origin header returned (blocked)
+curl -s -I -X OPTIONS \
+  "https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io/" \
+  -H "Origin: https://demo.ti5g.com" \
+  -H "Access-Control-Request-Method: GET"
+
+# Old domain — works
+curl -s -I -X OPTIONS \
+  "https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io/" \
+  -H "Origin: https://blue-bush-0491f9503.7.azurestaticapps.net" \
+  -H "Access-Control-Request-Method: GET"
+```
+
+Two places had the old hostname hardcoded as the only allowed origin:
+
+1. **Function App** `func-tfl-analytics-ingestion-dev-nhkpyupi` — CORS
+   allowlist (Azure-managed, not app code):
+   ```bash
+   az functionapp cors show \
+     --name func-tfl-analytics-ingestion-dev-nhkpyupi \
+     --resource-group rg-tfl-analytics-dev-uk-south
+   ```
+   returned only `https://blue-bush-0491f9503.7.azurestaticapps.net`.
+
+2. **Container App** `ca-tfl-api-dev-nhkpyupi` — env var
+   `Cors__AllowedOrigins__0`, sourced from the Bicep `dashboardOrigin`
+   parameter (`infra/bicep/main.bicep` → `modules/api-hosting.bicep`, see
+   `pi-cors.md`), which is derived only from
+   `compute.outputs.staticWebAppHostname`. There is currently no Bicep
+   parameter for an additional/custom domain.
+
+The SignalR resource (`infra/bicep/modules/realtime.bicep`) has the same
+single-origin pattern (`dashboardOrigin` → `cors.allowedOrigins`) and is
+**likely affected too**, though not explicitly re-tested after the fix
+below — worth checking if live alert/SignalR features still misbehave on
+the custom domain.
+
+## Stop-Gap Fix Applied Live (Azure CLI, not yet in IaC)
+
+These commands were run directly against the running Azure resources to
+restore the demo immediately. **They are not reflected in Bicep**, so the
+next `azd deploy` / pipeline run that re-applies the IaC will likely revert
+the Container App's env var (the Function App CORS setting is Azure
+resource state, not driven by Bicep here, so check if it persists or is
+also reset on redeploy).
+
+```bash
+# 1. Function App: add the new origin (Azure CORS resource, additive)
+az functionapp cors add \
+  --name func-tfl-analytics-ingestion-dev-nhkpyupi \
+  --resource-group rg-tfl-analytics-dev-uk-south \
+  --allowed-origins "https://demo.ti5g.com"
+
+# 2. Container App: add a second indexed CORS origin env var
+#    (ASP.NET Core config binding supports Cors__AllowedOrigins__0, __1, etc.)
+az containerapp update \
+  --name ca-tfl-api-dev-nhkpyupi \
+  --resource-group rg-tfl-analytics-dev-uk-south \
+  --set-env-vars "Cors__AllowedOrigins__1=https://demo.ti5g.com"
+```
+
+Verified after the change:
+
+```bash
+curl -s -I -X OPTIONS \
+  "https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io/" \
+  -H "Origin: https://demo.ti5g.com" \
+  -H "Access-Control-Request-Method: GET"
+# -> 204, access-control-allow-origin: https://demo.ti5g.com
+
+curl -s -o /dev/null -w "%{http_code}\n" https://demo.ti5g.com/dashboard
+# -> 200
+```
+
+Both the old Azure URL and the new custom domain work side by side now.
+
+## IaC Fix (Landed)
+
+The custom domain is now a first-class Bicep input instead of a CLI patch.
+`main.bicep` takes a `dashboardCustomDomain` parameter and builds a
+`dashboardOrigins` array (Static Web App default hostname + optional custom
+domain), passed to all three CORS-aware resources:
+
+- `modules/api-hosting.bicep` — Container App, as indexed
+  `Cors__AllowedOrigins__N` env vars.
+- `modules/compute.bicep` — ingestion Function App's
+  `siteConfig.cors.allowedOrigins`.
+- `modules/realtime.bicep` — SignalR's `properties.cors.allowedOrigins`.
+
+`infra/bicep/environments/dev.bicepparam` sets
+`dashboardCustomDomain = 'demo.ti5g.com'`, so the next `az deployment group
+create` run reapplies this domain everywhere instead of reverting the
+Container App's env var back to a single origin. `infra/bicep/main.json` is
+regenerated by `az bicep build` (CI runs this in `.github/workflows/ci.yml`,
+not hand-maintained).
+
+See `pi-cors.md` for the current single-source-of-truth description of the
+multi-origin pattern. The SignalR CORS change has not been independently
+re-tested against the custom domain in production yet — worth a smoke test
+after the next deploy.

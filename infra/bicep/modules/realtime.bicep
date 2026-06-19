@@ -1,6 +1,6 @@
 param location string
 param name string
-param dashboardOrigin string
+param dashboardOrigins array
 param apiPrincipalId string
 param processingPrincipalId string
 param tags object
@@ -22,9 +22,7 @@ resource signalR 'Microsoft.SignalRService/signalR@2024-03-01' = {
   }
   properties: {
     cors: {
-      allowedOrigins: [
-        dashboardOrigin
-      ]
+      allowedOrigins: dashboardOrigins
     }
     disableAadAuth: false
     disableLocalAuth: true

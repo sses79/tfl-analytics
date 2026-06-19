@@ -22,6 +22,7 @@ param sqlServerFqdn string
 param sqlDatabaseName string
 param apiIdentityName string
 param apiIdentityPrincipalId string = ''
+param dashboardCustomDomain string = ''
 param tags object
 
 param maximumFunctionInstanceCount int = 20
@@ -54,6 +55,10 @@ var ingestionDeploymentContainerUri = '${storageAccount.properties.primaryEndpoi
 var processingDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${processingDeploymentContainerName}'
 var applicationInsightsConnectionString = applicationInsights.?properties.ConnectionString ?? ''
 var tflApiKeyVaultReference = '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=TflApi--AppKey)'
+var dashboardOrigins = concat(
+  ['https://${staticWebApp.properties.defaultHostname}'],
+  empty(dashboardCustomDomain) ? [] : ['https://${dashboardCustomDomain}']
+)
 
 resource ingestionIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: ingestionIdentityName
@@ -195,9 +200,7 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       cors: {
-        allowedOrigins: [
-          'https://${staticWebApp.properties.defaultHostname}'
-        ]
+        allowedOrigins: dashboardOrigins
       }
       appSettings: concat([
         {

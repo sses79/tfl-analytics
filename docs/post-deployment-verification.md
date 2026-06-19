@@ -17,11 +17,11 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 16, 2026 |
-| Git commit | `afcfb29` plus local dashboard explainer and deployment-script changes |
+| Date | June 19, 2026 |
+| Git commit | `45093d5` plus the local dashboard CSP change |
 | ARM deployment | Not applicable; Static Web Apps CLI production release |
 | Provisioning state | `Succeeded` |
-| Scope | Data-flow explainers expanded by default on all dashboard routes; dashboard deployment uses Docker/Linux production build |
+| Scope | Dashboard CSP permits Azure SignalR HTTPS/WSS connections and the existing Google Fonts stylesheet and font files |
 | Cost impact | None; existing Static Web Apps Free tier |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
@@ -30,22 +30,27 @@ Latest verification evidence:
 
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.
-- `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200
-  with production assets `main-XKZNKGT2.js` and `styles-QDWHA3BV.css`.
-- The reusable data-flow explainer now renders expanded by default on each
-  route and can still be hidden or shown with the existing toggle control.
-- The reusable explainer component passed its default-expanded and
-  expand/collapse interaction test.
-- The dashboard deployment script built the production Angular bundle through
-  the Linux Docker image before publishing the copied Nginx artifact.
+- The live CSP now allows the API origin, Azure SignalR HTTPS and WSS origins,
+  Google Fonts stylesheets, and Google font files.
+- `/dashboard`, `/status`, `/arrivals`, and `/alerts` each returned HTTP 200.
+- SignalR negotiation returned HTTP 200 from the dashboard origin, and a real
+  SignalR client reached the `Connected` state.
+- The dashboard production Docker build completed before the Static Web Apps
+  CLI release.
 - The API health endpoint returned `healthy`.
 - Dashboard APIs returned 11 monitored lines, five monitored stations, and 50
   recent alerts; the summary endpoint reported live event data at
-  `2026-06-16T10:00:00.1351613+00:00`.
+  `2026-06-19T19:10:00.1559181+00:00`.
 - Ingestion and processing Function health endpoints returned `healthy`.
-- Bicep build passed and ARM what-if was run before release. No ARM deployment
-  was applied; the what-if output showed existing template/drift noise only, no
-  intentional resource creates or deletes, and no cost impact.
+- Ingestion and processing Functions were indexed, including polling, archive,
+  queue processing, alert orchestration, persistence, audit, and broadcast
+  functions.
+- Data-service and workload-RBAC smoke tests passed. The diagnostics smoke test
+  is not applicable to the current deployment because `enableObservability` is
+  false and no Log Analytics workspace is deployed.
+- The latest ARM deployment, `manual-20260619-171859`, remains `Succeeded`; no
+  ARM deployment or infrastructure change was applied for this dashboard-only
+  release.
 
 ## Load Resource Names
 
