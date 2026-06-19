@@ -20,6 +20,9 @@ param apiImageTag string = 'dev'
 param sqlLocation string = 'centralus'
 param apiIdentityPrincipalId string = ''
 
+@description('Optional custom domain aliasing the Static Web App (e.g. demo.example.com), added to every CORS allowlist alongside the generated hostname.')
+param dashboardCustomDomain string = ''
+
 var suffix = take(uniqueString(subscription().id, resourceGroup().id), 8)
 var storageAccountName = 'sttfl${suffix}'
 var keyVaultName = 'kv-tfl-${suffix}'
@@ -97,6 +100,7 @@ module compute 'modules/compute.bicep' = {
     sqlDatabaseName: sqlDatabaseName
     apiIdentityName: apiIdentityName
     apiIdentityPrincipalId: apiIdentityPrincipalId
+    dashboardCustomDomain: dashboardCustomDomain
     tags: commonTags
   }
   dependsOn: [
@@ -104,6 +108,11 @@ module compute 'modules/compute.bicep' = {
     keyVault
   ]
 }
+
+var dashboardOrigins = concat(
+  ['https://${compute.outputs.staticWebAppHostname}'],
+  empty(dashboardCustomDomain) ? [] : ['https://${dashboardCustomDomain}']
+)
 
 module apiHosting 'modules/api-hosting.bicep' = {
   name: 'api-hosting'
@@ -115,7 +124,7 @@ module apiHosting 'modules/api-hosting.bicep' = {
     apiIdentityName: 'id-${projectName}-api-${environmentName}-${suffix}'
     applicationInsightsName: observability.?outputs.applicationInsightsName ?? ''
     keyVaultName: keyVaultName
-    dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
+    dashboardOrigins: dashboardOrigins
     signalRHostname: signalRHostname
     cosmosEndpoint: cosmosEndpoint
     storageAccountName: storageAccountName
@@ -169,7 +178,7 @@ module realtime 'modules/realtime.bicep' = {
   params: {
     location: location
     name: signalRName
-    dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
+    dashboardOrigins: dashboardOrigins
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
     tags: commonTags

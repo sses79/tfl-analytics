@@ -83,30 +83,50 @@ local ports are rejected unless they are added explicitly.
 
 ## Azure Configuration
 
-The production origin is derived from the Static Web App Bicep output in
-`infra/bicep/main.bicep`:
+The allowed origins are an array, built in `infra/bicep/main.bicep` from the
+Static Web App's generated hostname plus an optional custom domain:
 
 ```bicep
-dashboardOrigin: 'https://${compute.outputs.staticWebAppHostname}'
+param dashboardCustomDomain string = ''
+
+var dashboardOrigins = concat(
+  ['https://${compute.outputs.staticWebAppHostname}'],
+  empty(dashboardCustomDomain) ? [] : ['https://${dashboardCustomDomain}']
+)
 ```
 
-`infra/bicep/modules/api-hosting.bicep` passes it to the Container App:
+`infra/bicep/environments/dev.bicepparam` sets `dashboardCustomDomain` to the
+custom domain that aliases the deployed dashboard (see `cors.md` for the
+incident that prompted this). Leave it as `''` for an environment with no
+custom domain.
+
+`infra/bicep/modules/api-hosting.bicep` turns the array into indexed env vars
+for the Container App:
 
 ```bicep
-{
-  name: 'Cors__AllowedOrigins__0'
-  value: dashboardOrigin
-}
+var corsOriginSettings = [for (origin, i) in dashboardOrigins: {
+  name: 'Cors__AllowedOrigins__${i}'
+  value: origin
+}]
 ```
 
 ASP.NET Core maps the double underscores to this configuration path:
 
 ```text
 Cors:AllowedOrigins:0
+Cors:AllowedOrigins:1
 ```
 
-This avoids duplicating the generated Static Web App hostname in application
-code. The Container App also runs with:
+The same `dashboardOrigins` array is also passed straight to:
+
+- `infra/bicep/modules/compute.bicep`'s ingestion Function App
+  (`siteConfig.cors.allowedOrigins`), and
+- `infra/bicep/modules/realtime.bicep`'s SignalR resource
+  (`properties.cors.allowedOrigins`),
+
+so adding a new dashboard hostname only requires updating
+`dashboardCustomDomain` in the `.bicepparam` file — no per-service CLI patches.
+The Container App also runs with:
 
 ```text
 ASPNETCORE_ENVIRONMENT=Production

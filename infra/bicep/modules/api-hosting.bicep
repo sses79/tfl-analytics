@@ -5,7 +5,7 @@ param apiAppName string
 param apiIdentityName string
 param applicationInsightsName string = ''
 param keyVaultName string
-param dashboardOrigin string
+param dashboardOrigins array
 param signalRHostname string
 param cosmosEndpoint string
 param storageAccountName string
@@ -21,6 +21,11 @@ var acrPullRoleDefinitionId = subscriptionResourceId(
 )
 
 var observabilityEnabled = !empty(applicationInsightsName)
+
+var corsOriginSettings = [for (origin, i) in dashboardOrigins: {
+  name: 'Cors__AllowedOrigins__${i}'
+  value: origin
+}]
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (observabilityEnabled) {
   name: observabilityEnabled ? applicationInsightsName : 'unused'
@@ -105,6 +110,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
               name: 'ASPNETCORE_ENVIRONMENT'
               value: 'Production'
             }
+          ], corsOriginSettings, [
             {
               name: 'AZURE_CLIENT_ID'
               value: apiIdentity.properties.clientId
@@ -116,10 +122,6 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'TflApi__BaseUrl'
               value: 'https://api.tfl.gov.uk/'
-            }
-            {
-              name: 'Cors__AllowedOrigins__0'
-              value: dashboardOrigin
             }
             {
               // ClientId selects the user-assigned identity when multiple are present.
