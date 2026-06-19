@@ -31,3 +31,6 @@ dist/
 
 # Generated Bicep templates
 infra/bicep/*.json
+
+# pycache
+scripts/analytics/__pycache__/
