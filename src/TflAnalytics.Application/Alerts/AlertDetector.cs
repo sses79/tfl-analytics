@@ -50,6 +50,22 @@ public sealed class AlertDetector : IAlertDetector
             return null;
         }
 
+        if (previous.Direction is not null
+            && envelope.Payload.Direction is not null
+            && !string.Equals(
+                previous.Direction,
+                envelope.Payload.Direction,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            // A real train never reverses direction mid-journey, so a
+            // change here means TfL has reassigned this VehicleId to a new
+            // working (commonly the return trip) - not the same train
+            // arriving later. Direction (inbound/outbound) stays well-defined
+            // even on circular services (Circle, Hammersmith & City), unlike
+            // DestinationName, which can vary by via-point text.
+            return null;
+        }
+
         var slippageSeconds = (int)Math.Round(
             (envelope.Payload.ExpectedArrivalUtc.Value
                 - previous.ExpectedArrivalUtc.Value).TotalSeconds,

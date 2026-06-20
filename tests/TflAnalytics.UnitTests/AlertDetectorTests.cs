@@ -71,6 +71,25 @@ public sealed class AlertDetectorTests
     }
 
     [Fact]
+    public async Task DoesNotAlertWhenTheDirectionChangesBetweenObservations()
+    {
+        var history = new StubObservationHistory
+        {
+            Arrival = new ArrivalObservation(
+                "previous",
+                ObservedAt.AddSeconds(-30),
+                ObservedAt.AddSeconds(60),
+                Direction: "outbound")
+        };
+        var detector = CreateDetector(history);
+
+        var alert = await detector.DetectArrivalAsync(
+            CreateArrival("current", ObservedAt.AddSeconds(181)));
+
+        Assert.Null(alert);
+    }
+
+    [Fact]
     public async Task DoesNotAlertAtThePredictionThreshold()
     {
         var history = new StubObservationHistory

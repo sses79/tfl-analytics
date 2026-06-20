@@ -73,7 +73,8 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
                 SELECT TOP 2
                     c.id AS id,
                     c.observedAtUtc AS observedAtUtc,
-                    c.payload.ExpectedArrivalUtc AS expectedArrivalUtc
+                    c.payload.ExpectedArrivalUtc AS expectedArrivalUtc,
+                    c.payload.Direction AS direction
                 FROM c
                 WHERE c.id != @eventId
                     AND c.payload.VehicleId = @vehicleId
@@ -112,7 +113,8 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
             previous.Id,
             previous.ObservedAtUtc,
             previous.ExpectedArrivalUtc,
-            priorToPrevious?.ExpectedArrivalUtc);
+            priorToPrevious?.ExpectedArrivalUtc,
+            previous.Direction);
     }
 
     public async Task<LineStatusObservation?> GetPreviousLineStatusAsync(
@@ -340,7 +342,8 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
     private sealed record ArrivalHistoryDocument(
         [property: JsonProperty("id")] string Id,
         [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
-        [property: JsonProperty("expectedArrivalUtc")] DateTimeOffset? ExpectedArrivalUtc);
+        [property: JsonProperty("expectedArrivalUtc")] DateTimeOffset? ExpectedArrivalUtc,
+        [property: JsonProperty("direction")] string? Direction);
 
     private sealed record LineStatusHistoryDocument(
         [property: JsonProperty("id")] string Id,

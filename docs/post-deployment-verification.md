@@ -18,11 +18,11 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | June 20, 2026 |
-| Git commit | Uncommitted: arrival-observation staleness check in `AlertDetector` (`MaxObservationGapSeconds`) |
+| Git commit | Uncommitted: direction-mismatch check in `AlertDetector` (supersedes the observation-gap-only check from the prior deploy) |
 | ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh` |
 | Provisioning state | `Succeeded` |
 | Scope | Ingestion and processing Function Apps only; no infrastructure change |
-| Cost impact | None directly; fixes false-positive multi-hour "slippage" alerts caused by TfL VehicleId reuse across unrelated journeys |
+| Cost impact | None directly; fixes false-positive "slippage" alerts caused by TfL reassigning a VehicleId to the return working (direction reversal) within the 30-minute staleness window |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
@@ -32,13 +32,20 @@ Latest verification evidence:
   `func-tfl-analytics-ingestion-dev-nhkpyupi` and
   `func-tfl-analytics-processing-dev-nhkpyupi`; Azure deployment history
   confirms both deployments completed successfully at
-  `2026-06-20T17:56:23Z` (ingestion) and `2026-06-20T17:58:52Z` (processing).
+  `2026-06-20T19:35:39Z` (ingestion) and `2026-06-20T19:38:07Z` (processing).
 - Both Function Apps' health endpoints returned `{"status":"healthy"}`
   immediately after deployment.
 - `GET /api/alerts` on the live API continued to return alert data normally
   post-deploy.
 - Not yet committed or PR'd — deployed ahead of commit per session pattern of
   verifying live before opening a PR.
+
+Prior verification evidence (June 20, 2026 observation-gap staleness check,
+uncommitted at the time, since superseded above):
+
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps; Azure
+  deployment history confirmed completion at `2026-06-20T17:56:23Z`
+  (ingestion) and `2026-06-20T17:58:52Z` (processing), both healthy.
 
 Prior verification evidence (June 20, 2026 write-storm fix, commit
 `4b08594`):
