@@ -16,7 +16,8 @@ public interface IObservationHistory
 public sealed record ArrivalObservation(
     string EventId,
     DateTimeOffset ObservedAtUtc,
-    DateTimeOffset? ExpectedArrivalUtc);
+    DateTimeOffset? ExpectedArrivalUtc,
+    DateTimeOffset? PriorExpectedArrivalUtc = null);
 
 public sealed record LineStatusObservation(
     string EventId,

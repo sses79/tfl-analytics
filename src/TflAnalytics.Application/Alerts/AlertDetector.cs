@@ -48,6 +48,20 @@ public sealed class AlertDetector : IAlertDetector
             return null;
         }
 
+        if (previous.PriorExpectedArrivalUtc is not null)
+        {
+            var previousSlippageSeconds = (int)Math.Round(
+                (previous.ExpectedArrivalUtc.Value
+                    - previous.PriorExpectedArrivalUtc.Value).TotalSeconds,
+                MidpointRounding.AwayFromZero);
+            if (previousSlippageSeconds > _options.ArrivalSlippageThresholdSeconds)
+            {
+                // Already over threshold last poll too - this is the same
+                // ongoing delay, not a new crossing, so don't re-alert.
+                return null;
+            }
+        }
+
         return Create(
             AlertRuleTypes.ArrivalPredictionSlippage,
             envelope.EventId,
