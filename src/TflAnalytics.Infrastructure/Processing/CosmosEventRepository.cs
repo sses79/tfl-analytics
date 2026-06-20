@@ -70,7 +70,7 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
 
         var query = new QueryDefinition(
                 """
-                SELECT TOP 1
+                SELECT TOP 2
                     c.id AS id,
                     c.observedAtUtc AS observedAtUtc,
                     c.payload.ExpectedArrivalUtc AS expectedArrivalUtc
@@ -92,7 +92,7 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
             requestOptions: new QueryRequestOptions
             {
                 PartitionKey = new PartitionKey(current.StationId),
-                MaxItemCount = 1
+                MaxItemCount = 2
             });
 
         if (!iterator.HasMoreResults)
@@ -102,12 +102,17 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
 
         var response = await iterator.ReadNextAsync(cancellationToken);
         var previous = response.Resource.FirstOrDefault();
-        return previous is null
-            ? null
-            : new ArrivalObservation(
-                previous.Id,
-                previous.ObservedAtUtc,
-                previous.ExpectedArrivalUtc);
+        if (previous is null)
+        {
+            return null;
+        }
+
+        var priorToPrevious = response.Resource.Skip(1).FirstOrDefault();
+        return new ArrivalObservation(
+            previous.Id,
+            previous.ObservedAtUtc,
+            previous.ExpectedArrivalUtc,
+            priorToPrevious?.ExpectedArrivalUtc);
     }
 
     public async Task<LineStatusObservation?> GetPreviousLineStatusAsync(
