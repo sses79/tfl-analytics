@@ -53,6 +53,24 @@ public sealed class AlertDetectorTests
     }
 
     [Fact]
+    public async Task DoesNotAlertWhenThePreviousObservationGapIsTooLarge()
+    {
+        var history = new StubObservationHistory
+        {
+            Arrival = new ArrivalObservation(
+                "previous",
+                ObservedAt.AddMinutes(-40),
+                ObservedAt.AddMinutes(-39))
+        };
+        var detector = CreateDetector(history);
+
+        var alert = await detector.DetectArrivalAsync(
+            CreateArrival("current", ObservedAt.AddMinutes(180)));
+
+        Assert.Null(alert);
+    }
+
+    [Fact]
     public async Task DoesNotAlertAtThePredictionThreshold()
     {
         var history = new StubObservationHistory

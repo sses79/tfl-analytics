@@ -17,16 +17,40 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 19, 2026 |
-| Git commit | `45093d5` plus the local dashboard CSP change |
-| ARM deployment | Not applicable; Static Web Apps CLI production release |
+| Date | June 20, 2026 |
+| Git commit | Uncommitted: arrival-observation staleness check in `AlertDetector` (`MaxObservationGapSeconds`) |
+| ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh` |
 | Provisioning state | `Succeeded` |
-| Scope | Dashboard CSP permits Azure SignalR HTTPS/WSS connections and the existing Google Fonts stylesheet and font files |
-| Cost impact | None; existing Static Web Apps Free tier |
+| Scope | Ingestion and processing Function Apps only; no infrastructure change |
+| Cost impact | None directly; fixes false-positive multi-hour "slippage" alerts caused by TfL VehicleId reuse across unrelated journeys |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
 Latest verification evidence:
+
+- `scripts/deploy-functions.sh` zip-deployed both
+  `func-tfl-analytics-ingestion-dev-nhkpyupi` and
+  `func-tfl-analytics-processing-dev-nhkpyupi`; Azure deployment history
+  confirms both deployments completed successfully at
+  `2026-06-20T17:56:23Z` (ingestion) and `2026-06-20T17:58:52Z` (processing).
+- Both Function Apps' health endpoints returned `{"status":"healthy"}`
+  immediately after deployment.
+- `GET /api/alerts` on the live API continued to return alert data normally
+  post-deploy.
+- Not yet committed or PR'd — deployed ahead of commit per session pattern of
+  verifying live before opening a PR.
+
+Prior verification evidence (June 20, 2026 write-storm fix, commit
+`4b08594`):
+
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps; Azure
+  deployment history confirmed completion at `2026-06-20T13:49:57Z`
+  (ingestion) and `2026-06-20T13:54:03Z` (processing), both healthy.
+- PR #19 (`dev` → `main`, commit `4b08594`) carried this change; merged via
+  `20ae067`.
+
+Prior verification evidence (June 19, 2026 dashboard CSP release, commit
+`45093d5`):
 
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.

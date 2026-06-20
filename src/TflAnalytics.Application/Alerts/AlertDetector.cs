@@ -39,6 +39,17 @@ public sealed class AlertDetector : IAlertDetector
             return null;
         }
 
+        var observationGapSeconds =
+            (envelope.ObservedAtUtc - previous.ObservedAtUtc).TotalSeconds;
+        if (observationGapSeconds > _options.MaxObservationGapSeconds)
+        {
+            // TfL reuses VehicleIds across unrelated journeys once a train
+            // goes out of service, so a gap this large means "previous" is
+            // very likely a different physical train, not the same one
+            // running late.
+            return null;
+        }
+
         var slippageSeconds = (int)Math.Round(
             (envelope.Payload.ExpectedArrivalUtc.Value
                 - previous.ExpectedArrivalUtc.Value).TotalSeconds,
