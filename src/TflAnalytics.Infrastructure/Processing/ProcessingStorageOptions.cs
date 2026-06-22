@@ -14,5 +14,7 @@ public sealed class ProcessingStorageOptions
 
     public string AuditTableName { get; set; } = "audit";
 
+    public string AlertsTableName { get; set; } = "alerts";
+
     public bool Initialize { get; set; }
 }

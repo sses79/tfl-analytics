@@ -12,6 +12,7 @@
     "ProcessingStorage__RawContainerName": "raw",
     "ProcessingStorage__QueueName": "processing",
     "ProcessingStorage__AuditTableName": "audit",
+    "ProcessingStorage__AlertsTableName": "alerts",
     "ProcessingStorage__Initialize": "true",
     "Cosmos__ConnectionString": "AccountEndpoint=https://localhost:8081/;AccountKey=COSMOS_EMULATOR_KEY;",
     "Cosmos__DatabaseName": "tfl-analytics",

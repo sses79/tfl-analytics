@@ -30,6 +30,10 @@ Completed:
   and automatic pause when the monthly free allowance is exhausted.
 - Azure SignalR Service Free F1 with key authentication disabled and
   managed-identity app-server access.
+- Alert history migrated from Azure SQL to the `alerts` Storage Table on June
+  21, 2026 to avoid serverless SQL compute cost, with verification completed on
+  June 22. The SQL resource and implementation are retained but inactive for
+  possible future relational workloads.
 - Least-privilege Event Hubs and Key Vault workload RBAC for the API,
   ingestion, and processing identities.
 - Selected low-volume diagnostic settings for Key Vault, Event Hubs, Cosmos DB,
@@ -126,8 +130,8 @@ flowchart LR
     subgraph Storage
         ADLS[Data Lake Gen2<br/>Compressed Raw Events]
         COSMOS[Cosmos DB<br/>Live and Recent Events]
-        SQL[Azure SQL<br/>Alerts and Aggregates]
-        TABLE[Table Storage<br/>Audit Records]
+        SQL[Azure SQL<br/>Retained, inactive]
+        TABLE[Table Storage<br/>Alerts and Audit Records]
     end
 
     subgraph API_and_UI[API and Dashboard]
@@ -152,11 +156,10 @@ flowchart LR
     QF --> DF
     QF --> SIGNALR
     DF --> COSMOS
-    DF --> SQL
     DF --> TABLE
     DF --> SIGNALR
     COSMOS --> API
-    SQL --> API
+    TABLE --> API
     API --> SIGNALR
     SIGNALR --> ANGULAR
     ANGULAR --> API
@@ -189,7 +192,7 @@ flowchart LR
         EH_LOCAL[Event Hubs Emulator]
         AZURITE[Azurite<br/>Blob, Queue, Table]
         COSMOS_LOCAL[Cosmos DB Emulator vNext]
-        SQL_LOCAL[SQL Server Container]
+        SQL_LOCAL[SQL Server Container<br/>Retained, inactive]
         SIGNALR_LOCAL[Self-hosted SignalR Hub]
         DD[Datadog Agent<br/>Optional profile]
     end
@@ -202,10 +205,8 @@ flowchart LR
     EH_LOCAL --> PROCESS
     PROCESS --> AZURITE
     PROCESS --> COSMOS_LOCAL
-    PROCESS --> SQL_LOCAL
     PROCESS -- Development relay --> API_LOCAL
     API_LOCAL --> COSMOS_LOCAL
-    API_LOCAL --> SQL_LOCAL
     API_LOCAL --> SIGNALR_LOCAL
     SIGNALR_LOCAL --> WEB
     API_LOCAL --> WEB
@@ -216,7 +217,6 @@ flowchart LR
     TESTS --> API_LOCAL
     TESTS --> AZURITE
     TESTS --> COSMOS_LOCAL
-    TESTS --> SQL_LOCAL
 ```
 
 ### Local Service Matrix
@@ -228,7 +228,7 @@ flowchart LR
 | Blob, Queue, Table Storage | Official Azurite container | Suitable for triggers, queues, raw blob archives, poison queues, and Durable Functions state. Table support remains preview. |
 | Data Lake Gen2 | Azurite Blob endpoint through an archive abstraction | Tests payloads and partition paths, but not hierarchical namespace, DFS APIs, POSIX ACLs, or lifecycle policies. Those require Azure smoke tests. |
 | Cosmos DB for NoSQL | Official Linux Cosmos DB emulator vNext | Runs in Docker and supports the NoSQL API in gateway mode. It implements only a subset of cloud features. |
-| Azure SQL Database | SQL Server Linux container | Tests EF Core mappings, migrations, and queries. On Apple Silicon it uses `linux/amd64` emulation and may be slower. |
+| Azure SQL Database | SQL Server Linux container | Retained for future relational workloads but not used by the active alert path. On Apple Silicon it uses `linux/amd64` emulation. |
 | Durable Functions | Local Functions host backed by Azurite | Tests orchestration, activity, retry, and idempotency behavior. Azure scale and hosting behavior require cloud tests. |
 | Azure SignalR Service | Self-hosted ASP.NET Core SignalR with a development-only HTTP relay from the processing Function | Exercises hub negotiation, browser delivery, and all three realtime contracts without requiring Azure SignalR. Managed identity, service scale, and the Azure REST endpoint require cloud tests. |
 | Key Vault | Environment variables or mounted Docker secrets through `ISecretProvider` | Tests configuration flow, not Key Vault authentication, RBAC, rotation, or network controls. |
@@ -315,9 +315,9 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 6. Arrival and status updates are broadcast to connected Angular clients using
    SignalR.
 7. Qualifying delays and disruptions start a Durable Functions orchestration.
-8. The orchestration writes alert records to Azure SQL, audit records to Table
-   Storage, and broadcasts the alert through SignalR.
-9. The Web API queries Cosmos DB for live data and Azure SQL for alerts and
+8. The orchestration writes alert and audit records to separate Storage Tables
+   and broadcasts the alert through SignalR.
+9. The Web API queries Cosmos DB for live data and Table Storage for alerts and
    aggregates.
 
 The current implementation covers all nine steps. The REST-backed dashboard
@@ -377,12 +377,15 @@ vehicle, expected arrival, and observation window.
 
 ### Azure SQL
 
-- Stores alert history, alert rules, and daily station and line aggregates.
-- Alert and aggregate retention defaults to 1 year.
+- Retained for possible future relational alert rules and aggregate reporting.
+- Not used for active alert writes or dashboard queries.
 
 ### Table Storage
 
-- Stores low-cost orchestration and processing audit records.
+- Stores full alert history in the `alerts` table and low-cost orchestration
+  audit records in the separate `audit` table.
+- Alert writes are idempotent and row keys are ordered for efficient recent
+  history queries.
 
 ## Alert Rules
 
@@ -394,8 +397,8 @@ A Durable Functions alert workflow starts when:
 The workflow will:
 
 1. Receive a qualifying transition detected from recent Cosmos DB observations.
-2. Store the alert idempotently in Azure SQL.
-3. Write an audit record to Table Storage.
+2. Store the alert idempotently in the `alerts` Storage Table.
+3. Write an audit record to the separate `audit` Storage Table.
 4. Send a mock notification.
 5. Broadcast `alertRaised` through SignalR.
 
@@ -467,7 +470,7 @@ Application Insights will track:
 - Events published and processed.
 - Event Hub consumer lag.
 - Queue depth, retries, poison messages, and processing latency.
-- Cosmos DB and SQL failures.
+- Cosmos DB and Storage Table failures.
 - Durable Functions orchestration status.
 - SignalR broadcasts and connected clients.
 - Alerts raised by station, line, and rule.
@@ -512,16 +515,17 @@ Status: completed June 13, 2026.
 
 - Implement prediction-slippage and line-status transition rules.
 - Add the Durable Functions alert orchestration.
-- Persist alerts in SQL and audit records in Table Storage.
+- Persist alerts and audit records in separate Storage Tables.
 
-Status: completed locally and deployed to Azure June 14, 2026.
+Status: original SQL-backed workflow deployed June 14, 2026. Table-backed alert
+history deployed June 21 and verified June 22, 2026.
 
 Azure verification used a controlled good-service-to-disruption transition and
-confirmed the path through Event Hubs, raw Blob archive, Storage Queue, Cosmos
-DB history, Durable Functions, Azure SQL, Table Storage audit, and the mock
-notification activity. Local end-to-end coverage also exercises prediction
-slippage and line-status alert rules, idempotent SQL persistence, deterministic
-orchestration IDs, and audit writes.
+confirmed the original path through Event Hubs, raw Blob archive, Storage
+Queue, Cosmos DB history, Durable Functions, Azure SQL, Table Storage audit,
+and the mock notification activity. Current local end-to-end coverage exercises
+prediction slippage and line-status alert rules, idempotent Table Storage
+persistence, deterministic orchestration IDs, and audit writes.
 
 ### Phase 5: API And Dashboard
 
@@ -578,7 +582,7 @@ Entra ID authentication and authorization are deferred to Phase 6.
 - Cosmos DB persistence and TTL.
 - Blob archive paths and payloads through the same archive abstraction used for
   Data Lake.
-- Azure SQL alert persistence.
+- Table Storage alert persistence.
 - Durable Functions orchestration.
 - SignalR message publication.
 - API authentication and query results.

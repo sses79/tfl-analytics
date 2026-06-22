@@ -8,6 +8,18 @@ REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPOSITORY_ROOT"
 source "$SCRIPT_DIR/load-azure-outputs.sh"
 
+storage_account_id="$(az storage account show \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query id \
+  --output tsv)"
+
+alerts_table="$(az resource show \
+  --ids "$storage_account_id/tableServices/default/tables/alerts" \
+  --api-version 2023-05-01 \
+  --query name \
+  --output tsv)"
+
 cosmos_free_tier="$(az cosmosdb show \
   --name "$COSMOS_ACCOUNT" \
   --resource-group "$RESOURCE_GROUP" \
@@ -87,6 +99,13 @@ sql_free_limit_behavior="$(az sql db show \
   --query freeLimitExhaustionBehavior \
   --output tsv)"
 
+sql_auto_pause_delay="$(az sql db show \
+  --name "$SQL_DATABASE" \
+  --server "$SQL_SERVER" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query autoPauseDelay \
+  --output tsv)"
+
 sql_entra_only="$(az sql server ad-admin list \
   --server "$SQL_SERVER" \
   --resource-group "$RESOURCE_GROUP" \
@@ -117,6 +136,7 @@ signalr_role_count="$(az role assignment list \
   --output tsv)"
 
 [[ "$cosmos_free_tier" == "true" ]]
+[[ "$alerts_table" == "alerts" ]]
 [[ "$cosmos_database" == "$COSMOS_DATABASE" ]]
 [[ "$cosmos_throughput" == "1000" ]]
 [[ "$live_events_partition_key" == "/stationId" ]]
@@ -126,7 +146,8 @@ signalr_role_count="$(az role assignment list \
 [[ "$cosmos_role_count" == "2" ]]
 [[ "$sql_state" == "Online" || "$sql_state" == "Paused" ]]
 [[ "$sql_free_limit" == "true" ]]
-[[ "$sql_free_limit_behavior" == "AutoPause" ]]
+[[ "$sql_free_limit_behavior" == "BillOverUsage" ]]
+[[ "$sql_auto_pause_delay" == "60" ]]
 [[ "$sql_entra_only" == "true" ]]
 [[ "$signalr_sku" == "Free_F1" ]]
 [[ "$signalr_local_auth_disabled" == "true" ]]
@@ -134,6 +155,7 @@ signalr_role_count="$(az role assignment list \
 
 printf '%s\n' \
   "Azure data-service smoke tests passed:" \
+  "  Table Storage: alerts table exists" \
   "  Cosmos DB: free tier, 1000 RU/s, seven-day TTL, two data-role assignments" \
-  "  Azure SQL: $SQL_DATABASE is $sql_state, Entra-only, free-limit auto-pause" \
+  "  Azure SQL: $SQL_DATABASE is $sql_state, Entra-only, free limit enabled, 60-minute inactivity auto-pause" \
   "  SignalR: Free_F1, local authentication disabled, two app-server roles"

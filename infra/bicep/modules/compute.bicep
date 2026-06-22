@@ -438,6 +438,10 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'audit'
         }
         {
+          name: 'ProcessingStorage__AlertsTableName'
+          value: 'alerts'
+        }
+        {
           name: 'ProcessingStorage__Initialize'
           value: 'false'
         }

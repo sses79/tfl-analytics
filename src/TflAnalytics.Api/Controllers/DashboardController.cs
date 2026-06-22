@@ -55,9 +55,8 @@ public sealed class DashboardController : ControllerBase
     }
 
     // The dashboard re-fetches this summary on every SignalR push (arrivals/line-status update
-    // every few minutes per station/line), but the SQL-backed alert count rarely changes between
-    // pushes. Caching it bounds Azure SQL serverless compute to one query per cache window instead
-    // of one per push, which lets the database actually go idle and auto-pause between windows.
+    // every few minutes per station/line), but the alert count rarely changes between pushes.
+    // Caching also avoids repeating the same Table Storage query on every realtime update.
     private Task<int> GetRecentAlertCountAsync(CancellationToken cancellationToken) =>
         _cache.GetOrCreateAsync(RecentAlertCountCacheKey, async entry =>
         {

@@ -24,7 +24,7 @@ catch (Exception ex)
 {
     host.Services
         .GetRequiredService<ILogger<Program>>()
-        .LogError(ex, "SQL initialization failed at startup; will retry on first write.");
+        .LogError(ex, "Alert table initialization failed at startup; will retry on first write.");
 }
 
 await host.RunAsync();

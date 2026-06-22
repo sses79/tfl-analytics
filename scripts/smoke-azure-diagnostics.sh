@@ -8,6 +8,11 @@ REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPOSITORY_ROOT"
 source "$SCRIPT_DIR/load-azure-outputs.sh"
 
+if [[ -z "$LOG_ANALYTICS" ]]; then
+  echo "Azure diagnostic-setting smoke tests are not applicable: observability is disabled."
+  exit 0
+fi
+
 workspace_id="$(az monitor log-analytics workspace show \
   --workspace-name "$LOG_ANALYTICS" \
   --resource-group "$RESOURCE_GROUP" \

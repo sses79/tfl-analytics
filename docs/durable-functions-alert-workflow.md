@@ -12,8 +12,8 @@ A Durable Function coordinates a multi-step workflow while Azure persists its
 progress. The Phase 4 alert workflow is:
 
 ```text
-Persist SQL alert
-  -> Write Table Storage audit
+Persist alert in Table Storage
+  -> Write separate Table Storage audit
   -> Send mock notification
 ```
 
@@ -25,7 +25,7 @@ external I/O.
 ### Checkpointing
 
 Durable Functions records each completed activity. If notification fails after
-the SQL and audit activities succeed, the orchestration can retry from its
+the alert and audit activities succeed, the orchestration can retry from its
 persisted history instead of restarting the entire workflow.
 
 ### Independent Retries
@@ -53,8 +53,8 @@ regular Function invocation containing several unrelated external operations.
 ### Deterministic Identity And Deduplication
 
 `ProcessQueuedEvent` starts the orchestration with `alert.AlertId` as its
-instance ID. The alert ID is deterministic, and SQL persistence also treats a
-duplicate alert ID as an idempotent result.
+instance ID. The alert ID and Storage Table row key are deterministic, so a
+duplicate alert ID is treated as an idempotent result.
 
 Table Storage audit writes use upsert behavior, so replaying or retrying that
 activity does not create multiple audit entities.
@@ -85,8 +85,9 @@ await WriteAudit();
 await SendNotification();
 ```
 
-If the process stopped after writing SQL, the whole Function invocation could
-run again. The application would then need to implement its own:
+If the process stopped after writing the alert entity, the whole Function
+invocation could run again. The application would then need to implement its
+own:
 
 - Workflow checkpoints.
 - Retry state.

@@ -11,7 +11,8 @@ and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 
 - [Azure event and data flow](./docs/plan/architecture-diagram.md) shows how
   arrival, line-status, alert, and audit data move through Functions, Event
-  Hubs, Storage, Cosmos DB, Azure SQL, SignalR, and the dashboard.
+  Hubs, Storage, Cosmos DB, SignalR, and the dashboard. Azure SQL is retained
+  for possible future relational workloads but is not on the active alert path.
 - [API and dashboard architecture](./docs/plan/api-dashboard-architecture.md)
   explains how Angular and the ASP.NET Core Web API are hosted in Azure, how
   REST queries reach the data stores, and how SignalR delivers live updates.
@@ -126,9 +127,9 @@ docker compose \
 The ingestion Function polls the deterministic WireMock fixtures and publishes
 to the local `tfl-events` Event Hub. The processing Function archives each raw
 event to Azurite, queues it, validates it, persists it to Cosmos DB, and writes
-alerts to SQL Server and Azurite Table Storage. The API queries those same local
-stores. Station IDs, line IDs, schedules, and emulator settings are configured
-in `infra/local/compose.yaml`.
+alerts and alert audits to separate Azurite tables. The API queries those same
+local stores. Station IDs, line IDs, schedules, and emulator settings are
+configured in `infra/local/compose.yaml`.
 
 Add Angular:
 
@@ -216,6 +217,7 @@ Deployed resources:
 | Cosmos DB account | `cosmos-tfl-analytics-dev-nhkpyupi` |
 | Azure SQL server | `sql-tfl-analytics-dev-nhkpyupi` |
 | Azure SQL database | `tfl-analytics` |
+| Alert history table | `alerts` in `sttflnhkpyupi` Table Storage |
 | Azure SignalR Service | `sigr-tfl-analytics-dev-nhkpyupi` |
 
 Azure API:

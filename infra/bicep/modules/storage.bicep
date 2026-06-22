@@ -81,6 +81,11 @@ resource auditTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023
   name: 'audit'
 }
 
+resource alertsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableService
+  name: 'alerts'
+}
+
 output storageAccountName string = storage.name
 output storageAccountId string = storage.id
 output blobEndpoint string = storage.properties.primaryEndpoints.blob
