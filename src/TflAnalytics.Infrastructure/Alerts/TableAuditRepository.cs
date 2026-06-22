@@ -15,11 +15,11 @@ public sealed class TableAuditRepository : IAuditRepository
     private bool _initialized;
 
     public TableAuditRepository(
-        TableClient tableClient,
+        TableServiceClient tableServiceClient,
         IOptions<ProcessingStorageOptions> options)
     {
-        _tableClient = tableClient;
         _options = options.Value;
+        _tableClient = tableServiceClient.GetTableClient(_options.AuditTableName);
     }
 
     public async Task WriteAlertRaisedAsync(

@@ -11,6 +11,11 @@ re-alerting (and re-inserting into SQL) on the same persistent arrival-delay
 condition every single ~5-minute ingestion poll, instead of only on the
 first occurrence.
 
+The current branch removes Azure SQL from the active alert path. New alert
+history is written to the `alerts` Storage Table, while the SQL implementation,
+configuration, and paused Azure resource remain available for possible future
+relational workloads.
+
 ## Cost breakdown by meter
 
 Querying `Microsoft.CostManagement/query` (ActualCost, Daily) grouped by
@@ -48,11 +53,11 @@ below).
   (60 minutes, the minimum allowed). Anything that touches SQL more often
   than every 60 minutes keeps it billing continuously.
 
-## SQL usage in the codebase
+## SQL usage at the time of the investigation
 
-All SQL access goes through `SqlAlertRepository`
-(`src/TflAnalytics.Infrastructure/Alerts/SqlAlertRepository.cs`), registered
-as a singleton (`AddSingleton<IAlertRepository, SqlAlertRepository>()`):
+All alert SQL access went through `SqlAlertRepository`
+(`src/TflAnalytics.Infrastructure/Alerts/SqlAlertRepository.cs`), which was
+registered as the `IAlertRepository` implementation:
 
 - `EnsureInitializedAsync` — lazy schema bootstrap, runs once per
   process/cold-start (gated by an in-memory `_initialized` flag).

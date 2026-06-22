@@ -18,7 +18,7 @@ The Bicep deployment currently creates:
 | ADLS Gen2 storage | StorageV2, Standard LRS, hierarchical namespace |
 | Blob container | `raw` |
 | Storage queues | `processing`, `processing-poison` |
-| Storage table | `audit` |
+| Storage tables | `alerts`, `audit` |
 | Key Vault | Standard, RBAC authorization, seven-day soft delete |
 | Event Hubs namespace | Basic, one throughput unit |
 | Event hub | `tfl-events`, two partitions, one-day retention |
@@ -36,7 +36,7 @@ The Phase 1 compute foundation is deployed:
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
 | Container registry | Private Basic ACR with managed-identity image pull |
 | Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two seven-day TTL containers |
-| Azure SQL | Free serverless allowance, 0.5 minimum vCore, auto-pause at free-limit exhaustion |
+| Azure SQL | Free serverless allowance, 0.5 minimum vCore, 60-minute inactivity auto-pause; retained but inactive |
 | Azure SignalR | Free F1, local key authentication disabled |
 
 The Function hosts and their application packages are deployed. The Angular
@@ -246,6 +246,7 @@ The main Bicep deployment creates:
 - `live-events` container partitioned by `/stationId`.
 - `line-status` container partitioned by `/lineId`.
 - Seven-day default TTL on both containers.
+- Storage Table `alerts` for active alert history.
 - Azure SQL database `tfl-analytics` with Microsoft Entra-only authentication.
 - Azure SignalR Service Free F1 with managed-identity access.
 
@@ -270,12 +271,14 @@ workload:
 | Ingestion Function | `tfl-events` Event Hub | Azure Event Hubs Data Sender |
 | Processing Function | `tfl-events` Event Hub | Azure Event Hubs Data Receiver |
 | API | Key Vault | Key Vault Secrets User |
+| API | `alerts` Storage Table | Storage Table Data Reader |
 | Ingestion Function | Key Vault | Key Vault Secrets User |
 | Processing Function | Key Vault | Key Vault Secrets User |
 
-The Event Hubs roles are scoped to the individual event hub rather than the
-namespace. Key Vault roles permit reading secret values but not creating,
-updating, or deleting secrets.
+The Event Hubs role assignments are scoped to the individual event hub rather
+than the namespace, and the API table role is scoped to `alerts`. Key Vault
+roles permit reading secret values but not creating, updating, or deleting
+secrets.
 
 Each host sets `AZURE_CLIENT_ID` to the matching user-assigned identity. This is
 required for the Function Apps because they also have a system-assigned

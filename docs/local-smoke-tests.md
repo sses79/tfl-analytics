@@ -30,7 +30,7 @@ curl --fail http://localhost:8080/api/alerts
 curl --fail http://localhost:8080/api/dashboard/summary
 ```
 
-The query endpoints read from the local Cosmos DB and SQL Server containers,
+The query endpoints read from the local Cosmos DB and Azurite Table Storage,
 not from Azure.
 
 ## WireMock
@@ -201,14 +201,13 @@ This asserts that compressed raw events exist in the `raw` Blob container and
 that arrival and line-status documents exist in their Cosmos DB containers.
 
 To verify the Phase 4 alert path, start the processing stack and provide
-host-reachable Event Hubs, Azurite, Cosmos, and SQL connection strings:
+host-reachable Event Hubs, Azurite, and Cosmos connection strings:
 
 ```bash
 RUN_PHASE4_LOCAL_STACK_TESTS=true \
 LOCAL_EVENT_HUBS_CONNECTION_STRING='<Event Hubs emulator connection string using localhost>' \
 LOCAL_STORAGE_CONNECTION_STRING='<Azurite connection string using localhost>' \
 LOCAL_COSMOS_CONNECTION_STRING='<Cosmos emulator connection string using localhost>' \
-LOCAL_SQL_CONNECTION_STRING='<SQL Server connection string using localhost>' \
 dotnet test \
   tests/TflAnalytics.IntegrationTests/TflAnalytics.IntegrationTests.csproj \
   --no-restore \
@@ -219,6 +218,5 @@ dotnet test \
 ```
 
 This publishes an isolated good-service observation followed by a disruption
-and verifies one SQL alert plus its Table Storage audit record. If SQL reports
-an `sa` login failure after the password changed, recreate only the local
-`sql-data` volume so SQL Server initializes with the current `.env` password.
+and verifies one alert entity in the `alerts` table plus its separate `audit`
+table record.

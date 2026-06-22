@@ -680,8 +680,8 @@
         <div class="step">
           <article class="node storage">
             <span class="service-type">System of record</span>
-            <strong>Azure SQL: dbo.Alerts</strong>
-            <small>Alert history keyed by <code>AlertId</code>.</small>
+            <strong>Table Storage: alerts</strong>
+            <small>Alert history keyed by a deterministic row key.</small>
             <span class="contract">SourceEventId, RuleType, DetectedAtUtc</span>
           </article>
           <div class="arrow"><span></span></div>
@@ -712,7 +712,7 @@
           <h2>Alert audit</h2>
           <p>
             The Durable workflow writes a separate low-cost audit entity after
-            SQL persistence, preserving the workflow action and source linkage.
+            alert persistence, preserving the workflow action and source linkage.
           </p>
         </div>
         <span class="event-type">Action: AlertRaised</span>
@@ -722,7 +722,7 @@
           <article class="node">
             <span class="service-type">Orchestration</span>
             <strong>AlertOrchestration</strong>
-            <small>Continues after the SQL activity.</small>
+            <small>Continues after the alert persistence activity.</small>
           </article>
           <div class="arrow"><span></span></div>
         </div>
@@ -771,7 +771,7 @@
           <span><code>GET /api/lines/status</code> → Line status page</span>
         </article>
         <article class="read-card">
-          <strong>Azure SQL: dbo.Alerts</strong>
+          <strong>Table Storage: alerts</strong>
           <span><code>GET /api/alerts</code> → Alerts page</span>
         </article>
         <article class="read-card">

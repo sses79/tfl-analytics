@@ -136,14 +136,12 @@ public static class DependencyInjection
             var options = serviceProvider
                 .GetRequiredService<IOptions<ProcessingStorageOptions>>()
                 .Value;
-            var serviceClient = !string.IsNullOrWhiteSpace(options.ConnectionString)
+            return !string.IsNullOrWhiteSpace(options.ConnectionString)
                 ? new TableServiceClient(options.ConnectionString)
                 : new TableServiceClient(
                     new Uri(
                         $"https://{RequireAccountName(options.AccountName)}.table.core.windows.net"),
                     serviceProvider.GetRequiredService<TokenCredential>());
-
-            return serviceClient.GetTableClient(options.AuditTableName);
         });
         services.AddSingleton(serviceProvider =>
         {
@@ -195,7 +193,7 @@ public static class DependencyInjection
         services.AddSingleton<IObservationHistory>(
             serviceProvider => serviceProvider.GetRequiredService<CosmosEventRepository>());
         services.AddSingleton<IAlertDetector, AlertDetector>();
-        services.AddSingleton<IAlertRepository, SqlAlertRepository>();
+        services.AddSingleton<IAlertRepository, TableAlertRepository>();
         services.AddSingleton<IAuditRepository, TableAuditRepository>();
         services.AddSingleton<INotificationSender, LoggingNotificationSender>();
         services.AddSingleton<IRawEventIngestor, RawEventIngestor>();

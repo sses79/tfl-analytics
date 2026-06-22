@@ -19,6 +19,10 @@ var acrPullRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 )
+var storageTableDataReaderRoleDefinitionId = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  '76199698-9eea-4c19-bc75-cec21354c6b6'
+)
 
 var observabilityEnabled = !empty(applicationInsightsName)
 
@@ -45,6 +49,20 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   }
 }
 
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: storageAccountName
+}
+
+resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2023-05-01' existing = {
+  parent: storageAccount
+  name: 'default'
+}
+
+resource alertsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' existing = {
+  parent: tableService
+  name: 'alerts'
+}
+
 resource apiIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: apiIdentityName
   location: location
@@ -58,6 +76,16 @@ resource registryPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
     principalId: apiIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: acrPullRoleDefinitionId
+  }
+}
+
+resource apiTableStorageRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(alertsTable.id, apiIdentity.id, storageTableDataReaderRoleDefinitionId)
+  scope: alertsTable
+  properties: {
+    principalId: apiIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: storageTableDataReaderRoleDefinitionId
   }
 }
 
@@ -159,6 +187,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'ProcessingStorage__AccountName'
               value: storageAccountName
+            }
+            {
+              name: 'ProcessingStorage__AlertsTableName'
+              value: 'alerts'
             }
             {
               name: 'AlertStorage__ServerFqdn'

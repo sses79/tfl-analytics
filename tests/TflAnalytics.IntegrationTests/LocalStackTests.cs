@@ -3,7 +3,6 @@ using Azure.Data.Tables;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Data.SqlClient;
 using TflAnalytics.Contracts.Alerts;
 using TflAnalytics.Contracts.Events;
 using TflAnalytics.Infrastructure.Messaging;
@@ -80,8 +79,6 @@ public sealed class LocalStackTests
             "LOCAL_STORAGE_CONNECTION_STRING");
         var cosmosConnectionString = GetRequiredSetting(
             "LOCAL_COSMOS_CONNECTION_STRING");
-        var sqlConnectionString = GetRequiredSetting(
-            "LOCAL_SQL_CONNECTION_STRING");
         var runId = Guid.NewGuid().ToString("N");
         var lineId = $"phase4-{runId}";
         var observedAt = DateTimeOffset.UtcNow;
@@ -118,8 +115,8 @@ public sealed class LocalStackTests
             "A test disruption");
         await PublishUntilAsync(
             () => publisher.PublishAsync(disruptedEvent),
-            () => AlertExistsAsync(sqlConnectionString, disruptedEventId),
-            "SQL alert");
+            () => AlertExistsAsync(storageConnectionString, disruptedEventId),
+            "Table Storage alert");
         await WaitForAsync(
             () => AuditExistsAsync(storageConnectionString, disruptedEventId),
             "Table audit record");
@@ -203,19 +200,20 @@ public sealed class LocalStackTests
     {
         try
         {
-            var builder = new SqlConnectionStringBuilder(connectionString)
+            var table = new TableServiceClient(connectionString)
+                .GetTableClient("alerts");
+            var filter = TableClient.CreateQueryFilter(
+                $"PartitionKey eq {"alerts"} and SourceEventId eq {sourceEventId}");
+            await foreach (var _ in table.QueryAsync<TableEntity>(
+                               filter,
+                               maxPerPage: 1))
             {
-                InitialCatalog = "tfl-analytics"
-            };
-            await using var connection = new SqlConnection(builder.ConnectionString);
-            await connection.OpenAsync();
-            await using var command = connection.CreateCommand();
-            command.CommandText =
-                "SELECT COUNT(1) FROM dbo.Alerts WHERE SourceEventId = @sourceEventId";
-            command.Parameters.AddWithValue("@sourceEventId", sourceEventId);
-            return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
+                return true;
+            }
+
+            return false;
         }
-        catch (SqlException)
+        catch (RequestFailedException exception) when (exception.Status == 404)
         {
             return false;
         }

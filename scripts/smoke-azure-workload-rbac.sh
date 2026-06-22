@@ -46,6 +46,18 @@ key_vault_scope="$(az keyvault show \
   --query id \
   --output tsv)"
 
+storage_account_id="$(az storage account show \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query id \
+  --output tsv)"
+
+alerts_table_scope="$(az resource show \
+  --ids "$storage_account_id/tableServices/default/tables/alerts" \
+  --api-version 2023-05-01 \
+  --query id \
+  --output tsv)"
+
 assert_role() {
   local scope="$1"
   local principal_id="$2"
@@ -68,6 +80,7 @@ assert_role "$event_hub_scope" "$processing_principal_id" "Azure Event Hubs Data
 assert_role "$key_vault_scope" "$api_principal_id" "Key Vault Secrets User"
 assert_role "$key_vault_scope" "$ingestion_principal_id" "Key Vault Secrets User"
 assert_role "$key_vault_scope" "$processing_principal_id" "Key Vault Secrets User"
+assert_role "$alerts_table_scope" "$api_principal_id" "Storage Table Data Reader"
 
 api_configured_client_id="$(az containerapp show \
   --name "$API_APP" \
@@ -95,5 +108,5 @@ printf '%s\n' \
   "Azure workload RBAC smoke tests passed:" \
   "  Ingestion identity: Event Hubs sender and Key Vault secret reader" \
   "  Processing identity: Event Hubs receiver and Key Vault secret reader" \
-  "  API identity: Key Vault secret reader" \
+  "  API identity: Key Vault secret reader and alerts-table data reader" \
   "  All hosts select the matching user-assigned identity through AZURE_CLIENT_ID"

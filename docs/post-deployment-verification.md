@@ -17,16 +17,58 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 19, 2026 |
-| Git commit | `45093d5` plus the local dashboard CSP change |
-| ARM deployment | Not applicable; Static Web Apps CLI production release |
+| Date | June 22, 2026 |
+| Git commit | Uncommitted Table Storage migration based on `fe1c271`; API image `dev-20260621213648` |
+| ARM deployment | `manual-20260621-2142` |
 | Provisioning state | `Succeeded` |
-| Scope | Dashboard CSP permits Azure SignalR HTTPS/WSS connections and the existing Google Fonts stylesheet and font files |
-| Cost impact | None; existing Static Web Apps Free tier |
+| Scope | Added `alerts` Storage Table, table-scoped API reader RBAC, API revision `ca-tfl-api-dev-nhkpyupi--0000012`, and ingestion/processing Function packages |
+| Cost impact | Negligible Storage Table capacity/transactions; no new SKU; Azure SQL retained and verified paused |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
 Latest verification evidence:
+
+- ARM deployment `manual-20260621-2142` succeeded at
+  `2026-06-21T21:42:45Z` after Bicep compilation, what-if, and ARM validation.
+- API image `dev-20260621213648` is active in ready revision
+  `ca-tfl-api-dev-nhkpyupi--0000012`.
+- `scripts/deploy-functions.sh` successfully deployed both Function Apps; both
+  anonymous health endpoints returned `{"status":"healthy"}` and all expected
+  ingestion, processing, Durable, audit, and broadcast Functions were indexed.
+- The `alerts` Storage Table exists. The API identity has Storage Table Data
+  Reader scoped to that table, while the processing identity retains its
+  existing Table Data Contributor role.
+- `GET /api/alerts` returned alerts detected after deployment, proving the
+  processing write and API read paths both use Table Storage. The dashboard
+  summary returned current Cosmos-backed state through `2026-06-22T07:30:00Z`.
+- Azure Monitor reported aggregate `QueueMessageCount` maximum `0` for the
+  latest one-hour sample. Today’s raw archive partition also contained recent
+  arrival data.
+- Data-service and workload-RBAC smoke tests passed. Diagnostics are not
+  applicable because observability resources are disabled in this deployment.
+- Azure SQL remained `Paused` after repeated alert and dashboard API queries;
+  its old alert rows were deliberately retained to avoid waking the database.
+- The live alert table already contains at least 50 recent alerts. Storage cost
+  is controlled, but detector noise remains a separate follow-up concern.
+
+Prior verification evidence (June 20, 2026 observation-gap staleness check,
+uncommitted at the time, since superseded above):
+
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps; Azure
+  deployment history confirmed completion at `2026-06-20T17:56:23Z`
+  (ingestion) and `2026-06-20T17:58:52Z` (processing), both healthy.
+
+Prior verification evidence (June 20, 2026 write-storm fix, commit
+`4b08594`):
+
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps; Azure
+  deployment history confirmed completion at `2026-06-20T13:49:57Z`
+  (ingestion) and `2026-06-20T13:54:03Z` (processing), both healthy.
+- PR #19 (`dev` → `main`, commit `4b08594`) carried this change; merged via
+  `20ae067`.
+
+Prior verification evidence (June 19, 2026 dashboard CSP release, commit
+`45093d5`):
 
 - Static Web Apps CLI deployed the production bundle successfully to
   `https://blue-bush-0491f9503.7.azurestaticapps.net`.
@@ -145,7 +187,7 @@ TfL Unified API
   -> ProcessQueuedEvent
   -> Cosmos DB live-events / line-status
   -> AlertOrchestration for qualifying transitions
-  -> Azure SQL dbo.Alerts
+  -> Table Storage alerts
   -> Table Storage audit
   -> mock notification log
 ```
@@ -159,8 +201,8 @@ In the Azure portal:
 
 1. Open `func-tfl-analytics-ingestion-dev-nhkpyupi`.
 2. Open **Functions > PollArrivals > Monitor** and confirm successful executions
-   approximately every 30 seconds.
-3. Check `PollLineStatus` for successful executions approximately every two
+   approximately every five minutes.
+3. Check `PollLineStatus` for successful executions approximately every ten
    minutes.
 4. Open `func-tfl-analytics-processing-dev-nhkpyupi`.
 5. Check `ArchiveEventHubEvents` and `ProcessQueuedEvent` for successful
@@ -220,9 +262,9 @@ their timestamps continue advancing.
 After a qualifying line transition or prediction slip:
 
 1. Open the processing Function App and confirm the orchestration completed.
-2. Query `dbo.Alerts` in Azure SQL and confirm exactly one row exists for the
-   source event.
-3. Open storage account `sttflnhkpyupi` > **Storage browser > Tables > audit**
+2. Open storage account `sttflnhkpyupi` > **Storage browser > Tables > alerts**
+   and confirm exactly one entity exists for the source event.
+3. Open **Tables > audit**
    and confirm the matching `AlertRaised` entity exists.
 4. Confirm Application Insights contains the mock notification log and no
    exhausted activity retries.
@@ -238,7 +280,8 @@ A deployment is complete only when:
 - Raw archives are recent and increasing.
 - Cosmos DB contains recent arrival and line-status documents.
 - Qualifying alerts complete the Durable workflow exactly once.
-- SQL contains the alert and Table Storage contains its audit record.
+- The `alerts` table contains the alert and the `audit` table contains its
+  audit record.
 - Processing queue returns to zero.
 - Poison queue is empty.
 - No unexplained Function or Application Insights errors remain.

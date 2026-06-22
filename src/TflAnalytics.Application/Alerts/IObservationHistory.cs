@@ -17,7 +17,8 @@ public sealed record ArrivalObservation(
     string EventId,
     DateTimeOffset ObservedAtUtc,
     DateTimeOffset? ExpectedArrivalUtc,
-    DateTimeOffset? PriorExpectedArrivalUtc = null);
+    DateTimeOffset? PriorExpectedArrivalUtc = null,
+    string? Direction = null);
 
 public sealed record LineStatusObservation(
     string EventId,

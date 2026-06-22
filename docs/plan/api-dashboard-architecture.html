@@ -713,12 +713,8 @@
             <small>Arrival and current line-status queries.</small>
           </div>
           <div class="service storage">
-            <strong>Azure SQL</strong>
-            <small>Alert history queried by the API identity.</small>
-          </div>
-          <div class="service storage">
             <strong>Storage account</strong>
-            <small>Supporting platform storage and processing artifacts.</small>
+            <small>Alert history plus supporting processing artifacts.</small>
           </div>
           <div class="service security">
             <strong>Application Insights</strong>
@@ -783,8 +779,8 @@
             <small>Station arrivals and line-status summaries.</small>
           </div>
           <div class="service storage">
-            <strong>SQL alert repository</strong>
-            <small>Recent alert history from <code>dbo.Alerts</code>.</small>
+            <strong>Table alert repository</strong>
+            <small>Recent alert history from the <code>alerts</code> table.</small>
           </div>
         </div>
       </div>
@@ -803,7 +799,7 @@
             <tr>
               <td><code>/dashboard</code></td>
               <td><code>GET /api/dashboard/summary</code></td>
-              <td>Cosmos DB + Azure SQL</td>
+              <td>Cosmos DB + Table Storage</td>
               <td>Counts monitored lines, disruptions, stations, alerts and latest event.</td>
             </tr>
             <tr>
@@ -821,7 +817,7 @@
             <tr>
               <td><code>/alerts</code></td>
               <td><code>GET /api/alerts</code></td>
-              <td>Azure SQL <code>dbo.Alerts</code></td>
+              <td>Table Storage <code>alerts</code></td>
               <td>Returns recent Durable workflow alert outcomes.</td>
             </tr>
           </tbody>
@@ -908,7 +904,7 @@
       <div class="tradeoff">
         SignalR messages are transient notifications, not the system of record.
         A newly opened or reconnected page still queries the Web API so Cosmos
-        DB and Azure SQL remain the authoritative state.
+        DB and Table Storage remain the authoritative state.
       </div>
     </section>
 
@@ -937,8 +933,8 @@
         <article class="security-card">
           <h3>Data-plane access</h3>
           <p>
-            The API identity queries Cosmos DB and Azure SQL using Azure
-            credentials and RBAC/database grants rather than browser-visible
+            The API identity queries Cosmos DB and Table Storage using Azure
+            credentials and data-plane RBAC rather than browser-visible
             connection strings.
           </p>
         </article>

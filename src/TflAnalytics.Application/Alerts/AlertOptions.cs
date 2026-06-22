@@ -7,4 +7,6 @@ public sealed class AlertOptions
     public int ArrivalSlippageThresholdSeconds { get; set; } = 1200;
 
     public int GoodServiceSeverity { get; set; } = 10;
+
+    public int MaxObservationGapSeconds { get; set; } = 1800;
 }
