@@ -26,6 +26,11 @@ public sealed class AlertDetector : IAlertDetector
         EventEnvelope<ArrivalPredictionObserved> envelope,
         CancellationToken cancellationToken = default)
     {
+        if (!_options.Enabled)
+        {
+            return null;
+        }
+
         if (envelope.Payload.ExpectedArrivalUtc is null)
         {
             return null;
@@ -106,6 +111,11 @@ public sealed class AlertDetector : IAlertDetector
         EventEnvelope<LineStatusObserved> envelope,
         CancellationToken cancellationToken = default)
     {
+        if (!_options.Enabled)
+        {
+            return null;
+        }
+
         var previous = await _history.GetPreviousLineStatusAsync(
             envelope,
             cancellationToken);
