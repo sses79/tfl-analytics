@@ -17,39 +17,35 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 22, 2026 |
-| Git commit | Uncommitted Table Storage migration based on `fe1c271`; API image `dev-20260621213648` |
-| ARM deployment | `manual-20260621-2142` |
+| Date | June 23, 2026 |
+| Git commit | Uncommitted: `AlertOptions.Enabled` flag in `AlertDetector` to pause alert detection until July 1 |
+| ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh`, plus an app-setting change and a data-plane table clear (no Bicep deployment) |
 | Provisioning state | `Succeeded` |
-| Scope | Added `alerts` Storage Table, table-scoped API reader RBAC, API revision `ca-tfl-api-dev-nhkpyupi--0000012`, and ingestion/processing Function packages |
-| Cost impact | Negligible Storage Table capacity/transactions; no new SKU; Azure SQL retained and verified paused |
+| Scope | Ingestion and processing Function Apps redeployed; `Alerts__Enabled=false` set on the processing Function App; all 365 existing rows deleted from the `alerts` Storage Table |
+| Cost impact | Stops all alert-pipeline activity (AlertDetector, AlertOrchestration, PersistAlert/WriteAlertAudit/SendMockAlertNotification/BroadcastAlert) until re-enabled; dashboard `recentAlertCount` now reads 0 |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
 Latest verification evidence:
 
-- ARM deployment `manual-20260621-2142` succeeded at
-  `2026-06-21T21:42:45Z` after Bicep compilation, what-if, and ARM validation.
-- API image `dev-20260621213648` is active in ready revision
-  `ca-tfl-api-dev-nhkpyupi--0000012`.
-- `scripts/deploy-functions.sh` successfully deployed both Function Apps; both
-  anonymous health endpoints returned `{"status":"healthy"}` and all expected
-  ingestion, processing, Durable, audit, and broadcast Functions were indexed.
-- The `alerts` Storage Table exists. The API identity has Storage Table Data
-  Reader scoped to that table, while the processing identity retains its
-  existing Table Data Contributor role.
-- `GET /api/alerts` returned alerts detected after deployment, proving the
-  processing write and API read paths both use Table Storage. The dashboard
-  summary returned current Cosmos-backed state through `2026-06-22T07:30:00Z`.
-- Azure Monitor reported aggregate `QueueMessageCount` maximum `0` for the
-  latest one-hour sample. Today’s raw archive partition also contained recent
-  arrival data.
-- Data-service and workload-RBAC smoke tests passed. Diagnostics are not
-  applicable because observability resources are disabled in this deployment.
-- Azure SQL remained `Paused` after repeated alert and dashboard API queries;
-  its old alert rows were deliberately retained to avoid waking the database.
-- The live alert table already contains at least 50 recent alerts. Storage cost
-  is controlled, but detector noise remains a separate follow-up concern.
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps; both health endpoints returned `{"status":"healthy"}`.
+- `az functionapp config appsettings set ... --settings "Alerts__Enabled=false"` confirmed set on `func-tfl-analytics-processing-dev-nhkpyupi`.
+- Temporarily granted my own user `Storage Table Data Contributor` on `sttflnhkpyupi` (I only had `Storage Blob Data Reader`), deleted all 365 rows from the `alerts` table via `az storage entity delete`, verified 0 rows remain, then revoked the temporary role grant.
+- `GET /api/dashboard/summary` returned `"recentAlertCount": 0`; `GET /api/alerts` returned `[]`.
+- **To re-enable on/after July 1:** remove or flip `Alerts__Enabled` back to `true` on the processing Function App — no code redeploy needed, the flag defaults to `true`.
+- **Caveat carried over:** `infra/bicep/main.bicep` still unconditionally declares the `sql` module. A future full `az deployment group create` will recreate the deleted SQL server unless that module is gated first (tracked in `docs/azure-resource-status.md`).
+
+Prior verification evidence (June 23, 2026 SQL Server deletion, no code change):
+
+- `az resource list --resource-group rg-tfl-analytics-dev-uk-south --query "[?contains(name,'sql')]"` returned empty immediately after deletion.
+- Confirmed via DI (`src/TflAnalytics.Infrastructure/DependencyInjection.cs:196`) that `IAlertRepository` resolves to `TableAlertRepository`, not `SqlAlertRepository` — the deleted server had no live consumer.
+
+Prior verification evidence (June 22, 2026 Table Storage migration deployment, API image `dev-20260621213648`, ARM deployment `manual-20260621-2142`):
+
+- ARM deployment `manual-20260621-2142` succeeded at `2026-06-21T21:42:45Z`.
+- API image `dev-20260621213648` active in revision `ca-tfl-api-dev-nhkpyupi--0000012`.
+- The `alerts` Storage Table exists with table-scoped RBAC; `GET /api/alerts` confirmed both the processing write path and API read path use Table Storage.
+- Azure SQL was `Paused` at the time and its old alert rows were retained — since superseded by the deletion above.
 
 Prior verification evidence (June 20, 2026 observation-gap staleness check,
 uncommitted at the time, since superseded above):

@@ -1,6 +1,43 @@
 # Azure Resource Status & Running Cost
 
-Snapshot taken 2026-06-17 against subscription `TfL Analytics Development` (`e3ea5ccc-661d-451b-8b3d-574300552e30`).
+Snapshot taken 2026-06-23 against subscription `TfL Analytics Development` (`e3ea5ccc-661d-451b-8b3d-574300552e30`). Supersedes the 2026-06-17 snapshot below.
+
+## Current state (2026-06-23)
+
+The `Monthly-Bill` budget (£100) shows £143.17 month-to-date, which reads as a
+crisis but is almost entirely historical: Log Analytics ingestion (£64.59
+MTD, disabled 2026-06-17, £0.00 every day since) and the `AlertDetector`
+write storm driving Azure SQL (£33.12 MTD, fixed 2026-06-20, and alerts then
+moved off SQL entirely onto Table Storage the same day). Today's actual
+run-rate across the whole resource group is **£0.106/day**: Event Hubs
+£0.045, Storage £0.034, Container Registry £0.016, Functions £0.010, SQL
+£0.003, everything else £0.00.
+
+Action taken 2026-06-23: deleted `sql-tfl-analytics-dev-nhkpyupi` (server +
+`tfl-analytics` database) entirely. It had been fully superseded by
+`TableAlertRepository` since `b079f29` (2026-06-20) — nothing in the code
+referenced it anymore, it was just a paused, unused resource sitting on the
+subscription. **Note:** `infra/bicep/main.bicep` still unconditionally
+declares the `sql` module — a future full `az deployment group create` will
+silently recreate the server. Gate it behind a parameter (mirroring
+`enableObservability`) before the next full infra redeploy.
+
+Resources currently free-tier or already scale-to-zero, left running as the
+"essential function" baseline:
+- Cosmos DB — Free Tier (1000 RU/s, 25 GB)
+- SignalR — Free_F1
+- Static Web App — Free
+- Container App (API) — min replicas 0, scales to zero when idle
+- Function Apps — Flex Consumption, no always-ready instances, polling
+  already slowed (PR #15: arrivals every 5 min, line status every 10 min,
+  plus an on-demand `/api/pull` trigger)
+- Key Vault — negligible (~£0.0001/month)
+
+Event Hubs (Basic, ~£0.045/day) is the one paid resource kept running
+intentionally — no free tier exists for Event Hubs, and it's the ingestion
+backbone.
+
+## 2026-06-17 snapshot (historical, see above for current state)
 
 ## Resource groups
 

@@ -90,6 +90,43 @@ public sealed class AlertDetectorTests
     }
 
     [Fact]
+    public async Task DoesNotAlertOnArrivalsWhenDetectionIsDisabled()
+    {
+        var history = new StubObservationHistory
+        {
+            Arrival = new ArrivalObservation(
+                "previous",
+                ObservedAt.AddSeconds(-30),
+                ObservedAt.AddSeconds(60))
+        };
+        var detector = CreateDetector(history, enabled: false);
+
+        var alert = await detector.DetectArrivalAsync(
+            CreateArrival("current", ObservedAt.AddSeconds(181)));
+
+        Assert.Null(alert);
+    }
+
+    [Fact]
+    public async Task DoesNotAlertOnLineStatusWhenDetectionIsDisabled()
+    {
+        var history = new StubObservationHistory
+        {
+            LineStatus = new LineStatusObservation(
+                "previous",
+                ObservedAt.AddMinutes(-2),
+                10,
+                "Good Service")
+        };
+        var detector = CreateDetector(history, enabled: false);
+
+        var alert = await detector.DetectLineStatusAsync(
+            CreateLineStatus("current", 5, "Part Closure"));
+
+        Assert.Null(alert);
+    }
+
+    [Fact]
     public async Task DoesNotAlertAtThePredictionThreshold()
     {
         var history = new StubObservationHistory
@@ -187,11 +224,14 @@ public sealed class AlertDetectorTests
         Assert.Equal(first?.AlertId, second?.AlertId);
     }
 
-    private static AlertDetector CreateDetector(IObservationHistory history) =>
+    private static AlertDetector CreateDetector(
+        IObservationHistory history,
+        bool enabled = true) =>
         new(
             history,
             new AlertOptions
             {
+                Enabled = enabled,
                 ArrivalSlippageThresholdSeconds = 120,
                 GoodServiceSeverity = 10
             },
