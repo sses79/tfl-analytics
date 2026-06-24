@@ -17,23 +17,41 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 23, 2026 |
-| Git commit | Uncommitted: `AlertOptions.Enabled` flag in `AlertDetector` to pause alert detection until July 1 |
-| ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh`, plus an app-setting change and a data-plane table clear (no Bicep deployment) |
-| Provisioning state | `Succeeded` |
-| Scope | Ingestion and processing Function Apps redeployed; `Alerts__Enabled=false` set on the processing Function App; all 365 existing rows deleted from the `alerts` Storage Table |
-| Cost impact | Stops all alert-pipeline activity (AlertDetector, AlertOrchestration, PersistAlert/WriteAlertAudit/SendMockAlertNotification/BroadcastAlert) until re-enabled; dashboard `recentAlertCount` now reads 0 |
+| Date | June 24, 2026 |
+| Git commit | `8bd66ca38e8d` (`codex/pause-arrival-ingestion`) |
+| ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh`, plus `Arrival__Enabled=false` app-setting change on the ingestion Function App. Full ARM create intentionally skipped because the unconditional SQL module would recreate the deleted SQL server. ARM validation passed against `infra/bicep/main.bicep`. |
+| Provisioning state | `Succeeded` for foundation deployment `manual-20260621-2142`; both Function zip deployments completed and health checks passed |
+| Scope | Ingestion and processing Function Apps redeployed; `Arrival__Enabled=false` set on `func-tfl-analytics-ingestion-dev-nhkpyupi`; line-status ingestion remains enabled |
+| Cost impact | Stops arrival TfL calls, arrival Event Hub messages, arrival raw archive writes, arrival Cosmos writes, arrival alert detection, and arrival SignalR broadcasts. Fixed/background costs remain, including Event Hubs Basic, ACR, Storage baseline, and line-status polling. Cost Management reported June 24 actual cost at £1.241 so far immediately after deployment. |
 | Event Hubs tier | Basic, one throughput unit |
 | Azure consumer group | `$Default` |
 
 Latest verification evidence:
 
+- `dotnet build TflAnalytics.sln --no-restore -m:1 --disable-build-servers` passed.
+- `dotnet test TflAnalytics.sln --no-restore --no-build -m:1 --disable-build-servers` passed.
+- `az bicep build --file infra/bicep/main.bicep` passed.
+- `az deployment group what-if` completed before deployment with no unexpected deletes or paid SKU increases identified; preview remained noisy for existing resources and nested modules.
+- `az deployment group validate --resource-group rg-tfl-analytics-dev-uk-south --template-file infra/bicep/main.bicep --parameters infra/bicep/environments/dev.bicepparam --output none` passed.
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps. Ingestion deployment id `bbfa5a0c-00b4-4d4c-9087-d0198c140d65`; processing deployment id `a3b3642b-93f8-4b1b-9576-e337530fc173`. Both health endpoints returned `{"status":"healthy"}`.
+- `az functionapp config appsettings set ... --settings Arrival__Enabled=false` completed, and a targeted app-setting query confirmed `Arrival__Enabled=false` on `func-tfl-analytics-ingestion-dev-nhkpyupi`.
+- Expected Functions are indexed on both Function Apps, including `PollArrivals`, `PollLineStatus`, `TriggerIngestion`, `ArchiveEventHubEvents`, `ProcessQueuedEvent`, and alert workflow activities.
+- Manual `POST https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/pull` returned `{"arrivalsPublished":0,"lineStatusPublished":14}`, confirming the deployed manual path also respects the arrival pause.
+- API live health, API line-status, ingestion health, processing health, and Static Web App endpoint checks all passed.
+- Workload RBAC smoke tests passed. Diagnostics smoke tests are not applicable because observability is disabled.
+- The data-service smoke script still fails on the known deleted SQL database. Manual non-SQL checks passed: `alerts` table exists; Cosmos DB free tier is enabled with 1000 RU/s and seven-day TTL on both containers; SignalR is `Free_F1` with local authentication disabled and two app-server roles.
+- Queue peeking was not performed because the current operator identity lacks Storage Queue data-plane RBAC and account keys were not used.
+- `az resource list --resource-group rg-tfl-analytics-dev-uk-south --query "[?contains(name,'sql')]"` returned no rows after deployment, confirming SQL was not recreated.
+- **To re-enable arrivals:** set `Arrival__Enabled=true` or remove the app setting from the ingestion Function App, then restart/redeploy the Function host. The code default is `true`.
+- **Caveat carried over:** `infra/bicep/main.bicep` still unconditionally declares the `sql` module. A future full `az deployment group create` will recreate the deleted SQL server unless that module is gated first (tracked in `docs/azure-resource-status.md`).
+
+Prior verification evidence (June 23, 2026 alert pause):
+
 - `scripts/deploy-functions.sh` zip-deployed both Function Apps; both health endpoints returned `{"status":"healthy"}`.
 - `az functionapp config appsettings set ... --settings "Alerts__Enabled=false"` confirmed set on `func-tfl-analytics-processing-dev-nhkpyupi`.
 - Temporarily granted my own user `Storage Table Data Contributor` on `sttflnhkpyupi` (I only had `Storage Blob Data Reader`), deleted all 365 rows from the `alerts` table via `az storage entity delete`, verified 0 rows remain, then revoked the temporary role grant.
 - `GET /api/dashboard/summary` returned `"recentAlertCount": 0`; `GET /api/alerts` returned `[]`.
-- **To re-enable on/after July 1:** remove or flip `Alerts__Enabled` back to `true` on the processing Function App — no code redeploy needed, the flag defaults to `true`.
-- **Caveat carried over:** `infra/bicep/main.bicep` still unconditionally declares the `sql` module. A future full `az deployment group create` will recreate the deleted SQL server unless that module is gated first (tracked in `docs/azure-resource-status.md`).
+- **To re-enable on/after July 1:** remove or flip `Alerts__Enabled` back to `true` on the processing Function App - no code redeploy needed, the flag defaults to `true`.
 
 Prior verification evidence (June 23, 2026 SQL Server deletion, no code change):
 
