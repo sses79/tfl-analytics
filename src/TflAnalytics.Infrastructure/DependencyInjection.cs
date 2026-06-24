@@ -48,6 +48,9 @@ public static class DependencyInjection
         services.AddSingleton(
             configuration.GetSection(IngestionOptions.SectionName).Get<IngestionOptions>()
             ?? new IngestionOptions());
+        services.AddSingleton(
+            configuration.GetSection(ArrivalOptions.SectionName).Get<ArrivalOptions>()
+            ?? new ArrivalOptions());
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(serviceProvider =>
         {

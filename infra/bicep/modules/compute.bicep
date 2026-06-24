@@ -248,6 +248,10 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: '0 */10 * * * *'
         }
         {
+          name: 'Arrival__Enabled'
+          value: 'false'
+        }
+        {
           name: 'Ingestion__StationIds__0'
           value: '940GZZLUVIC'
         }
