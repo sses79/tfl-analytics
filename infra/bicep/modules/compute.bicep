@@ -12,12 +12,12 @@ param ingestionDeploymentContainerName string
 param processingDeploymentContainerName string
 param applicationInsightsName string = ''
 param keyVaultName string
-param eventHubsNamespaceName string
-param eventHubName string
 param cosmosAccountName string
 param cosmosDatabaseName string
 param cosmosLiveEventsContainerName string
 param cosmosLineStatusContainerName string
+param cosmosRawEventsContainerName string
+param cosmosLeasesContainerName string
 param sqlServerFqdn string
 param sqlDatabaseName string
 param apiIdentityName string
@@ -232,12 +232,16 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: tflApiKeyVaultReference
         }
         {
-          name: 'EventHubs__FullyQualifiedNamespace'
-          value: '${eventHubsNamespaceName}.servicebus.windows.net'
+          name: 'Cosmos__Endpoint'
+          value: 'https://${cosmosAccountName}.documents.azure.com:443/'
         }
         {
-          name: 'EventHubs__EventHubName'
-          value: eventHubName
+          name: 'Cosmos__DatabaseName'
+          value: cosmosDatabaseName
+        }
+        {
+          name: 'Cosmos__RawEventsContainerName'
+          value: cosmosRawEventsContainerName
         }
         {
           name: 'IngestionArrivalsSchedule'
@@ -394,26 +398,6 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: keyVaultName
         }
         {
-          name: 'EventHubs__fullyQualifiedNamespace'
-          value: '${eventHubsNamespaceName}.servicebus.windows.net'
-        }
-        {
-          name: 'EventHubs__credential'
-          value: 'managedidentity'
-        }
-        {
-          name: 'EventHubs__clientId'
-          value: processingIdentity.properties.clientId
-        }
-        {
-          name: 'ProcessingEventHubName'
-          value: eventHubName
-        }
-        {
-          name: 'ProcessingConsumerGroup'
-          value: '$Default'
-        }
-        {
           name: 'ProcessingQueueName'
           value: 'processing'
         }
@@ -466,8 +450,28 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: cosmosLineStatusContainerName
         }
         {
+          name: 'Cosmos__RawEventsContainerName'
+          value: cosmosRawEventsContainerName
+        }
+        {
+          name: 'Cosmos__LeasesContainerName'
+          value: cosmosLeasesContainerName
+        }
+        {
           name: 'Cosmos__Initialize'
           value: 'false'
+        }
+        {
+          name: 'CosmosTrigger__accountEndpoint'
+          value: 'https://${cosmosAccountName}.documents.azure.com:443/'
+        }
+        {
+          name: 'CosmosTrigger__credential'
+          value: 'managedidentity'
+        }
+        {
+          name: 'CosmosTrigger__clientId'
+          value: processingIdentity.properties.clientId
         }
         {
           name: 'AlertStorage__ServerFqdn'

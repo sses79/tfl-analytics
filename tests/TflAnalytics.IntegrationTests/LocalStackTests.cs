@@ -1,11 +1,12 @@
 using Azure;
 using Azure.Data.Tables;
-using Azure.Messaging.EventHubs.Producer;
 using Azure.Storage.Blobs;
+using Microsoft.Extensions.Options;
 using Microsoft.Azure.Cosmos;
 using TflAnalytics.Contracts.Alerts;
 using TflAnalytics.Contracts.Events;
 using TflAnalytics.Infrastructure.Messaging;
+using TflAnalytics.Infrastructure.Processing;
 
 namespace TflAnalytics.IntegrationTests;
 
@@ -73,8 +74,6 @@ public sealed class LocalStackTests
             return;
         }
 
-        var eventHubsConnectionString = GetRequiredSetting(
-            "LOCAL_EVENT_HUBS_CONNECTION_STRING");
         var storageConnectionString = GetRequiredSetting(
             "LOCAL_STORAGE_CONNECTION_STRING");
         var cosmosConnectionString = GetRequiredSetting(
@@ -85,11 +84,19 @@ public sealed class LocalStackTests
         var goodEventId = $"phase4-good-{runId}";
         var disruptedEventId = $"phase4-disrupted-{runId}";
 
-        await using var producer = new EventHubProducerClient(
-            eventHubsConnectionString,
-            "tfl-events");
-        var publisher = new EventHubsEventPublisher(producer);
         using var cosmosClient = CreateCosmosClient(cosmosConnectionString);
+        var publisher = new CosmosRawEventPublisher(
+            cosmosClient,
+            Options.Create(
+                new CosmosOptions
+                {
+                    ConnectionString = cosmosConnectionString,
+                    DatabaseName = "tfl-analytics",
+                    RawEventsContainerName = "raw-events",
+                    LeasesContainerName = "leases",
+                    Initialize = true,
+                    DisableServerCertificateValidation = true
+                }));
         var lineStatus = cosmosClient
             .GetDatabase("tfl-analytics")
             .GetContainer("line-status");

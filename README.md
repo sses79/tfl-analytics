@@ -125,11 +125,12 @@ docker compose \
 ```
 
 The ingestion Function polls the deterministic WireMock fixtures and publishes
-to the local `tfl-events` Event Hub. The processing Function archives each raw
-event to Azurite, queues it, validates it, persists it to Cosmos DB, and writes
-alerts and alert audits to separate Azurite tables. The API queries those same
-local stores. Station IDs, line IDs, schedules, and emulator settings are
-configured in `infra/local/compose.yaml`.
+raw event envelopes to the local Cosmos DB `raw-events` container. The processing
+Function consumes the Cosmos DB change feed, archives each raw event to Azurite,
+queues it, validates it, persists it to Cosmos DB, and writes alerts and alert
+audits to separate Azurite tables. The API queries those same local stores.
+Station IDs, line IDs, schedules, and emulator settings are configured in
+`infra/local/compose.yaml`.
 
 Add Angular:
 
@@ -165,9 +166,6 @@ Local ports:
 | Azurite Blob | `10000` | default |
 | Azurite Queue | `10001` | default |
 | Azurite Table | `10002` | default |
-| Event Hubs health | `5300` | default |
-| Event Hubs AMQP | `5672` | default |
-| Event Hubs Kafka | `9092` | default |
 | Cosmos DB gateway | `8081` | default |
 | Cosmos DB readiness | `8082` | default |
 | Cosmos DB explorer | `1234` | default |
@@ -204,8 +202,6 @@ Deployed resources:
 |---|---|
 | ADLS Gen2 storage | `sttflnhkpyupi` |
 | Key Vault | `kv-tfl-nhkpyupi` |
-| Event Hubs namespace | `evhns-tfl-analytics-dev-nhkpyupi` |
-| Event hub | `tfl-events` |
 | Log Analytics | `log-tfl-analytics-dev-nhkpyupi` |
 | Application Insights | `appi-tfl-analytics-dev-nhkpyupi` |
 | Container registry | `acrtflnhkpyupi` |
@@ -215,6 +211,8 @@ Deployed resources:
 | Processing Function App | `func-tfl-analytics-processing-dev-nhkpyupi` |
 | Static Web App | `swa-tfl-analytics-dev-nhkpyupi` |
 | Cosmos DB account | `cosmos-tfl-analytics-dev-nhkpyupi` |
+| Cosmos raw transport container | `raw-events` |
+| Cosmos change-feed leases container | `leases` |
 | Azure SQL server | `sql-tfl-analytics-dev-nhkpyupi` |
 | Azure SQL database | `tfl-analytics` |
 | Alert history table | `alerts` in `sttflnhkpyupi` Table Storage |
