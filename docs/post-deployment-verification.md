@@ -18,7 +18,7 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | June 27, 2026 |
-| Git commit | `387122ebd1a5` (`dev`) |
+| Git commit | `0000e786e465` (`dev`) |
 | ARM deployment | `cosmos-change-feed-20260627-082434` |
 | Provisioning state | `Succeeded`; ingestion zip deployment `aa038bc8-1017-4839-9f5b-7011a18c094f`; processing zip deployment `e240105c-50ef-4ab0-8f65-63b1d94d3187` |
 | Scope | Migrated raw transport from Event Hubs to Cosmos DB change feed; added `raw-events` and `leases` containers; redeployed ingestion and processing Function Apps; deleted `evhns-tfl-analytics-dev-nhkpyupi`; kept `Arrival__Enabled=false` |
