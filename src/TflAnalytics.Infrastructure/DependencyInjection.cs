@@ -1,7 +1,6 @@
 using Azure.Core;
 using Azure.Data.Tables;
 using Azure.Identity;
-using Azure.Messaging.EventHubs.Producer;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
@@ -33,8 +32,8 @@ public static class DependencyInjection
             .AddOptions<TflApiOptions>()
             .Bind(configuration.GetSection(TflApiOptions.SectionName));
         services
-            .AddOptions<EventHubsOptions>()
-            .Bind(configuration.GetSection(EventHubsOptions.SectionName));
+            .AddOptions<CosmosOptions>()
+            .Bind(configuration.GetSection(CosmosOptions.SectionName));
 
         services.AddHttpClient<ITflApiClient, TflApiClient>((serviceProvider, client) =>
         {
@@ -48,33 +47,34 @@ public static class DependencyInjection
         services.AddSingleton(
             configuration.GetSection(IngestionOptions.SectionName).Get<IngestionOptions>()
             ?? new IngestionOptions());
+        services.AddSingleton(
+            configuration.GetSection(ArrivalOptions.SectionName).Get<ArrivalOptions>()
+            ?? new ArrivalOptions());
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(serviceProvider =>
         {
             var options = serviceProvider
-                .GetRequiredService<IOptions<EventHubsOptions>>()
+                .GetRequiredService<IOptions<CosmosOptions>>()
                 .Value;
+            var clientOptions = CreateCosmosClientOptions(options);
 
             if (!string.IsNullOrWhiteSpace(options.ConnectionString))
             {
-                return new EventHubProducerClient(
-                    options.ConnectionString,
-                    options.EventHubName);
+                return new CosmosClient(options.ConnectionString, clientOptions);
             }
 
-            if (string.IsNullOrWhiteSpace(options.FullyQualifiedNamespace))
+            if (string.IsNullOrWhiteSpace(options.Endpoint))
             {
                 throw new InvalidOperationException(
-                    "Configure EventHubs:ConnectionString locally or "
-                    + "EventHubs:FullyQualifiedNamespace in Azure.");
+                    "Configure Cosmos:ConnectionString locally or Cosmos:Endpoint in Azure.");
             }
 
-            return new EventHubProducerClient(
-                options.FullyQualifiedNamespace,
-                options.EventHubName,
-                new DefaultAzureCredential());
+            return new CosmosClient(
+                options.Endpoint,
+                new DefaultAzureCredential(),
+                clientOptions);
         });
-        services.AddSingleton<IEventPublisher, EventHubsEventPublisher>();
+        services.AddSingleton<IEventPublisher, CosmosRawEventPublisher>();
         services.AddSingleton<IIngestionPoller, IngestionPoller>();
 
         return services;
@@ -87,9 +87,6 @@ public static class DependencyInjection
         services
             .AddOptions<ProcessingStorageOptions>()
             .Bind(configuration.GetSection(ProcessingStorageOptions.SectionName));
-        services
-            .AddOptions<CosmosOptions>()
-            .Bind(configuration.GetSection(CosmosOptions.SectionName));
         services
             .AddOptions<AlertStorageOptions>()
             .Bind(configuration.GetSection(AlertStorageOptions.SectionName));
@@ -143,44 +140,6 @@ public static class DependencyInjection
                         $"https://{RequireAccountName(options.AccountName)}.table.core.windows.net"),
                     serviceProvider.GetRequiredService<TokenCredential>());
         });
-        services.AddSingleton(serviceProvider =>
-        {
-            var options = serviceProvider
-                .GetRequiredService<IOptions<CosmosOptions>>()
-                .Value;
-            var clientOptions = new CosmosClientOptions
-            {
-                ConnectionMode = ConnectionMode.Gateway
-            };
-
-            if (options.DisableServerCertificateValidation)
-            {
-                clientOptions.HttpClientFactory = () =>
-                    new HttpClient(
-                        new HttpClientHandler
-                        {
-                            ServerCertificateCustomValidationCallback =
-                                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                        });
-            }
-
-            if (!string.IsNullOrWhiteSpace(options.ConnectionString))
-            {
-                return new CosmosClient(options.ConnectionString, clientOptions);
-            }
-
-            if (string.IsNullOrWhiteSpace(options.Endpoint))
-            {
-                throw new InvalidOperationException(
-                    "Configure Cosmos:ConnectionString locally or Cosmos:Endpoint in Azure.");
-            }
-
-            return new CosmosClient(
-                options.Endpoint,
-                new DefaultAzureCredential(),
-                clientOptions);
-        });
-
         services
             .AddOptions<SignalROptions>()
             .Bind(configuration.GetSection(SignalROptions.SectionName));
@@ -233,4 +192,25 @@ public static class DependencyInjection
             : throw new InvalidOperationException(
                 "Configure ProcessingStorage:ConnectionString locally or "
                 + "ProcessingStorage:AccountName in Azure.");
+
+    private static CosmosClientOptions CreateCosmosClientOptions(CosmosOptions options)
+    {
+        var clientOptions = new CosmosClientOptions
+        {
+            ConnectionMode = ConnectionMode.Gateway
+        };
+
+        if (options.DisableServerCertificateValidation)
+        {
+            clientOptions.HttpClientFactory = () =>
+                new HttpClient(
+                    new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback =
+                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    });
+        }
+
+        return clientOptions;
+    }
 }

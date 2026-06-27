@@ -17,23 +17,43 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 23, 2026 |
-| Git commit | Uncommitted: `AlertOptions.Enabled` flag in `AlertDetector` to pause alert detection until July 1 |
-| ARM deployment | Not applicable; Functions-only zip deploy via `scripts/deploy-functions.sh`, plus an app-setting change and a data-plane table clear (no Bicep deployment) |
-| Provisioning state | `Succeeded` |
-| Scope | Ingestion and processing Function Apps redeployed; `Alerts__Enabled=false` set on the processing Function App; all 365 existing rows deleted from the `alerts` Storage Table |
-| Cost impact | Stops all alert-pipeline activity (AlertDetector, AlertOrchestration, PersistAlert/WriteAlertAudit/SendMockAlertNotification/BroadcastAlert) until re-enabled; dashboard `recentAlertCount` now reads 0 |
-| Event Hubs tier | Basic, one throughput unit |
-| Azure consumer group | `$Default` |
+| Date | June 27, 2026 |
+| Git commit | `0000e786e465` (`dev`) |
+| ARM deployment | `cosmos-change-feed-20260627-082434` |
+| Provisioning state | `Succeeded`; ingestion zip deployment `aa038bc8-1017-4839-9f5b-7011a18c094f`; processing zip deployment `e240105c-50ef-4ab0-8f65-63b1d94d3187` |
+| Scope | Migrated raw transport from Event Hubs to Cosmos DB change feed; added `raw-events` and `leases` containers; redeployed ingestion and processing Function Apps; deleted `evhns-tfl-analytics-dev-nhkpyupi`; kept `Arrival__Enabled=false` |
+| Cost impact | Removes the Event Hubs Basic namespace fixed cost after deletion. Azure Cost Management showed Event Hubs at £0.2459 on June 26 and £0.0112 so far on June 27 before/around deletion; Cosmos DB remained £0. Current remaining paid drivers are expected to be Container Apps, Container Registry, Storage, and small Function execution/storage costs. |
+| Event Hubs tier | Deleted; not used by the deployed event path |
+| Azure consumer group | Not applicable; processing now uses Cosmos DB change-feed leases |
 
 Latest verification evidence:
+
+- `dotnet build TflAnalytics.sln --no-restore -m:1 --disable-build-servers` passed.
+- `dotnet test TflAnalytics.sln --no-restore --no-build -m:1 --disable-build-servers` passed.
+- `az bicep build --file infra/bicep/main.bicep` passed.
+- `az deployment group what-if` completed before deployment with no unexpected paid SKU increases. The removed Event Hubs module appeared as `Ignore`, because the deployment mode is incremental and does not delete unmanaged resources.
+- `az deployment group validate --resource-group rg-tfl-analytics-dev-uk-south --template-file infra/bicep/main.bicep --parameters infra/bicep/environments/dev.bicepparam --output none` passed.
+- `az deployment group create --name cosmos-change-feed-20260627-082434 --resource-group rg-tfl-analytics-dev-uk-south --template-file infra/bicep/main.bicep --parameters infra/bicep/environments/dev.bicepparam` succeeded at `2026-06-27T07:26:24Z`.
+- `scripts/deploy-functions.sh` zip-deployed both Function Apps. Ingestion deployment id `aa038bc8-1017-4839-9f5b-7011a18c094f`; processing deployment id `e240105c-50ef-4ab0-8f65-63b1d94d3187`. Both health endpoints returned `{"status":"healthy"}`.
+- Cosmos DB container checks confirmed `raw-events` uses partition key `/partitionKey` with TTL `14400`, and `leases` uses partition key `/id`.
+- App-setting checks confirmed ingestion has `Cosmos__RawEventsContainerName=raw-events` and `Arrival__Enabled=false`; processing has `CosmosTrigger__accountEndpoint`, `CosmosTrigger__credential=managedidentity`, `Cosmos__RawEventsContainerName=raw-events`, and `Cosmos__LeasesContainerName=leases`. No Event Hubs settings were returned by the targeted query.
+- Expected Functions are indexed on both Function Apps, including `PollArrivals`, `PollLineStatus`, `TriggerIngestion`, `ArchiveRawEvents`, `ProcessQueuedEvent`, and alert workflow activities.
+- `az eventhubs namespace delete --resource-group rg-tfl-analytics-dev-uk-south --name evhns-tfl-analytics-dev-nhkpyupi --no-wait true` completed; a follow-up `az eventhubs namespace show` returned `NamespaceNotFound`.
+- Manual `POST https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/pull` returned `{"arrivalsPublished":0,"lineStatusPublished":11}`, confirming the deployed manual path still respects the arrival pause.
+- Processing Function metrics showed post-deployment executions, including two executions in the `2026-06-27T07:35:00Z` five-minute bucket after the Cosmos change-feed package was deployed.
+- API live health, API dashboard summary, API line-status, ingestion health, processing health, and Static Web App endpoint checks all passed. API data returned line statuses with `observedAtUtc=2026-06-27T07:20:00.1468213Z`; this timestamp is the TfL status observation time, not necessarily the Azure ingestion time.
+- Azure Cost Management for June 27 showed partial-day costs of Container Registry £0.0052, Event Hubs £0.0112, Functions £0.00002, and Storage £0.0050 at verification time.
+- `az resource list --resource-group rg-tfl-analytics-dev-uk-south --query "[?contains(name,'sql')]"` previously returned no rows after the gated SQL change, confirming SQL was not recreated by this deployment.
+- **To re-enable arrivals:** set `Arrival__Enabled=true` or remove the app setting from the ingestion Function App, then restart/redeploy the Function host. The code default is `true`.
+- **Caveat:** `az cosmosdb sql query` is not available in the local Azure CLI install, so raw document verification used container settings, Function metrics, and downstream API results instead of a direct SQL query against `raw-events`.
+
+Prior verification evidence (June 23, 2026 alert pause):
 
 - `scripts/deploy-functions.sh` zip-deployed both Function Apps; both health endpoints returned `{"status":"healthy"}`.
 - `az functionapp config appsettings set ... --settings "Alerts__Enabled=false"` confirmed set on `func-tfl-analytics-processing-dev-nhkpyupi`.
 - Temporarily granted my own user `Storage Table Data Contributor` on `sttflnhkpyupi` (I only had `Storage Blob Data Reader`), deleted all 365 rows from the `alerts` table via `az storage entity delete`, verified 0 rows remain, then revoked the temporary role grant.
 - `GET /api/dashboard/summary` returned `"recentAlertCount": 0`; `GET /api/alerts` returned `[]`.
-- **To re-enable on/after July 1:** remove or flip `Alerts__Enabled` back to `true` on the processing Function App — no code redeploy needed, the flag defaults to `true`.
-- **Caveat carried over:** `infra/bicep/main.bicep` still unconditionally declares the `sql` module. A future full `az deployment group create` will recreate the deleted SQL server unless that module is gated first (tracked in `docs/azure-resource-status.md`).
+- **To re-enable on/after July 1:** remove or flip `Alerts__Enabled` back to `true` on the processing Function App - no code redeploy needed, the flag defaults to `true`.
 
 Prior verification evidence (June 23, 2026 SQL Server deletion, no code change):
 
@@ -150,7 +170,7 @@ Expected Functions:
 - `IngestionHealth`
 - `PollArrivals`
 - `PollLineStatus`
-- `ArchiveEventHubEvents`
+- `ArchiveRawEvents`
 - `ProcessingHealth`
 - `ProcessQueuedEvent`
 - `AlertOrchestration`
@@ -176,8 +196,8 @@ After Phase 4 deployment, the path is:
 ```text
 TfL Unified API
   -> PollArrivals / PollLineStatus
-  -> tfl-events Event Hub
-  -> ArchiveEventHubEvents
+  -> Cosmos DB raw-events container
+  -> ArchiveRawEvents
   -> raw Blob container
   -> processing queue
   -> ProcessQueuedEvent
@@ -188,8 +208,8 @@ TfL Unified API
   -> mock notification log
 ```
 
-The Azure Basic Event Hubs namespace uses the built-in `$Default` consumer
-group. The dedicated `processing` consumer group is local-emulator-only.
+The Cosmos DB trigger checkpoints through the `leases` container. Event Hubs is
+no longer part of the Azure event path.
 
 ## Function Executions
 
@@ -201,7 +221,7 @@ In the Azure portal:
 3. Check `PollLineStatus` for successful executions approximately every ten
    minutes.
 4. Open `func-tfl-analytics-processing-dev-nhkpyupi`.
-5. Check `ArchiveEventHubEvents` and `ProcessQueuedEvent` for successful
+5. Check `ArchiveRawEvents` and `ProcessQueuedEvent` for successful
    executions.
 6. After a qualifying delay or disruption, confirm `AlertOrchestration`,
    `PersistAlert`, `WriteAlertAudit`, and `SendMockAlertNotification` succeed.
@@ -218,7 +238,6 @@ In the Azure portal:
 3. Confirm recently modified gzip files exist under paths resembling:
 
 ```text
-eventType=arrival/year=2026/month=06/day=14/hour=...
 eventType=line-status/year=2026/month=06/day=14/hour=...
 ```
 
@@ -274,7 +293,7 @@ A deployment is complete only when:
 - Expected Functions are indexed.
 - Management-plane smoke tests pass.
 - Raw archives are recent and increasing.
-- Cosmos DB contains recent arrival and line-status documents.
+- Cosmos DB contains recent raw and processed line-status documents.
 - Qualifying alerts complete the Durable workflow exactly once.
 - The `alerts` table contains the alert and the `audit` table contains its
   audit record.

@@ -311,6 +311,19 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
                     DefaultTimeToLive = _options.DefaultTtlSeconds
                 },
                 cancellationToken: cancellationToken);
+            await database.Database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(
+                    _options.RawEventsContainerName,
+                    "/partitionKey")
+                {
+                    DefaultTimeToLive = 14400
+                },
+                cancellationToken: cancellationToken);
+            await database.Database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(
+                    _options.LeasesContainerName,
+                    "/id"),
+                cancellationToken: cancellationToken);
 
             _initialized = true;
         }

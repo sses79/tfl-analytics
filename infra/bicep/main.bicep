@@ -13,6 +13,7 @@ param environmentName string = 'dev'
 param projectName string = 'tfl-analytics'
 
 param deployApiContainer bool = false
+param enableSql bool = false
 
 @description('Deploy Log Analytics workspace and Application Insights. Disabled by default to avoid AppTraces ingestion cost.')
 param enableObservability bool = false
@@ -90,12 +91,12 @@ module compute 'modules/compute.bicep' = {
     processingDeploymentContainerName: 'function-processing-deployments'
     applicationInsightsName: observability.?outputs.applicationInsightsName ?? ''
     keyVaultName: keyVaultName
-    eventHubsNamespaceName: messaging.outputs.namespaceName
-    eventHubName: messaging.outputs.eventHubName
     cosmosAccountName: cosmosAccountName
     cosmosDatabaseName: cosmosDatabaseName
     cosmosLiveEventsContainerName: 'live-events'
     cosmosLineStatusContainerName: 'line-status'
+    cosmosRawEventsContainerName: 'raw-events'
+    cosmosLeasesContainerName: 'leases'
     sqlServerFqdn: sqlServerFqdn
     sqlDatabaseName: sqlDatabaseName
     apiIdentityName: apiIdentityName
@@ -138,16 +139,6 @@ module apiHosting 'modules/api-hosting.bicep' = {
   ]
 }
 
-module messaging 'modules/messaging.bicep' = {
-  name: 'messaging'
-  params: {
-    location: location
-    namespaceName: 'evhns-${projectName}-${environmentName}-${suffix}'
-    eventHubName: 'tfl-events'
-    tags: commonTags
-  }
-}
-
 module cosmos 'modules/cosmos.bicep' = {
   name: 'cosmos'
   params: {
@@ -155,12 +146,13 @@ module cosmos 'modules/cosmos.bicep' = {
     accountName: cosmosAccountName
     databaseName: cosmosDatabaseName
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
+    ingestionPrincipalId: compute.outputs.ingestionDeploymentIdentityPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
     tags: commonTags
   }
 }
 
-module sql 'modules/sql.bicep' = {
+module sql 'modules/sql.bicep' = if (enableSql) {
   name: 'sql'
   params: {
     location: sqlLocation
@@ -188,8 +180,6 @@ module realtime 'modules/realtime.bicep' = {
 module workloadRbac 'modules/workload-rbac.bicep' = {
   name: 'workload-rbac'
   params: {
-    eventHubsNamespaceName: messaging.outputs.namespaceName
-    eventHubName: messaging.outputs.eventHubName
     keyVaultName: keyVault.outputs.keyVaultName
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     ingestionPrincipalId: compute.outputs.ingestionDeploymentIdentityPrincipalId
@@ -202,18 +192,18 @@ module diagnostics 'modules/diagnostics.bicep' = if (enableObservability) {
   params: {
     logAnalyticsWorkspaceId: observability.?outputs.logAnalyticsWorkspaceId ?? ''
     keyVaultName: keyVault.outputs.keyVaultName
-    eventHubsNamespaceName: messaging.outputs.namespaceName
     cosmosAccountName: cosmos.outputs.accountName
     signalRName: realtime.outputs.name
-    sqlServerName: sql.outputs.serverName
-    sqlDatabaseName: sql.outputs.databaseName
+    sqlServerName: sql.?outputs.serverName ?? ''
+    sqlDatabaseName: sql.?outputs.databaseName ?? ''
+    enableSqlDiagnostics: enableSql
   }
 }
 
 output storageAccountName string = storage.outputs.storageAccountName
 output keyVaultName string = keyVault.outputs.keyVaultName
-output eventHubsNamespaceName string = messaging.outputs.namespaceName
-output eventHubName string = messaging.outputs.eventHubName
+output eventHubsNamespaceName string = ''
+output eventHubName string = ''
 output applicationInsightsName string = observability.?outputs.applicationInsightsName ?? ''
 output logAnalyticsWorkspaceName string = observability.?outputs.logAnalyticsWorkspaceName ?? ''
 output containerRegistryName string = apiHosting.outputs.registryName
@@ -233,8 +223,10 @@ output cosmosEndpoint string = cosmos.outputs.accountEndpoint
 output cosmosDatabaseName string = cosmos.outputs.databaseName
 output cosmosLiveEventsContainerName string = cosmos.outputs.liveEventsContainerName
 output cosmosLineStatusContainerName string = cosmos.outputs.lineStatusContainerName
-output sqlServerName string = sql.outputs.serverName
-output sqlServerFqdn string = sql.outputs.serverFqdn
-output sqlDatabaseName string = sql.outputs.databaseName
+output cosmosRawEventsContainerName string = cosmos.outputs.rawEventsContainerName
+output cosmosLeasesContainerName string = cosmos.outputs.leasesContainerName
+output sqlServerName string = sql.?outputs.serverName ?? ''
+output sqlServerFqdn string = sql.?outputs.serverFqdn ?? ''
+output sqlDatabaseName string = sql.?outputs.databaseName ?? ''
 output signalRName string = realtime.outputs.name
 output signalRHostname string = realtime.outputs.hostname

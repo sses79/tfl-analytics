@@ -69,21 +69,6 @@ curl --output /dev/null \
   'http://localhost:10000/devstoreaccount1?comp=list'
 ```
 
-## Event Hubs
-
-Check Event Hubs emulator health and its AMQP and Kafka listeners:
-
-```bash
-curl --fail http://localhost:5300/health
-nc -z localhost 5672
-nc -z localhost 9092
-```
-
-The ingestion Function publishes deterministic arrival observations every 30
-seconds and line-status observations every two minutes to the `tfl-events`
-event hub. WireMock serves the configured arrival, stop metadata, and
-line-status fixtures, so this path does not require a live TfL API key.
-
 ## Cosmos DB
 
 Check Cosmos DB emulator readiness:
@@ -94,6 +79,12 @@ curl --fail http://localhost:8082/ready
 
 The response should report `"ready": true` and healthy `postgres`, `gateway`,
 and `explorer` checks.
+
+The ingestion Function publishes deterministic arrival observations every 30
+seconds and line-status observations every two minutes to the Cosmos DB
+`raw-events` transport container. The processing Function consumes that
+container's change feed. WireMock serves the configured arrival, stop metadata,
+and line-status fixtures, so this path does not require a live TfL API key.
 
 ## SQL Server
 
@@ -123,8 +114,8 @@ docker compose \
 Each host should report `Application started` and `Now listening on`.
 
 After at least two minutes, ingestion logs should show successful arrival and
-line-status timer executions. Processing logs should show the Event Hubs archive
-trigger and queue processor completing for both event types.
+line-status timer executions. Processing logs should show the Cosmos change-feed
+archive trigger and queue processor completing for both event types.
 
 ## Angular
 
@@ -201,11 +192,10 @@ This asserts that compressed raw events exist in the `raw` Blob container and
 that arrival and line-status documents exist in their Cosmos DB containers.
 
 To verify the Phase 4 alert path, start the processing stack and provide
-host-reachable Event Hubs, Azurite, and Cosmos connection strings:
+host-reachable Azurite and Cosmos connection strings:
 
 ```bash
 RUN_PHASE4_LOCAL_STACK_TESTS=true \
-LOCAL_EVENT_HUBS_CONNECTION_STRING='<Event Hubs emulator connection string using localhost>' \
 LOCAL_STORAGE_CONNECTION_STRING='<Azurite connection string using localhost>' \
 LOCAL_COSMOS_CONNECTION_STRING='<Cosmos emulator connection string using localhost>' \
 dotnet test \
