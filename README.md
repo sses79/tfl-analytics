@@ -204,7 +204,7 @@ Deployed resources:
 | Key Vault | `kv-tfl-nhkpyupi` |
 | Log Analytics | `log-tfl-analytics-dev-nhkpyupi` |
 | Application Insights | `appi-tfl-analytics-dev-nhkpyupi` |
-| Container registry | `acrtflnhkpyupi` |
+| API image registry | `ghcr.io/sses79/tfl-analytics-api` (public GHCR) |
 | Container Apps environment | `cae-tfl-analytics-dev-nhkpyupi` |
 | API Container App | `ca-tfl-api-dev-nhkpyupi` |
 | Ingestion Function App | `func-tfl-analytics-ingestion-dev-nhkpyupi` |

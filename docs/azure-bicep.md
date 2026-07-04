@@ -34,9 +34,9 @@ The Phase 1 compute foundation is deployed:
 | Function host and deployment storage | Dedicated Blob containers plus identity-based Blob, Queue, and Table access |
 | Angular hosting | Static Web Apps Free tier in West Europe |
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
-| Container registry | Private Basic ACR with managed-identity image pull |
+| API image registry | Public GitHub Container Registry (`ghcr.io/sses79/tfl-analytics-api`); Container App pulls anonymously |
 | Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two seven-day TTL containers |
-| Azure SQL | Free serverless allowance, 0.5 minimum vCore, 60-minute inactivity auto-pause; retained but inactive |
+| Azure SQL | Removed — alerts now on Table Storage; the `sql` Bicep module is gated off (`enableSql=false`) |
 | Azure SignalR | Free F1, local key authentication disabled |
 
 The Function hosts and their application packages are deployed. The Angular
@@ -57,8 +57,10 @@ Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
 June 12, 2026, or approximately `$15.34` for seven continuous days. Although
 within budget, Azure rejects the deployment because this subscription offer has
 zero Microsoft.Web total regional VM quota. Container Apps Consumption avoids
-that dedicated App Service quota and can scale the API to zero. Basic ACR was
-`$0.1666` per day when checked on June 12, 2026.
+that dedicated App Service quota and can scale the API to zero. The API image was
+moved from Basic ACR (a flat ~`$0.1666`/day fixed fee) to public GitHub Container
+Registry on July 4, 2026, which is free for this public repo — see
+`docs/ghcr-image-migration.md`.
 
 Default deployment settings:
 
@@ -169,21 +171,24 @@ The provisioning state should be `Succeeded`.
 
 ## API Image Deployment
 
-ACR Tasks are disabled by this subscription offer, so build and push the Linux
-image locally:
+The API image is published to **public GitHub Container Registry**
+(`ghcr.io/sses79/tfl-analytics-api`) by the `Publish API image` GitHub Actions
+workflow on push to `main` (tags: `latest` + commit SHA). The Container App pulls
+it anonymously — no registry credentials and no managed-identity pull role.
+
+Deploy Bicep (or `az containerapp update`) with `apiImageTag` set to the published
+SHA, after the image exists. To build out-of-band instead of via the workflow,
+push to the same repo:
 
 ```bash
-az acr login --name "$CONTAINER_REGISTRY"
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 
 docker buildx build \
   --platform linux/amd64 \
   --file src/TflAnalytics.Api/Dockerfile \
-  --tag "$CONTAINER_REGISTRY_LOGIN_SERVER/tfl-analytics-api:dev" \
+  --tag "ghcr.io/sses79/tfl-analytics-api:$API_IMAGE_TAG" \
   --push .
 ```
-
-Deploy Bicep after the image exists so the first Container App revision can pull
-it using its managed identity.
 
 ## Function Package Deployment
 

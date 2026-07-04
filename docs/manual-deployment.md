@@ -64,18 +64,40 @@ git diff --check
 git status --short
 ```
 
-## 2. Choose An API Image Tag
+## 2. Publish The API Image (GHCR)
 
-Use an immutable tag such as the Git commit SHA:
+The API image lives in **public GitHub Container Registry**
+(`ghcr.io/sses79/tfl-analytics-api`), not Azure Container Registry. It is built
+and pushed automatically by the `Publish API image` GitHub Actions workflow on
+every push to `main` (and via manual `workflow_dispatch`), tagged with both
+`latest` and the commit SHA. Pick the SHA of the `main` commit whose run
+published the image — do not deploy the mutable `latest` tag:
 
 ```bash
-API_IMAGE_TAG="$(git rev-parse --short=12 HEAD)"
-echo "$API_IMAGE_TAG"
+API_IMAGE_TAG="d4b7caeb97de686899e0810ff7e3f5551878e649"
 ```
 
-Do not deploy the mutable `latest` tag.
+Confirm the tag exists (anonymous pull; the GHCR package must be Public):
 
-Update `apiImageTag` in:
+```bash
+docker manifest inspect "ghcr.io/sses79/tfl-analytics-api:$API_IMAGE_TAG" > /dev/null && echo OK
+```
+
+To build out-of-band instead of via the workflow, push to the same repo:
+
+```bash
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
+
+docker buildx build \
+  --platform linux/amd64 \
+  --file src/TflAnalytics.Api/Dockerfile \
+  --tag "ghcr.io/sses79/tfl-analytics-api:$API_IMAGE_TAG" \
+  --push .
+```
+
+## 3. Point The Deployment At The Image Tag
+
+Set `apiImageTag` to the SHA in:
 
 ```text
 infra/bicep/environments/dev.bicepparam
@@ -84,30 +106,17 @@ infra/bicep/environments/dev.bicepparam
 Example:
 
 ```bicep
-param apiImageTag = 'a7e525d12345'
+param apiImageTag = 'd4b7caeb97de686899e0810ff7e3f5551878e649'
 ```
 
-## 3. Build And Push The API
+The image repository defaults to `ghcr.io/sses79/tfl-analytics-api` via the
+`apiImageRepository` param in `infra/bicep/modules/api-hosting.bicep`; override it
+only if the owner/repo changes. The image must exist in GHCR before Bicep updates
+the Container App revision.
 
-Load the current Azure resource names:
-
-```bash
-source scripts/load-azure-outputs.sh
-```
-
-Sign in to the registry and push an AMD64 image:
-
-```bash
-az acr login --name "$CONTAINER_REGISTRY"
-
-docker buildx build \
-  --platform linux/amd64 \
-  --file src/TflAnalytics.Api/Dockerfile \
-  --tag "$CONTAINER_REGISTRY_LOGIN_SERVER/tfl-analytics-api:$API_IMAGE_TAG" \
-  --push .
-```
-
-The image must exist before Bicep updates the Container App revision.
+> For a code-free image bump (no infra change), skip Bicep and repoint the live
+> app directly:
+> `az containerapp update -n ca-tfl-api-dev-nhkpyupi -g rg-tfl-analytics-dev-uk-south --image ghcr.io/sses79/tfl-analytics-api:$API_IMAGE_TAG`
 
 ## 4. Preview And Validate Bicep
 
@@ -257,12 +266,12 @@ stateful resources as a routine rollback.
 Before each deployment, verify that the preview preserves:
 
 - Cosmos DB lifetime free tier.
-- Azure SQL free-limit auto-pause.
-- The processing managed identity as Azure SQL Entra administrator for Phase 4.
 - SignalR Free F1.
 - Static Web Apps Free.
 - Container Apps scale-to-zero and maximum two replicas.
-- Basic ACR and Event Hubs capacity one.
+- The API image is on public GHCR (free); there is no Azure Container Registry.
+- No Event Hubs and no Azure SQL server — Event Hubs was replaced by the Cosmos
+  change feed, and the `sql` module is gated off (`enableSql=false`).
 - Narrow diagnostic categories rather than verbose request logging.
 
 After deployment, review Azure Cost Management and keep the seven-day project
