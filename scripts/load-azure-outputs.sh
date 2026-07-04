@@ -62,8 +62,6 @@ fi
 
 export STORAGE_ACCOUNT="$(get_output storageAccountName)"
 export KEY_VAULT="$(get_output keyVaultName)"
-export EVENT_HUBS_NAMESPACE="$(get_output eventHubsNamespaceName)"
-export EVENT_HUB="$(get_output eventHubName)"
 export LOG_ANALYTICS="$(get_output logAnalyticsWorkspaceName)"
 export APPLICATION_INSIGHTS="$(get_output applicationInsightsName)"
 export CONTAINER_APPS_ENVIRONMENT="$(get_output containerAppsEnvironmentName)"
@@ -95,8 +93,6 @@ printf '%s\n' \
   "  DEPLOYMENT=$DEPLOYMENT" \
   "  STORAGE_ACCOUNT=$STORAGE_ACCOUNT" \
   "  KEY_VAULT=$KEY_VAULT" \
-  "  EVENT_HUBS_NAMESPACE=$EVENT_HUBS_NAMESPACE" \
-  "  EVENT_HUB=$EVENT_HUB" \
   "  LOG_ANALYTICS=$LOG_ANALYTICS" \
   "  APPLICATION_INSIGHTS=$APPLICATION_INSIGHTS" \
   "  CONTAINER_APPS_ENVIRONMENT=$CONTAINER_APPS_ENVIRONMENT" \

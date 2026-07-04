@@ -10,9 +10,10 @@ and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 ## Architecture Diagrams
 
 - [Azure event and data flow](./docs/plan/architecture-diagram.md) shows how
-  arrival, line-status, alert, and audit data move through Functions, Event
-  Hubs, Storage, Cosmos DB, SignalR, and the dashboard. Azure SQL is retained
-  for possible future relational workloads but is not on the active alert path.
+  arrival, line-status, alert, and audit data move through Functions, the Cosmos
+  DB change feed, Storage, Cosmos DB, SignalR, and the dashboard. The Azure SQL
+  server was removed (alerts now use Table Storage); a SQL Server container is
+  retained in the local stack for possible future relational workloads.
 - [API and dashboard architecture](./docs/plan/api-dashboard-architecture.md)
   explains how Angular and the ASP.NET Core Web API are hosted in Azure, how
   REST queries reach the data stores, and how SignalR delivers live updates.
@@ -213,8 +214,6 @@ Deployed resources:
 | Cosmos DB account | `cosmos-tfl-analytics-dev-nhkpyupi` |
 | Cosmos raw transport container | `raw-events` |
 | Cosmos change-feed leases container | `leases` |
-| Azure SQL server | `sql-tfl-analytics-dev-nhkpyupi` |
-| Azure SQL database | `tfl-analytics` |
 | Alert history table | `alerts` in `sttflnhkpyupi` Table Storage |
 | Azure SignalR Service | `sigr-tfl-analytics-dev-nhkpyupi` |
 

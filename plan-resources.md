@@ -1,5 +1,13 @@
 # Azure Resources and Datadog Observability Plan
 
+> **Current-state note (updated 2026-07-04):** this is a planning document; the
+> deployed resource set has since changed. **Event Hubs was replaced by the Cosmos
+> DB change feed** (2026-06-27), the **Azure SQL server was deleted** (alerts use
+> Table Storage; the `sql` module is gated off, SQL Server retained only locally),
+> and the **API image moved from ACR to public GHCR** (2026-07-04). Authoritative
+> current state: `docs/azure-bicep.md`, `docs/cosmos-change-feed-migration.md`,
+> `docs/ghcr-image-migration.md`, `docs/post-deployment-verification.md`.
+
 ## Purpose
 
 This plan covers the prerequisites and resources needed before implementing the

@@ -1,5 +1,14 @@
 # TfL Live Analytics Azure Mini Project Plan
 
+> **Current-state note (updated 2026-07-04):** this is the original delivery plan;
+> parts below are now historical. In the deployed system **Event Hubs was replaced
+> by the Cosmos DB change feed** (2026-06-27), the **Azure SQL server was deleted**
+> (alerts use Table Storage; the `sql` Bicep module is gated off, and a SQL Server
+> container is retained only in the local stack), and the **API image moved from
+> ACR to public GHCR** (2026-07-04). Authoritative current state:
+> `docs/azure-bicep.md`, `docs/cosmos-change-feed-migration.md`,
+> `docs/ghcr-image-migration.md`, `docs/post-deployment-verification.md`.
+
 ## Implementation Status
 
 Phase 1 started on June 11, 2026 and completed on June 13, 2026. Phases 2 and 3

@@ -1,5 +1,13 @@
 # Real‑Time Event Analytics Dashboard – Azure Mini Project
 
+> **Current-state note (updated 2026-07-04):** this is the original architecture
+> design and is now partly historical. In the deployed system **Event Hubs was
+> replaced by the Cosmos DB change feed** (2026-06-27), the **Azure SQL server was
+> deleted** (alerts use Table Storage; the `sql` module is gated off, SQL Server
+> retained only locally), and the **API image moved from ACR to public GHCR**
+> (2026-07-04). See `docs/azure-bicep.md`, `docs/cosmos-change-feed-migration.md`,
+> `docs/ghcr-image-migration.md`, and `docs/post-deployment-verification.md`.
+
 ## Overview
 A system that ingests high‑volume telemetry events (IoT sensor readings, clickstreams, etc.), processes them in real‑time, stores raw and aggregated data, and provides an Angular dashboard for monitoring and analytics. Demonstrates Azure services, .NET 10, and SOLID principles.
 

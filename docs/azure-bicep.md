@@ -20,8 +20,6 @@ The Bicep deployment currently creates:
 | Storage queues | `processing`, `processing-poison` |
 | Storage tables | `alerts`, `audit` |
 | Key Vault | Standard, RBAC authorization, seven-day soft delete |
-| Event Hubs namespace | Basic, one throughput unit |
-| Event hub | `tfl-events`, two partitions, one-day retention |
 | Log Analytics | PerGB2018, 30-day retention |
 | Application Insights | Workspace-based, 30-day retention |
 
@@ -43,15 +41,18 @@ The Function hosts and their application packages are deployed. The Angular
 line-status dashboard is deployed to the Static Web App and calls the Container
 App API through an origin-restricted CORS policy.
 
-The Basic Event Hubs tier supports only the built-in `$Default` consumer group.
-The Azure processing Function uses `$Default`; the local emulator uses the
-dedicated `processing` consumer group for clearer local isolation.
+Event transport uses the **Cosmos DB change feed**: ingestion writes raw events to
+the `raw-events` container and the processing Function's Cosmos DB trigger consumes
+them, tracking position in the `leases` container. Event Hubs — the prior transport
+— was removed on 2026-06-27 (see `docs/cosmos-change-feed-migration.md`).
 
-Cosmos DB and SignalR are deployed in UK South. This subscription is restricted
-from provisioning every Azure SQL SKU in UK South and the tested European
-regions, so the SQL server is deployed in Central US, where the subscription's
-free serverless offer is available. The database automatically pauses after 60
-minutes of inactivity and when its monthly free allowance is exhausted.
+Cosmos DB and SignalR are deployed in UK South. The Azure SQL server was deleted on
+2026-06-23 (alerts moved to the `alerts` Storage Table) and its Bicep module is now
+gated off (`enableSql=false`), so no SQL server is deployed. A SQL Server container
+is still retained in the local Compose stack for possible future relational
+workloads. (When enabled, the `sql` module targets Central US, because this
+subscription cannot provision the free serverless SQL SKU in UK South or the tested
+European regions.)
 
 Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
 June 12, 2026, or approximately `$15.34` for seven continuous days. Although
@@ -131,7 +132,7 @@ az deployment group what-if \
 Review additions, modifications, replacements, and deletions before proceeding.
 Pay particular attention to changes involving:
 
-- Event Hubs SKU or capacity.
+- Cosmos DB throughput or container TTL.
 - Log Analytics and Application Insights retention or ingestion.
 - Storage redundancy or access tier.
 - Key Vault networking and retention.
@@ -212,8 +213,9 @@ https://func-tfl-analytics-processing-dev-nhkpyupi.azurewebsites.net/api/health
 ```
 
 The ingestion package contains arrival and line-status timer triggers plus its
-health function. The processing package contains the Event Hubs archive trigger,
-the Storage Queue processing trigger, and its health function.
+health function. The processing package contains the Cosmos change-feed archive
+trigger (`ArchiveRawEvents`), the Storage Queue processing trigger, and its health
+function.
 
 Phase 3 was deployed on June 14, 2026. The Azure smoke run verified raw Blob
 archives and documents in both Cosmos DB containers.
@@ -250,9 +252,9 @@ The main Bicep deployment creates:
 - Cosmos DB database `tfl-analytics`.
 - `live-events` container partitioned by `/stationId`.
 - `line-status` container partitioned by `/lineId`.
-- Seven-day default TTL on both containers.
+- `raw-events` change-feed transport container (partitioned by `/partitionKey`, short TTL) plus its `leases` container.
+- Seven-day default TTL on the `live-events` and `line-status` containers.
 - Storage Table `alerts` for active alert history.
-- Azure SQL database `tfl-analytics` with Microsoft Entra-only authentication.
 - Azure SignalR Service Free F1 with managed-identity access.
 
 Run the focused management-plane smoke tests after deployment:
@@ -262,9 +264,8 @@ Run the focused management-plane smoke tests after deployment:
 ```
 
 The script verifies free-tier controls, Cosmos throughput and TTL, partition
-keys, SQL auto-pause behavior, disabled local authentication, and the expected
-managed-identity role assignments. It does not retrieve account keys or
-connection strings.
+keys, disabled local authentication, and the expected managed-identity role
+assignments. It does not retrieve account keys or connection strings.
 
 ## Workload RBAC
 
@@ -273,17 +274,16 @@ workload:
 
 | Workload identity | Scope | Role |
 |---|---|---|
-| Ingestion Function | `tfl-events` Event Hub | Azure Event Hubs Data Sender |
-| Processing Function | `tfl-events` Event Hub | Azure Event Hubs Data Receiver |
 | API | Key Vault | Key Vault Secrets User |
-| API | `alerts` Storage Table | Storage Table Data Reader |
 | Ingestion Function | Key Vault | Key Vault Secrets User |
 | Processing Function | Key Vault | Key Vault Secrets User |
 
-The Event Hubs role assignments are scoped to the individual event hub rather
-than the namespace, and the API table role is scoped to `alerts`. Key Vault
-roles permit reading secret values but not creating, updating, or deleting
-secrets.
+The Event Hubs sender/receiver assignments were removed with the Cosmos
+change-feed migration (2026-06-27). The Cosmos DB data-plane roles (raw-events
+writes and change-feed reads) are granted in the `cosmos` module, and the API's
+`Storage Table Data Reader` role on `alerts` is granted in the `api-hosting`
+module. Key Vault roles permit reading secret values but not creating, updating,
+or deleting secrets.
 
 Each host sets `AZURE_CLIENT_ID` to the matching user-assigned identity. This is
 required for the Function Apps because they also have a system-assigned
@@ -306,14 +306,12 @@ Analytics workspace:
 | Resource | Categories |
 |---|---|
 | Key Vault | `AuditEvent` |
-| Event Hubs namespace | `DiagnosticErrorLogs`, `OperationalLogs` |
 | Cosmos DB | `ControlPlaneRequests` |
 | SignalR | `AllLogs` |
-| Azure SQL database | `Errors`, `Timeouts`, `Deadlocks`, `DevOpsOperationsAudit` |
 
-Verbose Cosmos data-plane requests, SQL query statistics, Function application
-logs, and broad storage transaction logs are intentionally excluded to control
-cost and avoid duplicate telemetry.
+Verbose Cosmos data-plane requests, Function application logs, and broad storage
+transaction logs are intentionally excluded to control cost and avoid duplicate
+telemetry.
 
 Verify the settings:
 
@@ -385,20 +383,15 @@ az keyvault show \
   --output table
 ```
 
-Check Event Hubs:
+Check the Cosmos DB transport containers:
 
 ```bash
-az eventhubs namespace show \
-  --name "$EVENT_HUBS_NAMESPACE" \
+az cosmosdb sql container show \
+  --account-name "$COSMOS_ACCOUNT" \
+  --database-name "$COSMOS_DATABASE" \
   --resource-group "$RESOURCE_GROUP" \
-  --query "{name:name, state:provisioningState, status:status, sku:sku.name}" \
-  --output table
-
-az eventhubs eventhub show \
-  --name "$EVENT_HUB" \
-  --namespace-name "$EVENT_HUBS_NAMESPACE" \
-  --resource-group "$RESOURCE_GROUP" \
-  --query "{name:name, status:status, partitions:partitionCount, retention:messageRetentionInDays}" \
+  --name raw-events \
+  --query "{name:name, partitionKey:resource.partitionKey.paths, ttl:resource.defaultTtl}" \
   --output table
 ```
 
@@ -558,7 +551,7 @@ Verify required resource providers:
 ```bash
 az provider show --namespace Microsoft.Storage --query registrationState
 az provider show --namespace Microsoft.KeyVault --query registrationState
-az provider show --namespace Microsoft.EventHub --query registrationState
+az provider show --namespace Microsoft.DocumentDB --query registrationState
 az provider show --namespace Microsoft.OperationalInsights --query registrationState
 az provider show --namespace Microsoft.Insights --query registrationState
 ```
