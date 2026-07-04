@@ -1,8 +1,10 @@
 # Proposal: move the API image to GHCR, delete Azure Container Registry
 
-**Status:** implemented on branch `feat/ghcr-api-image` (2026-07-04) — workflow +
-Bicep edits done and `az bicep build` passes; **not yet cut over** (image not yet
-pushed, Container App not repointed, ACR not deleted). See "Cutover order" below.
+**Status:** ✅ DONE (cut over 2026-07-04). Code on `dev` (commit `492ec1b`); image
+published to `ghcr.io/sses79/tfl-analytics-api` (public); Container App
+`ca-tfl-api-dev-nhkpyupi` revision `--0000013` runs the ghcr image; the ACR
+registry entry was removed and `acrtflnhkpyupi` deleted. Verified in
+`docs/post-deployment-verification.md` (July 4, 2026 record).
 **Goal:** remove the last standing fixed paid resource. After the Cosmos
 change-feed migration (see `docs/cosmos-change-feed-migration.md`) crushed the
 variable costs, **Azure Container Registry (Basic) is now the #1 daily line at a
@@ -100,9 +102,11 @@ After the Container App is verified pulling from ghcr:
 3. Verify (below).
 4. Only then `az acr delete` the ACR.
 
-> ⚠️ **Still gate the `sql` module before any full `az deployment group create`**
-> (see `docs/cosmos-change-feed-migration.md`) — a full redeploy remains the moment
-> that trips the dormant SQL server recreation.
+> **Note:** the `sql` module is already gated (`enableSql=false`, done 2026-06-27,
+> verified in `docs/post-deployment-verification.md`), so a full
+> `az deployment group create` is safe and will not recreate the deleted SQL
+> server. For this ACR cutover, `az containerapp update` is still the lighter touch,
+> but a full redeploy is no longer a landmine.
 
 ## Verification
 1. Workflow run is green; `ghcr.io/sses79/tfl-analytics-api:<sha>` exists and the
