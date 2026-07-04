@@ -1,5 +1,4 @@
 param location string
-param registryName string
 param environmentName string
 param apiAppName string
 param apiIdentityName string
@@ -13,12 +12,9 @@ param sqlServerFqdn string
 param tags object
 
 param deployApiContainer bool = false
-param apiImageTag string = 'dev'
+param apiImageTag string = 'latest'
+param apiImageRepository string = 'ghcr.io/sses79/tfl-analytics-api'
 
-var acrPullRoleDefinitionId = subscriptionResourceId(
-  'Microsoft.Authorization/roleDefinitions',
-  '7f951dda-4ed3-4680-a7ca-43fe172d538d'
-)
 var storageTableDataReaderRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   '76199698-9eea-4c19-bc75-cec21354c6b6'
@@ -33,20 +29,6 @@ var corsOriginSettings = [for (origin, i) in dashboardOrigins: {
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (observabilityEnabled) {
   name: observabilityEnabled ? applicationInsightsName : 'unused'
-}
-
-resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: registryName
-  location: location
-  tags: tags
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    adminUserEnabled: false
-    dataEndpointEnabled: false
-    publicNetworkAccess: 'Enabled'
-  }
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
@@ -67,16 +49,6 @@ resource apiIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-3
   name: apiIdentityName
   location: location
   tags: tags
-}
-
-resource registryPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(registry.id, apiIdentity.id, acrPullRoleDefinitionId)
-  scope: registry
-  properties: {
-    principalId: apiIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: acrPullRoleDefinitionId
-  }
 }
 
 resource apiTableStorageRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -121,18 +93,12 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
         targetPort: 8080
         transport: 'auto'
       }
-      registries: [
-        {
-          identity: apiIdentity.id
-          server: registry.properties.loginServer
-        }
-      ]
     }
     template: {
       containers: [
         {
           name: 'api'
-          image: '${registry.properties.loginServer}/tfl-analytics-api:${apiImageTag}'
+          image: '${apiImageRepository}:${apiImageTag}'
           env: concat([
             {
               name: 'ASPNETCORE_ENVIRONMENT'
@@ -250,13 +216,8 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
       }
     }
   }
-  dependsOn: [
-    registryPullRole
-  ]
 }
 
-output registryName string = registry.name
-output registryLoginServer string = registry.properties.loginServer
 output containerAppsEnvironmentName string = environment.name
 output apiContainerAppName string = apiApp.?name ?? ''
 output apiContainerAppFqdn string = apiApp.?properties.configuration.ingress.fqdn ?? ''

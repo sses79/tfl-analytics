@@ -12,22 +12,30 @@ public sealed class IngestionPoller : IIngestionPoller
     private readonly ITflApiClient _tflApiClient;
     private readonly IEventPublisher _eventPublisher;
     private readonly IngestionOptions _options;
+    private readonly ArrivalOptions _arrivalOptions;
     private readonly TimeProvider _timeProvider;
 
     public IngestionPoller(
         ITflApiClient tflApiClient,
         IEventPublisher eventPublisher,
         IngestionOptions options,
+        ArrivalOptions arrivalOptions,
         TimeProvider timeProvider)
     {
         _tflApiClient = tflApiClient;
         _eventPublisher = eventPublisher;
         _options = options;
+        _arrivalOptions = arrivalOptions;
         _timeProvider = timeProvider;
     }
 
     public async Task<int> PollArrivalsAsync(CancellationToken cancellationToken = default)
     {
+        if (!_arrivalOptions.Enabled)
+        {
+            return 0;
+        }
+
         var published = 0;
 
         foreach (var stationId in Normalize(_options.StationIds))

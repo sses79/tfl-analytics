@@ -5,8 +5,9 @@
 A regular Azure Function handles one trigger and runs until it succeeds or
 fails.
 
-For example, `ArchiveEventHubEvents` receives Event Hubs messages, archives
-them, places processing references on Storage Queue, and finishes.
+For example, `ArchiveRawEvents` receives raw-event documents from the Cosmos DB
+change feed, archives them, places processing references on Storage Queue, and
+finishes.
 
 A Durable Function coordinates a multi-step workflow while Azure persists its
 progress. The Phase 4 alert workflow is:

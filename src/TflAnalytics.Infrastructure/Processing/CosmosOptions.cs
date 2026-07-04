@@ -14,6 +14,10 @@ public sealed class CosmosOptions
 
     public string LineStatusContainerName { get; set; } = "line-status";
 
+    public string RawEventsContainerName { get; set; } = "raw-events";
+
+    public string LeasesContainerName { get; set; } = "leases";
+
     public bool Initialize { get; set; }
 
     public bool DisableServerCertificateValidation { get; set; }

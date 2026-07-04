@@ -20,10 +20,6 @@
       "visibilityTimeout": "00:00:30",
       "messageEncoding": "base64"
     },
-    "eventHubs": {
-      "maxEventBatchSize": 64,
-      "prefetchCount": 128
-    },
     "durableTask": {
       "hubName": "TflAnalyticsAlerts"
     }

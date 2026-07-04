@@ -81,6 +81,38 @@ public sealed class IngestionPollerTests
     }
 
     [Fact]
+    public async Task SkipsArrivalPollingWhenArrivalIngestionIsDisabled()
+    {
+        var client = new StubTflApiClient
+        {
+            Arrivals =
+            [
+                new ArrivalPrediction(
+                    "prediction-1",
+                    "245",
+                    "940GZZLUVIC",
+                    "Victoria Underground Station",
+                    "victoria",
+                    "Victoria",
+                    "Walthamstow Central Underground Station",
+                    "Northbound - Platform 3",
+                    "inbound",
+                    DateTimeOffset.Parse("2026-06-13T12:00:45Z"),
+                    35,
+                    DateTimeOffset.Parse("2026-06-13T12:00:00Z"))
+            ]
+        };
+        var publisher = new RecordingEventPublisher();
+        var poller = CreatePoller(client, publisher, arrivalEnabled: false);
+
+        var count = await poller.PollArrivalsAsync();
+
+        Assert.Equal(0, count);
+        Assert.Empty(publisher.Events);
+        Assert.Equal(0, client.ArrivalRequestCount);
+    }
+
+    [Fact]
     public void EventIdsAreStableWithinAnObservationWindow()
     {
         var first = EventIdFactory.Create(
@@ -104,7 +136,8 @@ public sealed class IngestionPollerTests
 
     private static IngestionPoller CreatePoller(
         ITflApiClient client,
-        IEventPublisher publisher) =>
+        IEventPublisher publisher,
+        bool arrivalEnabled = true) =>
         new(
             client,
             publisher,
@@ -112,6 +145,10 @@ public sealed class IngestionPollerTests
             {
                 StationIds = ["940GZZLUVIC"],
                 LineIds = ["victoria"]
+            },
+            new ArrivalOptions
+            {
+                Enabled = arrivalEnabled
             },
             new FixedTimeProvider(ObservedAt));
 
@@ -146,10 +183,15 @@ public sealed class IngestionPollerTests
 
         public IReadOnlyList<Line> Lines { get; init; } = [];
 
+        public int ArrivalRequestCount { get; private set; }
+
         public Task<IReadOnlyList<ArrivalPrediction>> GetArrivalsAsync(
             string stationId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Arrivals);
+            CancellationToken cancellationToken = default)
+        {
+            ArrivalRequestCount++;
+            return Task.FromResult(Arrivals);
+        }
 
         public Task<StopPoint> GetStopPointAsync(
             string stationId,

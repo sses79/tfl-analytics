@@ -1,17 +1,13 @@
 param logAnalyticsWorkspaceId string
 param keyVaultName string
-param eventHubsNamespaceName string
 param cosmosAccountName string
 param signalRName string
 param sqlServerName string
 param sqlDatabaseName string
+param enableSqlDiagnostics bool = false
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
-}
-
-resource eventHubsNamespace 'Microsoft.EventHub/namespaces@2024-01-01' existing = {
-  name: eventHubsNamespaceName
 }
 
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' existing = {
@@ -22,11 +18,11 @@ resource signalR 'Microsoft.SignalRService/signalR@2024-03-01' existing = {
   name: signalRName
 }
 
-resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = {
+resource sqlServer 'Microsoft.Sql/servers@2023-08-01' existing = if (enableSqlDiagnostics) {
   name: sqlServerName
 }
 
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01' existing = {
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01' existing = if (enableSqlDiagnostics) {
   parent: sqlServer
   name: sqlDatabaseName
 }
@@ -40,25 +36,6 @@ resource keyVaultDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
     logs: [
       {
         category: 'AuditEvent'
-        enabled: true
-      }
-    ]
-  }
-}
-
-resource eventHubsDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'operational'
-  scope: eventHubsNamespace
-  properties: {
-    logAnalyticsDestinationType: 'Dedicated'
-    workspaceId: logAnalyticsWorkspaceId
-    logs: [
-      {
-        category: 'DiagnosticErrorLogs'
-        enabled: true
-      }
-      {
-        category: 'OperationalLogs'
         enabled: true
       }
     ]
@@ -95,7 +72,7 @@ resource signalRDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   }
 }
 
-resource sqlDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+resource sqlDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableSqlDiagnostics) {
   name: 'operational'
   scope: sqlDatabase
   properties: {
@@ -122,4 +99,4 @@ resource sqlDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-previe
   }
 }
 
-output diagnosticSettingCount int = 5
+output diagnosticSettingCount int = enableSqlDiagnostics ? 4 : 3
