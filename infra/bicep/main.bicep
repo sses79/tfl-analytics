@@ -119,7 +119,6 @@ module apiHosting 'modules/api-hosting.bicep' = {
   name: 'api-hosting'
   params: {
     location: location
-    registryName: 'acrtfl${suffix}'
     environmentName: 'cae-${projectName}-${environmentName}-${suffix}'
     apiAppName: 'ca-tfl-api-${environmentName}-${suffix}'
     apiIdentityName: 'id-${projectName}-api-${environmentName}-${suffix}'
@@ -206,8 +205,6 @@ output eventHubsNamespaceName string = ''
 output eventHubName string = ''
 output applicationInsightsName string = observability.?outputs.applicationInsightsName ?? ''
 output logAnalyticsWorkspaceName string = observability.?outputs.logAnalyticsWorkspaceName ?? ''
-output containerRegistryName string = apiHosting.outputs.registryName
-output containerRegistryLoginServer string = apiHosting.outputs.registryLoginServer
 output containerAppsEnvironmentName string = apiHosting.outputs.containerAppsEnvironmentName
 output apiAppName string = apiHosting.outputs.apiContainerAppName
 output apiAppHostname string = apiHosting.outputs.apiContainerAppFqdn
