@@ -33,13 +33,6 @@ ingestion_client_id="$(jq -r .clientId <<<"$ingestion_identity")"
 processing_principal_id="$(jq -r .principalId <<<"$processing_identity")"
 processing_client_id="$(jq -r .clientId <<<"$processing_identity")"
 
-event_hub_scope="$(az eventhubs eventhub show \
-  --name "$EVENT_HUB" \
-  --namespace-name "$EVENT_HUBS_NAMESPACE" \
-  --resource-group "$RESOURCE_GROUP" \
-  --query id \
-  --output tsv)"
-
 key_vault_scope="$(az keyvault show \
   --name "$KEY_VAULT" \
   --resource-group "$RESOURCE_GROUP" \
@@ -75,8 +68,6 @@ assert_role() {
   fi
 }
 
-assert_role "$event_hub_scope" "$ingestion_principal_id" "Azure Event Hubs Data Sender"
-assert_role "$event_hub_scope" "$processing_principal_id" "Azure Event Hubs Data Receiver"
 assert_role "$key_vault_scope" "$api_principal_id" "Key Vault Secrets User"
 assert_role "$key_vault_scope" "$ingestion_principal_id" "Key Vault Secrets User"
 assert_role "$key_vault_scope" "$processing_principal_id" "Key Vault Secrets User"
@@ -106,7 +97,7 @@ processing_configured_client_id="$(az functionapp config appsettings list \
 
 printf '%s\n' \
   "Azure workload RBAC smoke tests passed:" \
-  "  Ingestion identity: Event Hubs sender and Key Vault secret reader" \
-  "  Processing identity: Event Hubs receiver and Key Vault secret reader" \
+  "  Ingestion identity: Key Vault secret reader" \
+  "  Processing identity: Key Vault secret reader" \
   "  API identity: Key Vault secret reader and alerts-table data reader" \
   "  All hosts select the matching user-assigned identity through AZURE_CLIENT_ID"

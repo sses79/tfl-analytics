@@ -17,10 +17,15 @@ Action taken 2026-06-23: deleted `sql-tfl-analytics-dev-nhkpyupi` (server +
 `tfl-analytics` database) entirely. It had been fully superseded by
 `TableAlertRepository` since `b079f29` (2026-06-20) — nothing in the code
 referenced it anymore, it was just a paused, unused resource sitting on the
-subscription. **Note:** `infra/bicep/main.bicep` still unconditionally
-declares the `sql` module — a future full `az deployment group create` will
-silently recreate the server. Gate it behind a parameter (mirroring
-`enableObservability`) before the next full infra redeploy.
+subscription. **Note:** `infra/bicep/main.bicep` previously declared the `sql`
+module unconditionally, so a full `az deployment group create` would have
+silently recreated the server. **Resolved 2026-06-27 (commit `0000e78`):** the
+module is now gated behind `param enableSql bool = false`
+(`module sql ... = if (enableSql)`), and consumers tolerate its absence
+(`sql.?outputs.* ?? ''`, `enableSqlDiagnostics: enableSql`). Verified in the
+2026-06-27 full deploy — `az resource list ... [?contains(name,'sql')]` returned
+no rows afterward (see `docs/post-deployment-verification.md`). A full redeploy
+with the default params is now safe.
 
 Resources currently free-tier or already scale-to-zero, left running as the
 "essential function" baseline:

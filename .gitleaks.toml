@@ -14,3 +14,10 @@ regexTarget = "match"
 regexes = [
   '''C2y6yDjf5/R\+ob0N8A7Cgv30VRDJIWEHLM\+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=='''
 ]
+
+[[allowlists]]
+description = "The deployment guide uses a public Git commit SHA as an immutable GHCR image tag."
+regexTarget = "match"
+regexes = [
+  '''d4b7caeb97de686899e0810ff7e3f5551878e649'''
+]

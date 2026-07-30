@@ -62,12 +62,8 @@ fi
 
 export STORAGE_ACCOUNT="$(get_output storageAccountName)"
 export KEY_VAULT="$(get_output keyVaultName)"
-export EVENT_HUBS_NAMESPACE="$(get_output eventHubsNamespaceName)"
-export EVENT_HUB="$(get_output eventHubName)"
 export LOG_ANALYTICS="$(get_output logAnalyticsWorkspaceName)"
 export APPLICATION_INSIGHTS="$(get_output applicationInsightsName)"
-export CONTAINER_REGISTRY="$(get_output containerRegistryName)"
-export CONTAINER_REGISTRY_LOGIN_SERVER="$(get_output containerRegistryLoginServer)"
 export CONTAINER_APPS_ENVIRONMENT="$(get_output containerAppsEnvironmentName)"
 export API_APP="$(get_output apiAppName)"
 export API_HOSTNAME="$(get_output apiAppHostname)"
@@ -97,12 +93,8 @@ printf '%s\n' \
   "  DEPLOYMENT=$DEPLOYMENT" \
   "  STORAGE_ACCOUNT=$STORAGE_ACCOUNT" \
   "  KEY_VAULT=$KEY_VAULT" \
-  "  EVENT_HUBS_NAMESPACE=$EVENT_HUBS_NAMESPACE" \
-  "  EVENT_HUB=$EVENT_HUB" \
   "  LOG_ANALYTICS=$LOG_ANALYTICS" \
   "  APPLICATION_INSIGHTS=$APPLICATION_INSIGHTS" \
-  "  CONTAINER_REGISTRY=$CONTAINER_REGISTRY" \
-  "  CONTAINER_REGISTRY_LOGIN_SERVER=$CONTAINER_REGISTRY_LOGIN_SERVER" \
   "  CONTAINER_APPS_ENVIRONMENT=$CONTAINER_APPS_ENVIRONMENT" \
   "  API_APP=$API_APP" \
   "  API_HOSTNAME=$API_HOSTNAME" \

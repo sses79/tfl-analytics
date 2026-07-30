@@ -13,15 +13,17 @@ infra/bicep/modules/workload-rbac.bicep
 
 | Workload | Resource scope | Role | Purpose |
 |---|---|---|---|
-| Ingestion Function | `tfl-events` Event Hub | Azure Event Hubs Data Sender | Publish versioned TfL events |
-| Processing Function | `tfl-events` Event Hub | Azure Event Hubs Data Receiver | Consume published TfL events |
 | API | Key Vault | Key Vault Secrets User | Read application secrets |
 | Ingestion Function | Key Vault | Key Vault Secrets User | Read the TfL and Datadog keys |
 | Processing Function | Key Vault | Key Vault Secrets User | Read required processing secrets |
 
-The Event Hubs assignments are scoped to the individual event hub rather than
-the whole namespace. The Key Vault role can read secret values but cannot
-create, update, delete, recover, or purge secrets.
+This module grants only the three Key Vault Secrets User assignments. Since the
+2026-06-27 Cosmos change-feed migration the Event Hubs sender/receiver roles are
+gone; the Cosmos DB data-plane roles that replaced them (raw-events writes and
+change-feed reads for the ingestion and processing identities) are assigned in the
+`cosmos` module, and the API's `Storage Table Data Reader` role on `alerts` is
+assigned in the `api-hosting` module. The Key Vault role can read secret values but
+cannot create, update, delete, recover, or purge secrets.
 
 ## Identity Flow
 
@@ -36,7 +38,6 @@ flowchart LR
     PROCESS_ID[Processing user-assigned identity]
 
     KV[Azure Key Vault]
-    HUB[Event Hub: tfl-events]
 
     API -->|AZURE_CLIENT_ID| API_ID
     INGEST -->|AZURE_CLIENT_ID| INGEST_ID
@@ -45,9 +46,6 @@ flowchart LR
     API_ID -->|Key Vault Secrets User| KV
     INGEST_ID -->|Key Vault Secrets User| KV
     PROCESS_ID -->|Key Vault Secrets User| KV
-
-    INGEST_ID -->|Azure Event Hubs Data Sender| HUB
-    PROCESS_ID -->|Azure Event Hubs Data Receiver| HUB
 ```
 
 ## Role Definition IDs
@@ -55,16 +53,6 @@ flowchart LR
 The Bicep module references Azure built-in roles by stable definition ID:
 
 ```bicep
-var eventHubsDataSenderRoleDefinitionId = subscriptionResourceId(
-  'Microsoft.Authorization/roleDefinitions',
-  '2b629674-e913-4c01-ae53-ef4638d8f975'
-)
-
-var eventHubsDataReceiverRoleDefinitionId = subscriptionResourceId(
-  'Microsoft.Authorization/roleDefinitions',
-  'a638d3c7-ab3a-418d-83e6-5f17a39d4fde'
-)
-
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   '4633458b-17de-408a-b874-0445c86b69e6'
@@ -76,19 +64,10 @@ display names.
 
 ## Existing Resource References
 
-The RBAC module receives deployed resource names and treats the Event Hubs
-namespace, event hub, and Key Vault as existing resources:
+The RBAC module receives the deployed Key Vault name and treats it as an existing
+resource:
 
 ```bicep
-resource eventHubsNamespace 'Microsoft.EventHub/namespaces@2024-01-01' existing = {
-  name: eventHubsNamespaceName
-}
-
-resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' existing = {
-  parent: eventHubsNamespace
-  name: eventHubName
-}
-
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
 }
@@ -102,13 +81,13 @@ Bicep dependency tracking.
 Each role-assignment name is generated from its scope, principal, and role:
 
 ```bicep
-resource ingestionEventHubSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(eventHub.id, ingestionPrincipalId, eventHubsDataSenderRoleDefinitionId)
-  scope: eventHub
+resource apiKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, apiPrincipalId, keyVaultSecretsUserRoleDefinitionId)
+  scope: keyVault
   properties: {
-    principalId: ingestionPrincipalId
+    principalId: apiPrincipalId
     principalType: 'ServicePrincipal'
-    roleDefinitionId: eventHubsDataSenderRoleDefinitionId
+    roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
   }
 }
 ```
@@ -207,9 +186,9 @@ Expected result:
 
 ```text
 Azure workload RBAC smoke tests passed:
-  Ingestion identity: Event Hubs sender and Key Vault secret reader
-  Processing identity: Event Hubs receiver and Key Vault secret reader
-  API identity: Key Vault secret reader
+  Ingestion identity: Key Vault secret reader
+  Processing identity: Key Vault secret reader
+  API identity: Key Vault secret reader and alerts-table data reader
   All hosts select the matching user-assigned identity through AZURE_CLIENT_ID
 ```
 
@@ -224,6 +203,6 @@ workload initially receives HTTP `401` or `403`:
 4. Check that the SDK requests the expected data-plane audience.
 5. Confirm the role scope is the resource being accessed.
 
-Do not solve authorization failures by adding `Owner`, `Contributor`, Event Hubs
-Data Owner, Key Vault Administrator, or account access keys unless the workload
-genuinely requires those broader capabilities.
+Do not solve authorization failures by adding `Owner`, `Contributor`, account-scoped
+Cosmos DB Built-in Data Contributor, Key Vault Administrator, or account access keys
+unless the workload genuinely requires those broader capabilities.

@@ -17,16 +17,24 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | June 27, 2026 |
-| Git commit | `0000e786e465` (`dev`) |
-| ARM deployment | `cosmos-change-feed-20260627-082434` |
-| Provisioning state | `Succeeded`; ingestion zip deployment `aa038bc8-1017-4839-9f5b-7011a18c094f`; processing zip deployment `e240105c-50ef-4ab0-8f65-63b1d94d3187` |
-| Scope | Migrated raw transport from Event Hubs to Cosmos DB change feed; added `raw-events` and `leases` containers; redeployed ingestion and processing Function Apps; deleted `evhns-tfl-analytics-dev-nhkpyupi`; kept `Arrival__Enabled=false` |
-| Cost impact | Removes the Event Hubs Basic namespace fixed cost after deletion. Azure Cost Management showed Event Hubs at £0.2459 on June 26 and £0.0112 so far on June 27 before/around deletion; Cosmos DB remained £0. Current remaining paid drivers are expected to be Container Apps, Container Registry, Storage, and small Function execution/storage costs. |
-| Event Hubs tier | Deleted; not used by the deployed event path |
-| Azure consumer group | Not applicable; processing now uses Cosmos DB change-feed leases |
+| Date | July 4, 2026 |
+| Git commit | `492ec1b` (`dev`); API image built from `main` commit `d4b7caeb97de686899e0810ff7e3f5551878e649` |
+| Change | ACR → GHCR image cutover (imperative `az containerapp update`, **not** a full ARM deploy) |
+| Provisioning state | `Succeeded` — Container App `ca-tfl-api-dev-nhkpyupi` revision `--0000013` |
+| Scope | Moved the API image from Azure Container Registry to public GitHub Container Registry (`ghcr.io/sses79/tfl-analytics-api`); Container App pulls anonymously; removed the ACR registry entry; deleted `acrtflnhkpyupi` |
+| Cost impact | Removes the Container Registry Basic fixed fee (~£0.126/day — the #1 daily line after the Cosmos migration) → £0. GHCR is free for a public repo (storage, pulls, build workflow). |
 
 Latest verification evidence:
+
+- `Publish API image` GitHub Actions workflow built `src/TflAnalytics.Api/Dockerfile` and pushed `ghcr.io/sses79/tfl-analytics-api:{latest,d4b7caeb…}` on push to `main`; run succeeded.
+- The `tfl-analytics-api` GHCR package was marked **Public**; anonymous manifest pull of both the SHA tag and `latest` returned HTTP 200.
+- `az containerapp update --image ghcr.io/sses79/tfl-analytics-api:d4b7caeb…` created revision `--0000013` (provisioning state `Succeeded`). Post-update: `/health/live` returned 200 (after cold start) and `/api/lines/status` returned 200 — confirming the ghcr image runs and reaches Cosmos / Table / Key Vault via the API managed identity.
+- `az containerapp registry remove --server acrtflnhkpyupi.azurecr.io` succeeded; `properties.configuration.registries` is now empty. Endpoints re-verified 200.
+- `az acr delete -n acrtflnhkpyupi --yes` succeeded; `az acr list` returned no rows, and `/health/live` + `/api/lines/status` re-verified 200 afterward. The ACR-pull role assignment was auto-removed with the registry (it was scoped to the ACR); the API managed identity remains for Key Vault / Table / SignalR.
+- `az resource list ... [?contains(name,'acr') || contains(name,'sql')]` returned no rows.
+- Bicep (`492ec1b`) already stripped the ACR resource, ACR-pull role, `registries` block, and `containerRegistry*` outputs, so IaC now matches the live post-cutover state. A future full deploy is consistent and safe (the `sql` module is gated, `enableSql=false`).
+
+Prior verification evidence (June 27, 2026 — Cosmos change-feed migration; commit `0000e786e465`, ARM deployment `cosmos-change-feed-20260627-082434`, provisioning `Succeeded`; ingestion zip `aa038bc8-1017-4839-9f5b-7011a18c094f`, processing zip `e240105c-50ef-4ab0-8f65-63b1d94d3187`; migrated raw transport Event Hubs → Cosmos change feed, added `raw-events`/`leases`, deleted `evhns-tfl-analytics-dev-nhkpyupi`, kept `Arrival__Enabled=false`):
 
 - `dotnet build TflAnalytics.sln --no-restore -m:1 --disable-build-servers` passed.
 - `dotnet test TflAnalytics.sln --no-restore --no-build -m:1 --disable-build-servers` passed.

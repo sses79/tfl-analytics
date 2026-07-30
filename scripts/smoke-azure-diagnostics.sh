@@ -60,12 +60,6 @@ key_vault_id="$(az keyvault show \
   --query id \
   --output tsv)"
 
-event_hubs_id="$(az eventhubs namespace show \
-  --name "$EVENT_HUBS_NAMESPACE" \
-  --resource-group "$RESOURCE_GROUP" \
-  --query id \
-  --output tsv)"
-
 cosmos_id="$(az cosmosdb show \
   --name "$COSMOS_ACCOUNT" \
   --resource-group "$RESOURCE_GROUP" \
@@ -78,17 +72,21 @@ signalr_id="$(az signalr show \
   --query id \
   --output tsv)"
 
-sql_database_id="$(az sql db show \
-  --name "$SQL_DATABASE" \
-  --server "$SQL_SERVER" \
-  --resource-group "$RESOURCE_GROUP" \
-  --query id \
-  --output tsv)"
-
 assert_diagnostics "$key_vault_id" AuditEvent
-assert_diagnostics "$event_hubs_id" DiagnosticErrorLogs OperationalLogs
 assert_diagnostics "$cosmos_id" ControlPlaneRequests
 assert_diagnostics "$signalr_id" AllLogs
-assert_diagnostics "$sql_database_id" Errors Timeouts Deadlocks DevOpsOperationsAudit
 
-echo "Azure diagnostic-setting smoke tests passed for five resources."
+# Azure SQL is deleted by default (the sql module is gated off, enableSql=false).
+# Check its diagnostics only when the server is actually deployed.
+if [[ -n "$SQL_SERVER" ]]; then
+  sql_database_id="$(az sql db show \
+    --name "$SQL_DATABASE" \
+    --server "$SQL_SERVER" \
+    --resource-group "$RESOURCE_GROUP" \
+    --query id \
+    --output tsv)"
+  assert_diagnostics "$sql_database_id" Errors Timeouts Deadlocks DevOpsOperationsAudit
+  echo "Azure diagnostic-setting smoke tests passed for Key Vault, Cosmos DB, SignalR, and Azure SQL."
+else
+  echo "Azure diagnostic-setting smoke tests passed for Key Vault, Cosmos DB, and SignalR (Azure SQL disabled)."
+fi
