@@ -1,6 +1,7 @@
 param location string
 param logAnalyticsName string
 param applicationInsightsName string
+param dailyQuotaGb string = '0.1'
 param tags object
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -9,6 +10,9 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   tags: tags
   properties: {
     retentionInDays: 30
+    workspaceCapping: {
+      dailyQuotaGb: json(dailyQuotaGb)
+    }
     sku: {
       name: 'PerGB2018'
     }

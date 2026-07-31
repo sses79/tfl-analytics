@@ -19,39 +19,34 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | July 30, 2026 |
-| Git commit | Worktree based on `1ce3ebf` (`dev`); configuration and documentation changes not yet committed |
-| Change | Reconcile post-demo feature flags and remove retired SQL settings (imperative app-setting updates, **not** a full ARM deploy) |
-| Provisioning state | `Succeeded` — Container App `ca-tfl-api-dev-nhkpyupi` revision `--0000014`; both Function hosts healthy |
-| Scope | Set `Alerts__Enabled=false`; retained `Arrival__Enabled=false`, five-minute arrival timer, and ten-minute line-status timer; removed all `AlertStorage__*` settings from processing and API; made the reduced-cost flags and schedules explicit in Bicep |
-| Cost impact | £0 expected: configuration-only changes, no new resources or paid SKU changes |
+| Date | July 31, 2026 |
+| Git commit | Uncommitted `dev` worktree based on `9ede4f3` |
+| Change | Enable processing-only Application Insights to diagnose the stalled Cosmos change-feed trigger |
+| Provisioning state | `Succeeded` — targeted deployments `processing-observability-20260731` and `processing-observability-connect-20260731-v2`; processing host healthy |
+| Scope | Created one workspace and one workspace-based Application Insights component; connected only `func-tfl-analytics-processing-dev-nhkpyupi`; retained `Arrival__Enabled=false` and `Alerts__Enabled=false` |
+| Cost impact | Usage-based telemetry with 30-day retention and a 0.1 GB/day ingestion cap; expected short diagnostic usage is pennies, with a planning ceiling of roughly £0.30/day |
 
 Latest verification evidence:
 
-- `az bicep build --file infra/bicep/main.bicep` passed with no Bicep linter
-  warnings.
-- `az deployment group what-if` succeeded before the live changes. It proposed
-  no new resources or paid SKU changes; because the full preview also contained
-  unrelated provider-default noise, no ARM deployment was performed.
-- Processing app settings returned exactly `Alerts__Enabled=false` for the
-  targeted alert-control/legacy-SQL query; no `AlertStorage__*` settings remain.
-- Ingestion app settings confirmed `Arrival__Enabled=false`,
-  `IngestionArrivalsSchedule=0 */5 * * * *`, and
-  `IngestionLineStatusSchedule=0 */10 * * * *`.
-- Container App revision `ca-tfl-api-dev-nhkpyupi--0000014` reached
-  provisioning state `Succeeded`; no `AlertStorage__*` environment variables
-  remain. The dev Bicep parameter now pins the same verified GHCR commit tag
-  currently running in Azure.
-- Resource inventory returned no Azure SQL, Event Hubs, Azure Container
-  Registry, Log Analytics, or Application Insights resources.
-- Ingestion, processing, and API health endpoints passed; the Static Web App
-  returned HTTP 200; `/api/alerts` returned an empty array.
-- Data-service and workload-RBAC smoke tests passed. The diagnostics smoke test
-  correctly reported not applicable because observability is disabled.
-- The live line-status event-flow issue found during the July 30 status review
-  remains separate follow-up work: public hosts are healthy, but the dashboard
-  has no current line-status data and processing showed no executions in the
-  inspected 48-hour window.
+- Root and targeted Bicep builds passed. Root and targeted `what-if` previews
+  completed before deployment; the targeted preview limited deployment to the
+  monitoring resources and processing app settings, avoiding unrelated
+  provider-default changes in the root preview.
+- Log Analytics `log-tfl-analytics-dev-nhkpyupi` reports `PerGB2018`, 30-day
+  retention, and `dailyQuotaGb=0.1`.
+- The first diagnostic hour contained 24 telemetry records totalling about
+  0.0416 MB of billed data, so observed investigation cost is effectively zero.
+- `APPLICATIONINSIGHTS_CONNECTION_STRING` exists on processing only; ingestion
+  remains disconnected. No connection-string value was printed or persisted.
+- `ArchiveRawEvents` is indexed in the management plane with `isDisabled=false`,
+  but host telemetry reports `%Cosmos__DatabaseName%` does not resolve while
+  indexing the method, followed by `ArchiveRawEvents` being disabled by the
+  host.
+- Cosmos `raw-events` contains recent `LineStatusObserved` documents, while the
+  `leases` and `line-status` containers remain empty. The event flow is therefore
+  not restored by this monitoring-only deployment.
+- The processing health endpoint returned `healthy`; this confirms host health
+  but not trigger readiness.
 
 Prior verification evidence (July 4, 2026 — ACR → GHCR cutover):
 
