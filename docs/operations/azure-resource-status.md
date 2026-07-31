@@ -27,12 +27,13 @@ and £0 for Cosmos DB, SignalR, and Functions. From July 20–29, Storage was
 approximately £0.071–£0.080/day and is the main recurring cost.
 
 The hosts and public endpoints were healthy on July 30, but the dashboard data
-was empty and processing recorded no executions during the inspected 48-hour
-window. Processing-only telemetry enabled on July 31 identified the cause:
-`ArchiveRawEvents` fails indexing because `%Cosmos__DatabaseName%` does not
-resolve in the Azure Functions host, after which the host disables the function.
-The `raw-events` container continues receiving data while `leases` and
-`line-status` remain empty. Host health alone does not prove pipeline health.
+was empty. Processing-only telemetry enabled on July 31 identified unresolved
+`%Cosmos__*%` binding expressions, which caused the host to disable
+`ArchiveRawEvents`. The trigger now uses flat `CosmosTrigger*Name` settings. A
+controlled pull successfully traversed `raw-events` through processing and
+restored 10 current line records plus dashboard freshness. `waterloo-city`
+remains absent from the configured line list, so the separate 10-versus-11 gap
+is still open. Host health alone does not prove pipeline health.
 
 ## Historical state (2026-06-23)
 

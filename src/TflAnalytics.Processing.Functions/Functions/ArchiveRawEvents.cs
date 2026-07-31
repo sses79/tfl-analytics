@@ -21,10 +21,10 @@ public sealed class ArchiveRawEvents
     [Function(nameof(ArchiveRawEvents))]
     public async Task Run(
         [CosmosDBTrigger(
-            databaseName: "%Cosmos__DatabaseName%",
-            containerName: "%Cosmos__RawEventsContainerName%",
+            databaseName: "%CosmosTriggerDatabaseName%",
+            containerName: "%CosmosTriggerRawEventsContainerName%",
             Connection = "CosmosTrigger",
-            LeaseContainerName = "%Cosmos__LeasesContainerName%",
+            LeaseContainerName = "%CosmosTriggerLeasesContainerName%",
             CreateLeaseContainerIfNotExists = false)]
         IReadOnlyList<JsonElement> documents,
         CancellationToken cancellationToken)

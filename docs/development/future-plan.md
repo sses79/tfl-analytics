@@ -8,14 +8,15 @@ in [`Plan.md`](../../Plan.md).
 
 ## Current Position
 
-The reduced-cost Azure platform and public hosts are healthy, but the live
-line-status data path is degraded:
+The reduced-cost Azure platform and public hosts are healthy. The live
+line-status data path was restored on July 31 after replacing unresolved
+hierarchical trigger binding expressions with flat host settings:
 
-- `GET /api/dashboard/summary` returns `lastEventUtc=null` and zero monitored
+- `GET /api/dashboard/summary` returns a current `lastEventUtc` and 10 monitored
   lines.
-- `GET /api/lines/status` returns an empty array.
-- The processing Function recorded three executions during the inspected
-  July 30–31 window, but no queryable line-status observations resulted.
+- `GET /api/lines/status` returns 10 current records.
+- `ArchiveRawEvents` initializes without indexing errors and processes fresh
+  raw events.
 - Arrival ingestion and alert detection are intentionally disabled.
 
 Do not begin another product phase until line-status ingestion is reliable and
@@ -23,7 +24,7 @@ freshness is measured automatically.
 
 ## Phase 1 — Restore The Live Line-Status Path
 
-**Status: open and blocking**
+**Status: core event flow restored; reliability evidence remains open**
 
 Trace one scheduled or controlled line-status observation through:
 
@@ -42,7 +43,8 @@ Work:
 
 1. Confirm `PollLineStatus` calls TfL successfully and publishes 11 raw events.
 2. Inspect `raw-events` documents and the `leases` checkpoint state.
-3. Confirm `ArchiveRawEvents` executes and produces recent raw Blob objects.
+3. Confirm the flat `CosmosTrigger*Name` host settings resolve and
+   `ArchiveRawEvents` produces recent raw Blob objects.
 4. Verify `processing` drains and `processing-poison` remains empty.
 5. Confirm `ProcessQueuedEvent` writes recent `line-status` documents.
 6. Verify `/api/lines/status`, dashboard summary, and SignalR updates.

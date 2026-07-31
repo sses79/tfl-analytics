@@ -481,6 +481,18 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: processingIdentity.properties.clientId
         }
         {
+          name: 'CosmosTriggerDatabaseName'
+          value: cosmosDatabaseName
+        }
+        {
+          name: 'CosmosTriggerRawEventsContainerName'
+          value: cosmosRawEventsContainerName
+        }
+        {
+          name: 'CosmosTriggerLeasesContainerName'
+          value: cosmosLeasesContainerName
+        }
+        {
           name: 'Alerts__Enabled'
           value: string(enableAlerts)
         }

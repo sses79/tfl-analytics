@@ -20,33 +20,41 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | July 31, 2026 |
-| Git commit | Uncommitted `dev` worktree based on `9ede4f3` |
-| Change | Enable processing-only Application Insights to diagnose the stalled Cosmos change-feed trigger |
-| Provisioning state | `Succeeded` — targeted deployments `processing-observability-20260731` and `processing-observability-connect-20260731-v2`; processing host healthy |
-| Scope | Created one workspace and one workspace-based Application Insights component; connected only `func-tfl-analytics-processing-dev-nhkpyupi`; retained `Arrival__Enabled=false` and `Alerts__Enabled=false` |
-| Cost impact | Usage-based telemetry with 30-day retention and a 0.1 GB/day ingestion cap; expected short diagnostic usage is pennies, with a planning ceiling of roughly £0.30/day |
+| Git commit | Uncommitted trigger fix based on `0756be7` (`dev`) |
+| Change | Restore `ArchiveRawEvents` after processing-only telemetry identified unresolved Cosmos trigger binding settings |
+| Provisioning state | `Succeeded` — ARM deployment `processing-trigger-settings-20260731`; processing zip deployment `57534621-461f-45ac-99d4-5a228c85e090`; processing host healthy |
+| Scope | Added flat `CosmosTrigger*Name` host settings, updated the Cosmos trigger binding expressions, and retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
+| Cost impact | £0 expected for the trigger fix; diagnostic telemetry remains capped at 0.1 GB/day with observed usage far below the cap |
 
 Latest verification evidence:
 
-- Root and targeted Bicep builds passed. Root and targeted `what-if` previews
-  completed before deployment; the targeted preview limited deployment to the
-  monitoring resources and processing app settings, avoiding unrelated
-  provider-default changes in the root preview.
+- The solution build passed with no warnings; 28 tests passed and one live Azure
+  smoke test was intentionally skipped. Compose configuration passed using
+  `.env.example`, and the root and targeted Bicep templates compiled.
+- Azure returned an internal service error twice for the full root `what-if`.
+  The replacement targeted `what-if` succeeded and proposed exactly the
+  processing app-settings child resource, with 17 unrelated resources ignored.
+- Deployment `processing-trigger-settings-20260731` added
+  `CosmosTriggerDatabaseName=tfl-analytics`,
+  `CosmosTriggerRawEventsContainerName=raw-events`, and
+  `CosmosTriggerLeasesContainerName=leases`; package metadata references those
+  same flat names.
+- No `ArchiveRawEvents` indexing errors occurred after the corrected package
+  started. A controlled manual pull published 10 configured line-status events.
+- `GET /api/lines/status` returned 10 current records with
+  `observedAtUtc=2026-07-31T16:41:42.6475188Z`. Dashboard summary returned
+  `linesMonitored=10`, `linesDisrupted=6`, and the same `lastEventUtc`.
+- The remaining 10-versus-11 line gap is configuration: `waterloo-city` is not
+  currently present in the deployed line ID list. It is not a processing-path
+  failure.
 - Log Analytics `log-tfl-analytics-dev-nhkpyupi` reports `PerGB2018`, 30-day
   retention, and `dailyQuotaGb=0.1`.
 - The first diagnostic hour contained 24 telemetry records totalling about
   0.0416 MB of billed data, so observed investigation cost is effectively zero.
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` exists on processing only; ingestion
   remains disconnected. No connection-string value was printed or persisted.
-- `ArchiveRawEvents` is indexed in the management plane with `isDisabled=false`,
-  but host telemetry reports `%Cosmos__DatabaseName%` does not resolve while
-  indexing the method, followed by `ArchiveRawEvents` being disabled by the
-  host.
-- Cosmos `raw-events` contains recent `LineStatusObserved` documents, while the
-  `leases` and `line-status` containers remain empty. The event flow is therefore
-  not restored by this monitoring-only deployment.
-- The processing health endpoint returned `healthy`; this confirms host health
-  but not trigger readiness.
+- The processing health endpoint returned `healthy`; end-to-end data checks now
+  complement that host-only result.
 
 Prior verification evidence (July 4, 2026 — ACR → GHCR cutover):
 
