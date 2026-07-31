@@ -15,6 +15,15 @@ param projectName string = 'tfl-analytics'
 param deployApiContainer bool = false
 @description('Deploy Log Analytics workspace and Application Insights. Disabled by default to avoid AppTraces ingestion cost.')
 param enableObservability bool = false
+@description('Connect only the processing Function App to Application Insights. Useful for low-cost trigger diagnostics without enabling platform-wide telemetry.')
+param enableProcessingObservability bool = false
+@description('Daily Log Analytics ingestion cap in GB for the observability workspace.')
+@allowed([
+  '0.1'
+  '0.5'
+  '1'
+])
+param observabilityDailyQuotaGb string = '0.1'
 @description('Enable scheduled arrival ingestion. Disabled in the post-demo development environment to reduce TfL requests and Azure processing/storage transactions.')
 param enableArrivalIngestion bool = false
 @description('Enable alert detection and Durable alert workflows. Disabled in the post-demo development environment.')
@@ -38,6 +47,7 @@ var cosmosDatabaseName = 'tfl-analytics'
 var signalRName = 'sigr-${projectName}-${environmentName}-${suffix}'
 var signalRHostname = '${signalRName}.service.signalr.net'
 var cosmosEndpoint = 'https://${cosmosAccountName}.documents.azure.com:443/'
+var deployObservabilityResources = enableObservability || enableProcessingObservability
 var commonTags = {
   environment: environmentName
   project: projectName
@@ -64,12 +74,13 @@ module keyVault 'modules/key-vault.bicep' = {
   }
 }
 
-module observability 'modules/observability.bicep' = if (enableObservability) {
+module observability 'modules/observability.bicep' = if (deployObservabilityResources) {
   name: 'observability'
   params: {
     location: location
     logAnalyticsName: logAnalyticsName
     applicationInsightsName: applicationInsightsName
+    dailyQuotaGb: observabilityDailyQuotaGb
     tags: commonTags
   }
 }
@@ -89,7 +100,8 @@ module compute 'modules/compute.bicep' = {
     storageAccountName: storageAccountName
     ingestionDeploymentContainerName: 'function-ingestion-deployments'
     processingDeploymentContainerName: 'function-processing-deployments'
-    applicationInsightsName: observability.?outputs.applicationInsightsName ?? ''
+    ingestionApplicationInsightsName: enableObservability ? (observability.?outputs.applicationInsightsName ?? '') : ''
+    processingApplicationInsightsName: deployObservabilityResources ? (observability.?outputs.applicationInsightsName ?? '') : ''
     keyVaultName: keyVaultName
     cosmosAccountName: cosmosAccountName
     cosmosDatabaseName: cosmosDatabaseName

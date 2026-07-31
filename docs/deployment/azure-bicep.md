@@ -46,6 +46,13 @@ without calling TfL, and line status is scheduled every ten minutes. Retired
 `AlertStorage__*` SQL settings are not deployed to either Function App or the
 API Container App.
 
+Processing-only Application Insights can be enabled independently with
+`enableProcessingObservability=true`. The development environment currently
+uses this mode with a 0.1 GB/day workspace ingestion cap. It does not connect
+ingestion, the API, or platform diagnostic settings. Use
+`infra/bicep/processing-observability.bicep` for a targeted monitoring change
+when a full root `what-if` contains unrelated provider-default noise.
+
 The Function hosts and their application packages are deployed. The Angular
 line-status dashboard is deployed to the Static Web App and calls the Container
 App API through an origin-restricted CORS policy.

@@ -10,7 +10,8 @@ param staticWebAppName string
 param storageAccountName string
 param ingestionDeploymentContainerName string
 param processingDeploymentContainerName string
-param applicationInsightsName string = ''
+param ingestionApplicationInsightsName string = ''
+param processingApplicationInsightsName string = ''
 param keyVaultName string
 param cosmosAccountName string
 param cosmosDatabaseName string
@@ -45,15 +46,21 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
   name: storageAccountName
 }
 
-var observabilityEnabled = !empty(applicationInsightsName)
+var ingestionObservabilityEnabled = !empty(ingestionApplicationInsightsName)
+var processingObservabilityEnabled = !empty(processingApplicationInsightsName)
 
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (observabilityEnabled) {
-  name: observabilityEnabled ? applicationInsightsName : 'unused'
+resource ingestionApplicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (ingestionObservabilityEnabled) {
+  name: ingestionObservabilityEnabled ? ingestionApplicationInsightsName : 'unused'
+}
+
+resource processingApplicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (processingObservabilityEnabled) {
+  name: processingObservabilityEnabled ? processingApplicationInsightsName : 'unused'
 }
 
 var ingestionDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${ingestionDeploymentContainerName}'
 var processingDeploymentContainerUri = '${storageAccount.properties.primaryEndpoints.blob}${processingDeploymentContainerName}'
-var applicationInsightsConnectionString = applicationInsights.?properties.ConnectionString ?? ''
+var ingestionApplicationInsightsConnectionString = ingestionApplicationInsights.?properties.ConnectionString ?? ''
+var processingApplicationInsightsConnectionString = processingApplicationInsights.?properties.ConnectionString ?? ''
 var tflApiKeyVaultReference = '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=TflApi--AppKey)'
 var dashboardOrigins = concat(
   ['https://${staticWebApp.properties.defaultHostname}'],
@@ -323,10 +330,10 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'DD_SERVICE'
           value: 'tfl-analytics-ingestion'
         }
-      ], observabilityEnabled ? [
+      ], ingestionObservabilityEnabled ? [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsightsConnectionString
+          value: ingestionApplicationInsightsConnectionString
         }
       ] : [])
     }
@@ -474,6 +481,18 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: processingIdentity.properties.clientId
         }
         {
+          name: 'CosmosTriggerDatabaseName'
+          value: cosmosDatabaseName
+        }
+        {
+          name: 'CosmosTriggerRawEventsContainerName'
+          value: cosmosRawEventsContainerName
+        }
+        {
+          name: 'CosmosTriggerLeasesContainerName'
+          value: cosmosLeasesContainerName
+        }
+        {
           name: 'Alerts__Enabled'
           value: string(enableAlerts)
         }
@@ -493,10 +512,10 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'DD_SERVICE'
           value: 'tfl-analytics-processing'
         }
-      ], observabilityEnabled ? [
+      ], processingObservabilityEnabled ? [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsightsConnectionString
+          value: processingApplicationInsightsConnectionString
         }
       ] : [])
     }

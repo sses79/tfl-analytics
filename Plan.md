@@ -11,6 +11,7 @@
 > `docs/deployment/azure-bicep.md`, `docs/history/cosmos-change-feed-migration.md`,
 > `docs/history/ghcr-image-migration.md`,
 > `docs/deployment/post-deployment-verification.md`.
+> Remaining work is tracked in `docs/development/future-plan.md`.
 
 ## Implementation Status
 

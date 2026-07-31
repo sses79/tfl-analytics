@@ -234,7 +234,10 @@ Reduced-cost development configuration:
 - Alert detection is disabled (`Alerts__Enabled=false`).
 - The arrival timer runs every five minutes but exits without calling TfL while
   arrivals are disabled; line status is scheduled every ten minutes.
-- Log Analytics and Application Insights are not deployed by default.
+- Application Insights is connected only to the processing Function for the
+  current trigger investigation. Its Log Analytics workspace has a 0.1 GB/day
+  ingestion cap and 30-day retention; ingestion, API, and platform diagnostics
+  remain disconnected.
 - Azure SQL, Event Hubs, and Azure Container Registry have been removed.
 
 Validation, deployment, output discovery, and Azure smoke tests are documented

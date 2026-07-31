@@ -2,7 +2,7 @@
 
 > [Documentation index](../README.md)
 
-## Current state (2026-07-30)
+## Current state (2026-07-31)
 
 Read-only verification against subscription `TfL Analytics Development`
 confirmed the reduced-cost resource set:
@@ -10,8 +10,10 @@ confirmed the reduced-cost resource set:
 - Kept: Storage, Key Vault, two Flex Consumption Function Apps, Container Apps
   Consumption, Static Web Apps Free, Cosmos DB Free Tier, SignalR Free F1, and
   three managed identities.
-- Removed: Azure SQL, Event Hubs, Azure Container Registry, Log Analytics, and
-  Application Insights.
+- Removed: Azure SQL, Event Hubs, and Azure Container Registry.
+- Temporarily enabled for processing diagnostics: a workspace-based Application
+  Insights component connected only to the processing Function App, backed by a
+  PerGB2018 Log Analytics workspace with 30-day retention and a 0.1 GB/day cap.
 - The unused SQL repository, client package, local container, and Bicep
   provisioning module were removed on July 31.
 - API: public GHCR image, `minReplicas=0`, `maxReplicas=2`.
@@ -25,9 +27,13 @@ and £0 for Cosmos DB, SignalR, and Functions. From July 20–29, Storage was
 approximately £0.071–£0.080/day and is the main recurring cost.
 
 The hosts and public endpoints were healthy on July 30, but the dashboard data
-was empty and processing recorded no executions during the inspected 48-hour
-window. That event-flow issue is operational work still to be diagnosed; host
-health alone does not prove pipeline health.
+was empty. Processing-only telemetry enabled on July 31 identified unresolved
+`%Cosmos__*%` binding expressions, which caused the host to disable
+`ArchiveRawEvents`. The trigger now uses flat `CosmosTrigger*Name` settings. A
+controlled pull successfully traversed `raw-events` through processing and
+restored 10 current line records plus dashboard freshness. `waterloo-city`
+remains absent from the configured line list, so the separate 10-versus-11 gap
+is still open. Host health alone does not prove pipeline health.
 
 ## Historical state (2026-06-23)
 
