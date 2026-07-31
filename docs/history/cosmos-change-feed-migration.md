@@ -1,5 +1,7 @@
 # Proposal: drop Event Hubs, use the Cosmos DB change feed
 
+> [Documentation index](../README.md)
+
 **Status:** deployed and verified (2026-06-27) — code, local Compose, and Bicep
 have been migrated; Azure now uses the Cosmos DB change feed, and the old Event
 Hubs namespace has been deleted.
@@ -8,7 +10,7 @@ Hubs namespace has been deleted.
 **keeping a real, demonstrable event/data flow**. Targets a run-rate well under
 £1/day on mostly free-tier resources.
 
-See `docs/event-hubs-usage.md` for rollback/history context on the retired Event
+See `./event-hubs-usage.md` for rollback/history context on the retired Event
 Hubs transport.
 
 ## Plan of record (decisions & scope)
@@ -398,5 +400,5 @@ public async Task Run(
 - **Gate the `sql` Bicep module before any full `az deployment group create`** (see
   the ⚠️ in the cutover plan) — the EH-removal Bicep edits are exactly the kind of
   change that triggers a full redeploy.
-- Update `docs/event-hubs-usage.md` (flip its status note to "replaced by the
+- Update `./event-hubs-usage.md` (flip its status note to "replaced by the
   change feed") and `post-deployment-verification.md` once deployed.

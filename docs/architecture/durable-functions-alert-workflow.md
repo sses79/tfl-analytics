@@ -1,5 +1,7 @@
 # Durable Functions Alert Workflow
 
+> [Documentation index](../README.md)
+
 ## Regular Functions And Durable Functions
 
 A regular Azure Function handles one trigger and runs until it succeeds or

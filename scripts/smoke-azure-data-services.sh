@@ -114,22 +114,7 @@ signalr_role_count="$(az role assignment list \
 [[ "$signalr_local_auth_disabled" == "true" ]]
 [[ "$signalr_role_count" == "2" ]]
 
-# Azure SQL is deleted by default (the sql module is gated off, enableSql=false).
-# Verify it only when the server is actually deployed.
-sql_summary="  Azure SQL: not deployed (sql module gated off, enableSql=false)"
-if [[ -n "$SQL_SERVER" ]]; then
-  sql_state="$(az sql db show --name "$SQL_DATABASE" --server "$SQL_SERVER" --resource-group "$RESOURCE_GROUP" --query status --output tsv)"
-  sql_free_limit="$(az sql db show --name "$SQL_DATABASE" --server "$SQL_SERVER" --resource-group "$RESOURCE_GROUP" --query useFreeLimit --output tsv)"
-  sql_free_limit_behavior="$(az sql db show --name "$SQL_DATABASE" --server "$SQL_SERVER" --resource-group "$RESOURCE_GROUP" --query freeLimitExhaustionBehavior --output tsv)"
-  sql_auto_pause_delay="$(az sql db show --name "$SQL_DATABASE" --server "$SQL_SERVER" --resource-group "$RESOURCE_GROUP" --query autoPauseDelay --output tsv)"
-  sql_entra_only="$(az sql server ad-admin list --server "$SQL_SERVER" --resource-group "$RESOURCE_GROUP" --query "[0].azureAdOnlyAuthentication" --output tsv)"
-  [[ "$sql_state" == "Online" || "$sql_state" == "Paused" ]]
-  [[ "$sql_free_limit" == "true" ]]
-  [[ "$sql_free_limit_behavior" == "BillOverUsage" ]]
-  [[ "$sql_auto_pause_delay" == "60" ]]
-  [[ "$sql_entra_only" == "true" ]]
-  sql_summary="  Azure SQL: $SQL_DATABASE is $sql_state, Entra-only, free limit enabled, 60-minute inactivity auto-pause"
-fi
+sql_summary="  Azure SQL: not deployed; provisioning module removed"
 
 printf '%s\n' \
   "Azure data-service smoke tests passed:" \

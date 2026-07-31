@@ -8,7 +8,7 @@ describe('DataFlowExplainerComponent', () => {
   let fixture: ComponentFixture<DataFlowExplainerComponent>;
 
   const steps: readonly DataFlowStep[] = [
-    { service: 'Event Hubs', detail: 'Event stream', tone: 'messaging' },
+    { service: 'Cosmos change feed', detail: 'Event stream', tone: 'messaging' },
     { service: 'Cosmos DB', detail: 'Live state', tone: 'storage' }
   ];
 

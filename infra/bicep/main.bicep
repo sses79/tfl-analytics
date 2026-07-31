@@ -13,13 +13,17 @@ param environmentName string = 'dev'
 param projectName string = 'tfl-analytics'
 
 param deployApiContainer bool = false
-param enableSql bool = false
-
 @description('Deploy Log Analytics workspace and Application Insights. Disabled by default to avoid AppTraces ingestion cost.')
 param enableObservability bool = false
+@description('Enable scheduled arrival ingestion. Disabled in the post-demo development environment to reduce TfL requests and Azure processing/storage transactions.')
+param enableArrivalIngestion bool = false
+@description('Enable alert detection and Durable alert workflows. Disabled in the post-demo development environment.')
+param enableAlerts bool = false
+@description('NCRONTAB schedule for the arrival timer. The timer still runs and exits immediately while arrival ingestion is disabled.')
+param ingestionArrivalsSchedule string = '0 */5 * * * *'
+@description('NCRONTAB schedule for the line-status timer.')
+param ingestionLineStatusSchedule string = '0 */10 * * * *'
 param apiImageTag string = 'dev'
-param sqlLocation string = 'centralus'
-param apiIdentityPrincipalId string = ''
 
 @description('Optional custom domain aliasing the Static Web App (e.g. demo.example.com), added to every CORS allowlist alongside the generated hostname.')
 param dashboardCustomDomain string = ''
@@ -31,13 +35,9 @@ var logAnalyticsName = 'log-${projectName}-${environmentName}-${suffix}'
 var applicationInsightsName = 'appi-${projectName}-${environmentName}-${suffix}'
 var cosmosAccountName = 'cosmos-${projectName}-${environmentName}-${suffix}'
 var cosmosDatabaseName = 'tfl-analytics'
-var sqlServerName = 'sql-${projectName}-${environmentName}-${suffix}'
-var sqlDatabaseName = 'tfl-analytics'
 var signalRName = 'sigr-${projectName}-${environmentName}-${suffix}'
 var signalRHostname = '${signalRName}.service.signalr.net'
 var cosmosEndpoint = 'https://${cosmosAccountName}.documents.azure.com:443/'
-var sqlServerFqdn = '${sqlServerName}${environment().suffixes.sqlServerHostname}'
-var apiIdentityName = 'id-${projectName}-api-${environmentName}-${suffix}'
 var commonTags = {
   environment: environmentName
   project: projectName
@@ -97,10 +97,10 @@ module compute 'modules/compute.bicep' = {
     cosmosLineStatusContainerName: 'line-status'
     cosmosRawEventsContainerName: 'raw-events'
     cosmosLeasesContainerName: 'leases'
-    sqlServerFqdn: sqlServerFqdn
-    sqlDatabaseName: sqlDatabaseName
-    apiIdentityName: apiIdentityName
-    apiIdentityPrincipalId: apiIdentityPrincipalId
+    enableArrivalIngestion: enableArrivalIngestion
+    enableAlerts: enableAlerts
+    ingestionArrivalsSchedule: ingestionArrivalsSchedule
+    ingestionLineStatusSchedule: ingestionLineStatusSchedule
     dashboardCustomDomain: dashboardCustomDomain
     tags: commonTags
   }
@@ -128,7 +128,6 @@ module apiHosting 'modules/api-hosting.bicep' = {
     signalRHostname: signalRHostname
     cosmosEndpoint: cosmosEndpoint
     storageAccountName: storageAccountName
-    sqlServerFqdn: sqlServerFqdn
     deployApiContainer: deployApiContainer
     apiImageTag: apiImageTag
     tags: commonTags
@@ -147,19 +146,6 @@ module cosmos 'modules/cosmos.bicep' = {
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     ingestionPrincipalId: compute.outputs.ingestionDeploymentIdentityPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
-    tags: commonTags
-  }
-}
-
-module sql 'modules/sql.bicep' = if (enableSql) {
-  name: 'sql'
-  params: {
-    location: sqlLocation
-    serverName: sqlServerName
-    databaseName: sqlDatabaseName
-    administratorLogin: compute.outputs.processingIdentityName
-    administratorObjectId: compute.outputs.processingDeploymentIdentityPrincipalId
-    tenantId: subscription().tenantId
     tags: commonTags
   }
 }
@@ -193,9 +179,6 @@ module diagnostics 'modules/diagnostics.bicep' = if (enableObservability) {
     keyVaultName: keyVault.outputs.keyVaultName
     cosmosAccountName: cosmos.outputs.accountName
     signalRName: realtime.outputs.name
-    sqlServerName: sql.?outputs.serverName ?? ''
-    sqlDatabaseName: sql.?outputs.databaseName ?? ''
-    enableSqlDiagnostics: enableSql
   }
 }
 
@@ -222,8 +205,9 @@ output cosmosLiveEventsContainerName string = cosmos.outputs.liveEventsContainer
 output cosmosLineStatusContainerName string = cosmos.outputs.lineStatusContainerName
 output cosmosRawEventsContainerName string = cosmos.outputs.rawEventsContainerName
 output cosmosLeasesContainerName string = cosmos.outputs.leasesContainerName
-output sqlServerName string = sql.?outputs.serverName ?? ''
-output sqlServerFqdn string = sql.?outputs.serverFqdn ?? ''
-output sqlDatabaseName string = sql.?outputs.databaseName ?? ''
+// Retained as empty compatibility outputs for existing operator scripts.
+output sqlServerName string = ''
+output sqlServerFqdn string = ''
+output sqlDatabaseName string = ''
 output signalRName string = realtime.outputs.name
 output signalRHostname string = realtime.outputs.hostname

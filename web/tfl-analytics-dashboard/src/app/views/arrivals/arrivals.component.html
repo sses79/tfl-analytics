@@ -52,7 +52,7 @@
 <div class="arrivals-table-wrap" [attr.aria-busy]="loading()">
   @if (arrivals().length === 0 && !loading()) {
     <div class="empty-state">
-      <p>No recent arrivals recorded for this station. Predictions are stored as they arrive every 30 seconds.</p>
+      <p>No recent arrivals recorded for this station. Arrival ingestion is disabled in the reduced-cost environment.</p>
     </div>
   } @else {
     <table class="arrivals-table">

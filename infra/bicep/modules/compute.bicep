@@ -18,10 +18,10 @@ param cosmosLiveEventsContainerName string
 param cosmosLineStatusContainerName string
 param cosmosRawEventsContainerName string
 param cosmosLeasesContainerName string
-param sqlServerFqdn string
-param sqlDatabaseName string
-param apiIdentityName string
-param apiIdentityPrincipalId string = ''
+param enableArrivalIngestion bool = false
+param enableAlerts bool = false
+param ingestionArrivalsSchedule string = '0 */5 * * * *'
+param ingestionLineStatusSchedule string = '0 */10 * * * *'
 param dashboardCustomDomain string = ''
 param tags object
 
@@ -245,15 +245,15 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'IngestionArrivalsSchedule'
-          value: '0 */5 * * * *'
+          value: ingestionArrivalsSchedule
         }
         {
           name: 'IngestionLineStatusSchedule'
-          value: '0 */10 * * * *'
+          value: ingestionLineStatusSchedule
         }
         {
           name: 'Arrival__Enabled'
-          value: 'false'
+          value: string(enableArrivalIngestion)
         }
         {
           name: 'Ingestion__StationIds__0'
@@ -474,24 +474,8 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
           value: processingIdentity.properties.clientId
         }
         {
-          name: 'AlertStorage__ServerFqdn'
-          value: sqlServerFqdn
-        }
-        {
-          name: 'AlertStorage__DatabaseName'
-          value: sqlDatabaseName
-        }
-        {
-          name: 'AlertStorage__Initialize'
-          value: 'true'
-        }
-        {
-          name: 'AlertStorage__ApiIdentityName'
-          value: apiIdentityName
-        }
-        {
-          name: 'AlertStorage__ApiObjectId'
-          value: apiIdentityPrincipalId
+          name: 'Alerts__Enabled'
+          value: string(enableAlerts)
         }
         {
           name: 'Alerts__ArrivalSlippageThresholdSeconds'

@@ -1,5 +1,7 @@
 # Auto-implementing GitHub issues with Claude → PR into `dev`
 
+> [Documentation index](../README.md)
+
 **Status:** proposed setup (not yet implemented as of 2026-06-26).
 
 ## Goal
@@ -98,7 +100,7 @@ Notes:
 - The action's bundled `GITHUB_TOKEN` provides `gh` access for branch push + PR
   creation; the `permissions` block is the minimum needed.
 - Integration tests that need the local emulators run via `infra/local/compose.yaml`
-  (Azurite / Cosmos / Event Hubs emulator) and work on `ubuntu-latest`; no Azure
+  (Azurite and Cosmos DB emulator) and work on `ubuntu-latest`; no Azure
   secrets are required because none of the unit/integration tests call Azure.
 
 ### 4. Create the gating label

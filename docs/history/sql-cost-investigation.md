@@ -1,5 +1,7 @@
 # Azure SQL cost investigation (2026-06-20)
 
+> [Documentation index](../README.md)
+
 ## Summary
 
 Azure SQL Database (`tfl-analytics` on `sql-tfl-analytics-dev-*`) has been

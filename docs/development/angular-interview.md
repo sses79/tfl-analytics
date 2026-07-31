@@ -1,5 +1,7 @@
 # Angular interview notes: TfL Analytics Dashboard
 
+> [Documentation index](../README.md)
+
 Use these notes to describe what the frontend currently implements. Keep proposed
 improvements in future tense so the interview answer remains accurate.
 

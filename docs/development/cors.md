@@ -1,5 +1,7 @@
 # Custom Domain CORS Incident — demo.ti5g.com
 
+> [Documentation index](../README.md)
+
 ## Context
 
 A custom domain `https://demo.ti5g.com` was added as an alias for the

@@ -44,22 +44,6 @@ services:
     networks:
       - tfl-analytics
 
-  sql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64
-    environment:
-      HOME: /var/opt/mssql
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
-    working_dir: /var/opt/mssql
-    ports:
-      - "1433:1433"
-    volumes:
-      - sql-data:/var/opt/mssql
-    networks:
-      - tfl-analytics
-
   wiremock:
     image: wiremock/wiremock:3.13.1
     command: ["--global-response-templating", "--verbose"]
@@ -97,9 +81,6 @@ services:
       Cosmos__LeasesContainerName: leases
       Cosmos__Initialize: "true"
       Cosmos__DisableServerCertificateValidation: "true"
-      AlertStorage__ConnectionString: Server=sql,1433;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True
-      AlertStorage__DatabaseName: tfl-analytics
-      AlertStorage__Initialize: "true"
       DD_AGENT_HOST: datadog-agent
       DD_ENV: local
       DD_SERVICE: tfl-analytics-api
@@ -109,8 +90,6 @@ services:
     depends_on:
       cosmos:
         condition: service_healthy
-      sql:
-        condition: service_started
       wiremock:
         condition: service_started
     networks:
@@ -203,9 +182,6 @@ services:
       Cosmos__LeasesContainerName: leases
       Cosmos__Initialize: "true"
       Cosmos__DisableServerCertificateValidation: "true"
-      AlertStorage__ConnectionString: Server=sql,1433;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True
-      AlertStorage__DatabaseName: tfl-analytics
-      AlertStorage__Initialize: "true"
       Alerts__ArrivalSlippageThresholdSeconds: "1200"
       Alerts__GoodServiceSeverity: "10"
       SignalR__RelayBaseUrl: http://api:8080/internal/realtime
@@ -220,8 +196,6 @@ services:
         condition: service_started
       cosmos:
         condition: service_healthy
-      sql:
-        condition: service_started
       api:
         condition: service_started
     networks:
@@ -255,4 +229,3 @@ networks:
 volumes:
   azurite-data:
   cosmos-data:
-  sql-data:

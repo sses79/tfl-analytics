@@ -87,9 +87,6 @@ public static class DependencyInjection
         services
             .AddOptions<ProcessingStorageOptions>()
             .Bind(configuration.GetSection(ProcessingStorageOptions.SectionName));
-        services
-            .AddOptions<AlertStorageOptions>()
-            .Bind(configuration.GetSection(AlertStorageOptions.SectionName));
         services.AddSingleton(
             configuration.GetSection(AlertOptions.SectionName).Get<AlertOptions>()
             ?? new AlertOptions());

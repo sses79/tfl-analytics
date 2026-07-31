@@ -1,5 +1,7 @@
 # Local Smoke Tests
 
+> [Documentation index](../README.md)
+
 Run these commands from the repository root after starting the required Docker
 Compose services.
 
@@ -86,20 +88,6 @@ seconds and line-status observations every two minutes to the Cosmos DB
 container's change feed. WireMock serves the configured arrival, stop metadata,
 and line-status fixtures, so this path does not require a live TfL API key.
 
-## SQL Server
-
-Run a query inside the container without exposing the password:
-
-```bash
-docker compose \
-  --env-file .env \
-  -f infra/local/compose.yaml \
-  exec sql sh -lc \
-  '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
-  -P "$MSSQL_SA_PASSWORD" -C \
-  -Q "SET NOCOUNT ON; SELECT 1 AS Ready"'
-```
-
 ## Azure Functions
 
 Check both Azure Functions hosts:
@@ -137,7 +125,7 @@ broadcast through the self-hosted SignalR hub.
 When the `observability` profile is running, check the Datadog Agent and its
 APM receiver:
 
-See the [Datadog Agent guide](./datadog-agent.md) for configuration, data flow,
+See the [Datadog Agent guide](../operations/datadog-agent.md) for configuration, data flow,
 and current instrumentation limitations.
 
 ```bash

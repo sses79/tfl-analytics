@@ -1,13 +1,16 @@
 # TfL Live Analytics Azure Mini Project Plan
 
-> **Current-state note (updated 2026-07-04):** this is the original delivery plan;
+> **Current-state note (updated 2026-07-30):** this is the original delivery plan;
 > parts below are now historical. In the deployed system **Event Hubs was replaced
 > by the Cosmos DB change feed** (2026-06-27), the **Azure SQL server was deleted**
-> (alerts use Table Storage; the `sql` Bicep module is gated off, and a SQL Server
-> container is retained only in the local stack), and the **API image moved from
-> ACR to public GHCR** (2026-07-04). Authoritative current state:
-> `docs/azure-bicep.md`, `docs/cosmos-change-feed-migration.md`,
-> `docs/ghcr-image-migration.md`, `docs/post-deployment-verification.md`.
+> (alerts use Table Storage and the SQL Bicep module was removed), and the
+> inactive local SQL implementation was removed. The **API image moved from
+> ACR to public GHCR** (2026-07-04). The post-demo development configuration
+> polls line status every 10 minutes; arrival ingestion and alert detection are
+> disabled. Authoritative current state:
+> `docs/deployment/azure-bicep.md`, `docs/history/cosmos-change-feed-migration.md`,
+> `docs/history/ghcr-image-migration.md`,
+> `docs/deployment/post-deployment-verification.md`.
 
 ## Implementation Status
 
@@ -21,32 +24,32 @@ Completed:
   project boundaries.
 - Dockerfiles and validated Docker Compose configuration.
 - Deterministic WireMock TfL fixture and successful container smoke test.
-- Bicep modules for storage/ADLS, Key Vault, Event Hubs, Log Analytics, and
-  Application Insights.
+- Bicep modules for storage/ADLS, Key Vault, Cosmos DB, optional Log Analytics
+  and Application Insights, Functions, Container Apps, Static Web Apps, and
+  SignalR.
 - Azure foundation deployment to `rg-tfl-analytics-dev-uk-south`.
 - TfL and Datadog keys stored in `kv-tfl-nhkpyupi`.
 - Two .NET 10 Flex Consumption Function Apps with managed deployment identities.
 - Free Static Web App for the Angular dashboard.
-- ASP.NET Core API deployed to Azure Container Apps Consumption from a private
-  Basic Azure Container Registry.
+- ASP.NET Core API deployed to Azure Container Apps Consumption from public
+  GHCR, with scale-to-zero enabled.
 - Azure API health and live TfL line-status smoke tests.
 - Ingestion and processing Function packages deployed with public health checks.
 - Angular dashboard deployed to Azure Static Web Apps with production API CORS,
   security headers, and live TfL line-status smoke tests.
 - Cosmos DB free-tier account with shared throughput, seven-day TTL containers,
   and managed-identity data access.
-- Azure SQL free-serverless database with Microsoft Entra-only administration
-  and automatic pause when the monthly free allowance is exhausted.
+- Azure SQL was evaluated and deployed during the original implementation, then
+  removed after alert persistence moved to Table Storage.
 - Azure SignalR Service Free F1 with key authentication disabled and
   managed-identity app-server access.
 - Alert history migrated from Azure SQL to the `alerts` Storage Table on June
   21, 2026 to avoid serverless SQL compute cost, with verification completed on
-  June 22. The SQL resource and implementation are retained but inactive for
+  June 22. The cloud SQL resource is deleted; a local SQL container remains for
   possible future relational workloads.
-- Least-privilege Event Hubs and Key Vault workload RBAC for the API,
-  ingestion, and processing identities.
-- Selected low-volume diagnostic settings for Key Vault, Event Hubs, Cosmos DB,
-  SignalR, and Azure SQL.
+- Least-privilege Key Vault, Storage, Cosmos DB, and SignalR workload RBAC for
+  the API, ingestion, and processing identities.
+- Optional diagnostic settings for Key Vault, Cosmos DB, and SignalR.
 - GitHub Actions validation for .NET, Angular, Bicep, shell scripts, Docker
   Compose, secrets, and dependency vulnerabilities.
 - Documented manual Azure deployment and rollback runbook.
@@ -55,29 +58,29 @@ Completed:
 - Typed TfL arrivals, stop metadata, and line-status client operations with
   bounded retries for transient failures.
 - Configurable arrival and line-status timer-triggered polling.
-- Event Hubs publication using the emulator connection string locally and
-  managed identity in Azure.
+- Raw-event publication to Cosmos DB with managed identity in Azure.
 - Deterministic WireMock fixtures and focused tests for polling, mappings,
   event IDs, and retry behavior.
 - Key Vault-backed TfL API configuration for the Azure ingestion Function.
-- Event Hub-triggered gzip raw-event archiving with Hive-style Blob paths.
+- Cosmos change-feed-triggered gzip raw-event archiving with Hive-style Blob
+  paths.
 - Storage Queue handoff with validation, normalization, retry, and poison queue
   behavior.
 - Idempotent arrival and line-status persistence to partitioned Cosmos DB
   containers with seven-day TTL.
-- A deterministic Docker full-run test covering WireMock, timers, Event Hubs,
-  Blob Storage, Queue Storage, and Cosmos DB.
+- A deterministic Docker full-run test covering WireMock, timers, Blob Storage,
+  Queue Storage, and Cosmos DB.
 - Phase 3 deployed to Azure on June 14, 2026 and verified through live raw
   archives, queue processing, and Cosmos DB persistence.
 
 Phase 4 alert processing was completed locally and deployed to Azure on
 June 14, 2026. A controlled good-service-to-disruption transition verified the
-complete Durable Functions, Azure SQL, Table Storage, and mock-notification
+complete Durable Functions, Table Storage, and mock-notification
 workflow.
 
 Phase 5 API, SignalR, and dashboard work was implemented on June 14, 2026 and
 deployed to Azure on June 15, 2026. The deployed dashboard exposes summary,
-line-status, arrivals, and alert views backed by Cosmos DB and Azure SQL query
+line-status, arrivals, and alert views backed by Cosmos DB and Table Storage query
 endpoints. Processing Functions publish arrival, line-status, and alert
 notifications through Azure SignalR Service.
 
@@ -92,11 +95,12 @@ Microsoft Entra ID authentication and authorization remain deferred to Phase 6.
 
 ## Summary
 
-Transform the existing generic telemetry project into a portfolio-grade TfL live
-analytics platform. Azure Functions will poll TfL live arrivals every 30 seconds
-and line status every 2 minutes, publish normalized events through Event Hubs,
-store operational and historical data, detect delays and disruptions, and push
-updates to an Angular dashboard through Azure SignalR Service.
+The implemented platform ingests TfL data through Azure Functions, publishes raw
+events to Cosmos DB, processes them through the Cosmos change feed, stores recent
+data and low-cost alert history, and pushes updates to an Angular dashboard
+through Azure SignalR Service. In the reduced-cost post-demo configuration,
+arrival ingestion and alert detection are disabled and line status is scheduled
+every 10 minutes.
 
 The first release will monitor Tube data for these configurable stations:
 
@@ -115,9 +119,9 @@ The live TfL Swagger contract will be used instead of the legacy
 
 An expanded, interactive version that identifies event contracts and storage
 landing zones is available at
-[docs/plan/architecture-diagram.html](./docs/plan/architecture-diagram.html).
+[docs/architecture/architecture-diagram.md](./docs/architecture/architecture-diagram.md).
 The Web API, Angular hosting, and SignalR runtime paths are detailed in
-[docs/plan/api-dashboard-architecture.html](./docs/plan/api-dashboard-architecture.html).
+[docs/architecture/api-dashboard-architecture.html](./docs/architecture/api-dashboard-architecture.html).
 
 ```mermaid
 flowchart LR
@@ -125,9 +129,9 @@ flowchart LR
     KV[Azure Key Vault]
 
     subgraph Ingestion
-        TF[Timer Trigger Function<br/>Arrivals: 30 seconds<br/>Status: 2 minutes]
-        EH[Azure Event Hubs]
-        EHF[Event Hub Trigger Function]
+        TF[Timer Trigger Function<br/>Arrivals: disabled<br/>Status: 10 minutes]
+        RAW[Cosmos DB raw-events]
+        CF[Cosmos change-feed trigger]
     end
 
     subgraph Processing
@@ -139,7 +143,6 @@ flowchart LR
     subgraph Storage
         ADLS[Data Lake Gen2<br/>Compressed Raw Events]
         COSMOS[Cosmos DB<br/>Live and Recent Events]
-        SQL[Azure SQL<br/>Retained, inactive]
         TABLE[Table Storage<br/>Alerts and Audit Records]
     end
 
@@ -150,21 +153,16 @@ flowchart LR
         ENTRA[Microsoft Entra ID]
     end
 
-    subgraph Operations
-        AI[Application Insights]
-    end
-
     KV -. API Key via Managed Identity .-> TF
     TFL --> TF
-    TF --> EH
-    EH --> EHF
-    EHF --> ADLS
-    EHF --> Q
+    TF --> RAW
+    RAW --> CF
+    CF --> ADLS
+    CF --> Q
     Q --> QF
     QF --> COSMOS
     QF --> DF
     QF --> SIGNALR
-    DF --> COSMOS
     DF --> TABLE
     DF --> SIGNALR
     COSMOS --> API
@@ -174,11 +172,6 @@ flowchart LR
     ANGULAR --> API
     ENTRA --> ANGULAR
     ENTRA --> API
-    TF -. Telemetry .-> AI
-    EHF -. Telemetry .-> AI
-    QF -. Telemetry .-> AI
-    DF -. Telemetry .-> AI
-    API -. Telemetry .-> AI
 ```
 
 ## Local Container Architecture
@@ -198,10 +191,8 @@ flowchart LR
         API_LOCAL[Web API Container]
         WEB[Angular Container]
 
-        EH_LOCAL[Event Hubs Emulator]
         AZURITE[Azurite<br/>Blob, Queue, Table]
         COSMOS_LOCAL[Cosmos DB Emulator vNext]
-        SQL_LOCAL[SQL Server Container<br/>Retained, inactive]
         SIGNALR_LOCAL[Self-hosted SignalR Hub]
         DD[Datadog Agent<br/>Optional profile]
     end
@@ -210,8 +201,8 @@ flowchart LR
 
     FIXTURE --> INGEST
     LIVE -. Optional .-> INGEST
-    INGEST --> EH_LOCAL
-    EH_LOCAL --> PROCESS
+    INGEST --> COSMOS_LOCAL
+    COSMOS_LOCAL --> PROCESS
     PROCESS --> AZURITE
     PROCESS --> COSMOS_LOCAL
     PROCESS -- Development relay --> API_LOCAL
@@ -233,11 +224,9 @@ flowchart LR
 | Azure production service | Local container or replacement | Coverage and limitation |
 |---|---|---|
 | Azure Functions | Custom Functions containers using the local Functions host | Runs triggers and bindings locally; Azure hosting, scaling, and managed identity behavior require cloud tests. |
-| Event Hubs | Official Event Hubs emulator | Supports AMQP/Kafka producer and consumer flows. It does not emulate Entra ID, Capture, autoscale, geo-recovery, or Azure monitoring, and data is lost after restart. |
 | Blob, Queue, Table Storage | Official Azurite container | Suitable for triggers, queues, raw blob archives, poison queues, and Durable Functions state. Table support remains preview. |
 | Data Lake Gen2 | Azurite Blob endpoint through an archive abstraction | Tests payloads and partition paths, but not hierarchical namespace, DFS APIs, POSIX ACLs, or lifecycle policies. Those require Azure smoke tests. |
 | Cosmos DB for NoSQL | Official Linux Cosmos DB emulator vNext | Runs in Docker and supports the NoSQL API in gateway mode. It implements only a subset of cloud features. |
-| Azure SQL Database | SQL Server Linux container | Retained for future relational workloads but not used by the active alert path. On Apple Silicon it uses `linux/amd64` emulation. |
 | Durable Functions | Local Functions host backed by Azurite | Tests orchestration, activity, retry, and idempotency behavior. Azure scale and hosting behavior require cloud tests. |
 | Azure SignalR Service | Self-hosted ASP.NET Core SignalR with a development-only HTTP relay from the processing Function | Exercises hub negotiation, browser delivery, and all three realtime contracts without requiring Azure SignalR. Managed identity, service scale, and the Azure REST endpoint require cloud tests. |
 | Key Vault | Environment variables or mounted Docker secrets through `ISecretProvider` | Tests configuration flow, not Key Vault authentication, RBAC, rotation, or network controls. |
@@ -248,7 +237,7 @@ flowchart LR
 
 Docker Compose uses the following service groups:
 
-- Default: Azurite, Event Hubs emulator, Cosmos DB emulator, SQL Server, TfL
+- Default: Azurite, Cosmos DB emulator, TfL
   fixture server, Functions, and Web API.
 - `ui` profile: adds Angular and the self-hosted SignalR browser path.
 - `observability` profile: adds the Datadog Agent.
@@ -313,11 +302,11 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 
 ## Event Flow
 
-1. A timer-triggered Function requests arrival predictions for the configured
-   stations every 30 seconds and line status every 2 minutes.
+1. A timer-triggered Function requests enabled TfL feeds. In the post-demo
+   environment arrivals are disabled and line status runs every 10 minutes.
 2. The Function wraps each response in a versioned event envelope and publishes
-   it to Event Hubs.
-3. An Event Hub-triggered Function archives the raw JSON in Data Lake Gen2 and
+   it to the Cosmos DB `raw-events` container.
+3. A Cosmos change-feed-triggered Function archives the raw JSON in Data Lake Gen2 and
    places a lightweight processing message on Storage Queue.
 4. A Queue-triggered Function validates, normalizes, and deduplicates the event.
 5. Current and recent events are written to Cosmos DB.
@@ -384,10 +373,12 @@ vehicle, expected arrival, and observation window.
 - Default raw retention is 30 days.
 - Writes should be batched where practical to avoid many tiny files.
 
-### Azure SQL
+### Azure SQL (historical)
 
-- Retained for possible future relational alert rules and aggregate reporting.
-- Not used for active alert writes or dashboard queries.
+- The Azure SQL server was deleted on June 23, 2026.
+- The Bicep module was removed and active workloads have no SQL settings.
+- The inactive SQL repository, client dependency, and local SQL container were
+  removed in July 2026.
 
 ### Table Storage
 
@@ -402,6 +393,9 @@ A Durable Functions alert workflow starts when:
 
 - A line status worsens from good service to a disruption state.
 - An arrival prediction slips by more than a configurable 120 seconds.
+
+Alert detection is implemented but disabled in the post-demo development
+environment through `Alerts__Enabled=false`.
 
 The workflow will:
 
@@ -619,8 +613,7 @@ Entra ID authentication and authorization are deferred to Phase 6.
 - Temporary TfL failures preserve the last known dashboard state.
 - No TfL key or Azure secret appears in source control or logs.
 - `docker compose` can start the complete local integration environment on the
-  developer's Apple Silicon machine, with SQL Server allowed to use `amd64`
-  emulation.
+  developer's Apple Silicon machine.
 - The deterministic local end-to-end integration suite passes without an Azure
   subscription or internet access after images have been pulled.
 - Bicep can deploy the complete system into an empty resource group.

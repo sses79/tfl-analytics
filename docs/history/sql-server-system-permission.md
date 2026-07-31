@@ -1,4 +1,6 @@
-# SQL Server `/.system` Permission Error
+# Historical SQL Server `/.system` Permission Error
+
+> [Documentation index](../README.md)
 
 ## Symptom
 

@@ -1,5 +1,7 @@
 # How Event Hubs was used in this project
 
+> [Documentation index](../README.md)
+
 Azure Event Hubs was the **event transport** that decoupled ingestion from
 processing. The ingestion Function App polls the TfL API on a timer, wraps each
 observation in an envelope, and published it to an Event Hub. The processing
@@ -8,7 +10,7 @@ them into the downstream pipeline (Blob → queue → Cosmos → SignalR).
 
 > **Status note (2026-06-27):** this path has been retired in Azure. Code and
 > Bicep now use the **Cosmos DB change feed** transport described in
-> `docs/cosmos-change-feed-migration.md`, and the Azure Event Hubs namespace has
+> `./cosmos-change-feed-migration.md`, and the Azure Event Hubs namespace has
 > been deleted. Keep this document as rollback/history context.
 
 ## End-to-end flow

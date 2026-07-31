@@ -1,5 +1,7 @@
 # Security and PII Scan Record
 
+> [Documentation index](../README.md)
+
 Last reviewed: June 13, 2026
 
 ## Scope
@@ -56,7 +58,8 @@ remain unavailable or disabled for the current repository/account configuration.
 
 - `.env`, `local.settings.json`, generated Bicep JSON, build output, and
   deployment packages are ignored.
-- Docker Compose requires `MSSQL_SA_PASSWORD` to be explicitly set.
+- Docker Compose no longer requires a SQL Server password; alert persistence
+  uses Azurite Table Storage locally.
 - Real TfL and Datadog keys must remain in `.env` locally and Key Vault in Azure.
 - Security findings are redacted by the Gitleaks scan.
 

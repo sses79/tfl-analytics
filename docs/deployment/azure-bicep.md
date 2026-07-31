@@ -1,5 +1,7 @@
 # Azure Bicep Deployment Guide
 
+> [Documentation index](../README.md)
+
 This guide covers validation, preview, deployment, output discovery, and smoke
 testing for the current Phase 1 Azure foundation.
 
@@ -34,8 +36,15 @@ The Phase 1 compute foundation is deployed:
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
 | API image registry | Public GitHub Container Registry (`ghcr.io/sses79/tfl-analytics-api`); Container App pulls anonymously |
 | Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two seven-day TTL containers |
-| Azure SQL | Removed — alerts now on Table Storage; the `sql` Bicep module is gated off (`enableSql=false`) |
+| Azure SQL | Removed — alerts now use Table Storage and no SQL provisioning module remains |
 | Azure SignalR | Free F1, local key authentication disabled |
+
+The reduced-cost development parameters are explicit in
+`infra/bicep/environments/dev.bicepparam`: arrival ingestion and alert detection
+are disabled, the arrival timer is scheduled every five minutes but exits
+without calling TfL, and line status is scheduled every ten minutes. Retired
+`AlertStorage__*` SQL settings are not deployed to either Function App or the
+API Container App.
 
 The Function hosts and their application packages are deployed. The Angular
 line-status dashboard is deployed to the Static Web App and calls the Container
@@ -44,15 +53,13 @@ App API through an origin-restricted CORS policy.
 Event transport uses the **Cosmos DB change feed**: ingestion writes raw events to
 the `raw-events` container and the processing Function's Cosmos DB trigger consumes
 them, tracking position in the `leases` container. Event Hubs — the prior transport
-— was removed on 2026-06-27 (see `docs/cosmos-change-feed-migration.md`).
+— was removed on 2026-06-27 (see
+`../history/cosmos-change-feed-migration.md`).
 
 Cosmos DB and SignalR are deployed in UK South. The Azure SQL server was deleted on
-2026-06-23 (alerts moved to the `alerts` Storage Table) and its Bicep module is now
-gated off (`enableSql=false`), so no SQL server is deployed. A SQL Server container
-is still retained in the local Compose stack for possible future relational
-workloads. (When enabled, the `sql` module targets Central US, because this
-subscription cannot provision the free serverless SQL SKU in UK South or the tested
-European regions.)
+2026-06-23 after alerts moved to the `alerts` Storage Table. The SQL Bicep
+module, local SQL Server container, SQL client dependency, and inactive
+repository were removed in July 2026.
 
 Linux App Service `P0v4` was evaluated at `$0.0913` per hour in UK South on
 June 12, 2026, or approximately `$15.34` for seven continuous days. Although
@@ -61,7 +68,7 @@ zero Microsoft.Web total regional VM quota. Container Apps Consumption avoids
 that dedicated App Service quota and can scale the API to zero. The API image was
 moved from Basic ACR (a flat ~`$0.1666`/day fixed fee) to public GitHub Container
 Registry on July 4, 2026, which is free for this public repo — see
-`docs/ghcr-image-migration.md`.
+`../history/ghcr-image-migration.md`.
 
 Default deployment settings:
 
