@@ -1,5 +1,7 @@
 # Cosmos DB Emulator Docker Disk Space Error
 
+> [Documentation index](../README.md)
+
 ## Symptom
 
 The Cosmos DB emulator fails while initializing PostgreSQL:

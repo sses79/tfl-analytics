@@ -1,5 +1,7 @@
 # Manual Azure Deployment Runbook
 
+> [Documentation index](../README.md)
+
 TfL Analytics uses repository scripts and Azure CLI for controlled development
 deployments. GitHub Actions validates pull requests but does not deploy Azure
 resources.
@@ -53,7 +55,6 @@ cd ../..
 
 az bicep build --file infra/bicep/main.bicep
 
-MSSQL_SA_PASSWORD='Compose_validation_only_123!' \
 docker compose \
   --env-file .env.example \
   -f infra/local/compose.yaml \
@@ -188,10 +189,9 @@ This updates:
 - `func-tfl-analytics-ingestion-dev-nhkpyupi`
 - `func-tfl-analytics-processing-dev-nhkpyupi`
 
-The development namespace uses Event Hubs Basic, so the Azure processing
-trigger must use the built-in `$Default` consumer group. Creating additional
-consumer groups requires Standard tier and must not be introduced without a
-separate cost review.
+The Azure transport uses the Cosmos DB `raw-events` change feed and the
+processing Function checkpoints through the `leases` container. Event Hubs is
+not deployed.
 
 ## 7. Deploy The Dashboard
 
@@ -271,7 +271,7 @@ Before each deployment, verify that the preview preserves:
 - Container Apps scale-to-zero and maximum two replicas.
 - The API image is on public GHCR (free); there is no Azure Container Registry.
 - No Event Hubs and no Azure SQL server — Event Hubs was replaced by the Cosmos
-  change feed, and the `sql` module is gated off (`enableSql=false`).
+  change feed, and the SQL provisioning module was removed.
 - Narrow diagnostic categories rather than verbose request logging.
 
 After deployment, review Azure Cost Management and keep the seven-day project

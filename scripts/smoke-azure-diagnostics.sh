@@ -76,17 +76,4 @@ assert_diagnostics "$key_vault_id" AuditEvent
 assert_diagnostics "$cosmos_id" ControlPlaneRequests
 assert_diagnostics "$signalr_id" AllLogs
 
-# Azure SQL is deleted by default (the sql module is gated off, enableSql=false).
-# Check its diagnostics only when the server is actually deployed.
-if [[ -n "$SQL_SERVER" ]]; then
-  sql_database_id="$(az sql db show \
-    --name "$SQL_DATABASE" \
-    --server "$SQL_SERVER" \
-    --resource-group "$RESOURCE_GROUP" \
-    --query id \
-    --output tsv)"
-  assert_diagnostics "$sql_database_id" Errors Timeouts Deadlocks DevOpsOperationsAudit
-  echo "Azure diagnostic-setting smoke tests passed for Key Vault, Cosmos DB, SignalR, and Azure SQL."
-else
-  echo "Azure diagnostic-setting smoke tests passed for Key Vault, Cosmos DB, and SignalR (Azure SQL disabled)."
-fi
+echo "Azure diagnostic-setting smoke tests passed for Key Vault, Cosmos DB, and SignalR."

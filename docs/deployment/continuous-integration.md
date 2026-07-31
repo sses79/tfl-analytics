@@ -1,5 +1,7 @@
 # Continuous Integration
 
+> [Documentation index](../README.md)
+
 GitHub Actions validates every pull request and every push to `main`. Azure
 deployment remains a manual operator action using the repository scripts and
 the [manual deployment runbook](./manual-deployment.md).
@@ -43,7 +45,7 @@ operator review of `what-if`, cost impact, and deployment scope.
 Use:
 
 ```text
-docs/manual-deployment.md
+docs/deployment/manual-deployment.md
 ```
 
 for the complete release process.
@@ -92,7 +94,6 @@ bash -n \
   scripts/smoke-azure-diagnostics.sh \
   scripts/smoke-azure-workload-rbac.sh
 
-MSSQL_SA_PASSWORD='Compose_validation_only_123!' \
 docker compose \
   --env-file .env.example \
   -f infra/local/compose.yaml \

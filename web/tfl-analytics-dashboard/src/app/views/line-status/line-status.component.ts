@@ -23,8 +23,8 @@ export class LineStatusComponent implements OnInit {
   protected readonly lastUpdated = signal<Date | null>(null);
   protected readonly flowSteps: readonly DataFlowStep[] = [
     { service: 'TfL Line API', detail: 'Current Underground service status', tone: 'source' },
-    { service: 'PollLineStatus', detail: 'Runs approximately every two minutes', tone: 'compute' },
-    { service: 'Event Hubs', detail: 'LineStatusObserved event', tone: 'messaging' },
+    { service: 'PollLineStatus', detail: 'Runs approximately every ten minutes', tone: 'compute' },
+    { service: 'Cosmos change feed', detail: 'LineStatusObserved raw event', tone: 'messaging' },
     { service: 'ProcessQueuedEvent', detail: 'Normalizes and compares status', tone: 'compute' },
     { service: 'Cosmos DB', detail: 'line-status container', tone: 'storage' },
     { service: 'API + SignalR', detail: 'Query response and live change push', tone: 'api' },

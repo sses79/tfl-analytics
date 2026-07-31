@@ -25,9 +25,9 @@ export class DashboardComponent implements OnInit {
   protected readonly flowSteps: readonly DataFlowStep[] = [
     { service: 'TfL Unified API', detail: 'Arrival and line status observations', tone: 'source' },
     { service: 'Ingestion Functions', detail: 'Timer-triggered polling', tone: 'compute' },
-    { service: 'Event Hubs', detail: 'Transport-neutral event stream', tone: 'messaging' },
+    { service: 'Cosmos change feed', detail: 'Raw-event stream and checkpointed trigger', tone: 'messaging' },
     { service: 'Processing Functions', detail: 'Archive, normalize and detect', tone: 'compute' },
-    { service: 'Cosmos DB + SQL', detail: 'Live events and alert history', tone: 'storage' },
+    { service: 'Cosmos + Table Storage', detail: 'Live events and alert history', tone: 'storage' },
     { service: 'Container App API', detail: 'Aggregated dashboard summary', tone: 'api' },
     { service: 'Angular + SignalR', detail: 'Live overview in Static Web Apps', tone: 'ui' }
   ];

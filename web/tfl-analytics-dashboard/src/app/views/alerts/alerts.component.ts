@@ -24,8 +24,8 @@ export class AlertsComponent implements OnInit {
     { service: 'Processed TfL event', detail: 'Arrival slip or line-status transition', tone: 'source' },
     { service: 'Alert detector', detail: 'Applies disruption and slippage rules', tone: 'compute' },
     { service: 'Durable Functions', detail: 'Coordinates retryable alert activities', tone: 'compute' },
-    { service: 'Azure SQL', detail: 'Exactly-once alert record', tone: 'storage' },
-    { service: 'Table Storage', detail: 'AlertRaised audit entity', tone: 'storage' },
+    { service: 'Table Storage', detail: 'Idempotent alert record', tone: 'storage' },
+    { service: 'Table Storage audit', detail: 'AlertRaised audit entity', tone: 'storage' },
     { service: 'API + SignalR', detail: 'History query and live alert push', tone: 'api' },
     { service: 'Alerts page', detail: 'Operational workflow outcome', tone: 'ui' }
   ];

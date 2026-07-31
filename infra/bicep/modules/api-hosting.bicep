@@ -8,7 +8,6 @@ param dashboardOrigins array
 param signalRHostname string
 param cosmosEndpoint string
 param storageAccountName string
-param sqlServerFqdn string
 param tags object
 
 param deployApiContainer bool = false
@@ -157,14 +156,6 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApiContaine
             {
               name: 'ProcessingStorage__AlertsTableName'
               value: 'alerts'
-            }
-            {
-              name: 'AlertStorage__ServerFqdn'
-              value: sqlServerFqdn
-            }
-            {
-              name: 'AlertStorage__Initialize'
-              value: 'false'
             }
             {
               name: 'DD_ENV'

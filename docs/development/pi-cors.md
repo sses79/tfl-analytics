@@ -1,5 +1,7 @@
 # API CORS Configuration
 
+> [Documentation index](../README.md)
+
 The TfL Analytics API permits browser requests only from the Angular
 development server and the deployed Azure Static Web App. It does not use a
 wildcard origin.

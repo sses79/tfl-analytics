@@ -1,8 +1,40 @@
 # Azure Resource Status & Running Cost
 
-Snapshot taken 2026-06-23 against subscription `TfL Analytics Development` (`e3ea5ccc-661d-451b-8b3d-574300552e30`). Supersedes the 2026-06-17 snapshot below.
+> [Documentation index](../README.md)
 
-## Current state (2026-06-23)
+## Current state (2026-07-30)
+
+Read-only verification against subscription `TfL Analytics Development`
+confirmed the reduced-cost resource set:
+
+- Kept: Storage, Key Vault, two Flex Consumption Function Apps, Container Apps
+  Consumption, Static Web Apps Free, Cosmos DB Free Tier, SignalR Free F1, and
+  three managed identities.
+- Removed: Azure SQL, Event Hubs, Azure Container Registry, Log Analytics, and
+  Application Insights.
+- The unused SQL repository, client package, local container, and Bicep
+  provisioning module were removed on July 31.
+- API: public GHCR image, `minReplicas=0`, `maxReplicas=2`.
+- Runtime flags: `Arrival__Enabled=false` and `Alerts__Enabled=false`.
+- Schedules: arrival timer every five minutes (exits without a TfL request while
+  disabled), line status every ten minutes.
+
+July 1–30 Cost Management data returned approximately £2.17 for Storage,
+£0.45 residual early-month Container Registry billing, £0.0002 for Key Vault,
+and £0 for Cosmos DB, SignalR, and Functions. From July 20–29, Storage was
+approximately £0.071–£0.080/day and is the main recurring cost.
+
+The hosts and public endpoints were healthy on July 30, but the dashboard data
+was empty and processing recorded no executions during the inspected 48-hour
+window. That event-flow issue is operational work still to be diagnosed; host
+health alone does not prove pipeline health.
+
+## Historical state (2026-06-23)
+
+Snapshot taken 2026-06-23 against the same subscription. This section is
+retained as cost-reduction history and does not describe the current resources.
+
+### Snapshot
 
 The `Monthly-Bill` budget (£100) shows £143.17 month-to-date, which reads as a
 crisis but is almost entirely historical: Log Analytics ingestion (£64.59
@@ -24,7 +56,8 @@ module is now gated behind `param enableSql bool = false`
 (`module sql ... = if (enableSql)`), and consumers tolerate its absence
 (`sql.?outputs.* ?? ''`, `enableSqlDiagnostics: enableSql`). Verified in the
 2026-06-27 full deploy — `az resource list ... [?contains(name,'sql')]` returned
-no rows afterward (see `docs/post-deployment-verification.md`). A full redeploy
+no rows afterward (see
+`../deployment/post-deployment-verification.md`). A full redeploy
 with the default params is now safe.
 
 Resources currently free-tier or already scale-to-zero, left running as the

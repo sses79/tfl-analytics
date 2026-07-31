@@ -9,12 +9,12 @@ and Datadog guidance is in [plan-resources.md](./plan-resources.md).
 
 ## Architecture Diagrams
 
-- [Azure event and data flow](./docs/plan/architecture-diagram.md) shows how
+- [Azure event and data flow](./docs/architecture/architecture-diagram.md) shows how
   arrival, line-status, alert, and audit data move through Functions, the Cosmos
   DB change feed, Storage, Cosmos DB, SignalR, and the dashboard. The Azure SQL
-  server was removed (alerts now use Table Storage); a SQL Server container is
-  retained in the local stack for possible future relational workloads.
-- [API and dashboard architecture](./docs/plan/api-dashboard-architecture.md)
+  server and inactive local SQL implementation were removed; alerts use Table
+  Storage.
+- [API and dashboard architecture](./docs/architecture/api-dashboard-architecture.md)
   explains how Angular and the ASP.NET Core Web API are hosted in Azure, how
   REST queries reach the data stores, and how SignalR delivers live updates.
 
@@ -57,8 +57,8 @@ infra/
 - Azure CLI with Bicep
 - Azure subscription for cloud deployment
 
-Azure Functions and SQL Server containers run as `linux/amd64` under emulation
-on Apple Silicon.
+Azure Functions containers run as `linux/amd64` under emulation on Apple
+Silicon.
 
 ## Build And Test
 
@@ -170,18 +170,17 @@ Local ports:
 | Cosmos DB gateway | `8081` | default |
 | Cosmos DB readiness | `8082` | default |
 | Cosmos DB explorer | `1234` | default |
-| SQL Server | `1433` | default |
 | Datadog APM | `8126` | `observability` |
 | DogStatsD | `8125/udp` | `observability` |
 
 Service-by-service verification commands are documented in
-[Local Smoke Tests](./docs/local-smoke-tests.md).
+[Local Smoke Tests](./docs/deployment/local-smoke-tests.md).
 
 Datadog logs, APM, DogStatsD, and current instrumentation status are documented
-in the [Datadog Agent guide](./docs/datadog-agent.md).
+in the [Datadog Agent guide](./docs/operations/datadog-agent.md).
 
 Known local environment fixes are documented in
-[Troubleshooting](./docs/troubleshooting.md).
+[Troubleshooting](./docs/operations/troubleshooting.md).
 
 Stop containers while preserving volumes:
 
@@ -229,14 +228,23 @@ Azure dashboard:
 https://blue-bush-0491f9503.7.azurestaticapps.net
 ```
 
+Reduced-cost development configuration:
+
+- Arrival ingestion is disabled (`Arrival__Enabled=false`).
+- Alert detection is disabled (`Alerts__Enabled=false`).
+- The arrival timer runs every five minutes but exits without calling TfL while
+  arrivals are disabled; line status is scheduled every ten minutes.
+- Log Analytics and Application Insights are not deployed by default.
+- Azure SQL, Event Hubs, and Azure Container Registry have been removed.
+
 Validation, deployment, output discovery, and Azure smoke tests are documented
-in the [Azure Bicep guide](./docs/azure-bicep.md).
+in the [Azure Bicep guide](./docs/deployment/azure-bicep.md).
 
 The complete operator sequence is documented in the
-[manual Azure deployment runbook](./docs/manual-deployment.md).
+[manual Azure deployment runbook](./docs/deployment/manual-deployment.md).
 
 CI behavior is documented in the
-[continuous integration guide](./docs/continuous-integration.md).
+[continuous integration guide](./docs/deployment/continuous-integration.md).
 
 Validate Bicep:
 
@@ -286,4 +294,4 @@ configuration keys into Key Vault secret names.
 
 Current phase status and deployment evidence are maintained in
 [Plan.md](./Plan.md) and
-[Azure Post-Deployment Verification](./docs/post-deployment-verification.md).
+[Azure Post-Deployment Verification](./docs/deployment/post-deployment-verification.md).

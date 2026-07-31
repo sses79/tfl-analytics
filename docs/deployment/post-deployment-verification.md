@@ -1,5 +1,7 @@
 # Azure Post-Deployment Verification
 
+> [Documentation index](../README.md)
+
 Use this checklist after every Azure deployment. The deployed environment is
 currently the development environment, despite serving live TfL data:
 
@@ -17,14 +19,41 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | July 4, 2026 |
-| Git commit | `492ec1b` (`dev`); API image built from `main` commit `d4b7caeb97de686899e0810ff7e3f5551878e649` |
-| Change | ACR → GHCR image cutover (imperative `az containerapp update`, **not** a full ARM deploy) |
-| Provisioning state | `Succeeded` — Container App `ca-tfl-api-dev-nhkpyupi` revision `--0000013` |
-| Scope | Moved the API image from Azure Container Registry to public GitHub Container Registry (`ghcr.io/sses79/tfl-analytics-api`); Container App pulls anonymously; removed the ACR registry entry; deleted `acrtflnhkpyupi` |
-| Cost impact | Removes the Container Registry Basic fixed fee (~£0.126/day — the #1 daily line after the Cosmos migration) → £0. GHCR is free for a public repo (storage, pulls, build workflow). |
+| Date | July 30, 2026 |
+| Git commit | Worktree based on `1ce3ebf` (`dev`); configuration and documentation changes not yet committed |
+| Change | Reconcile post-demo feature flags and remove retired SQL settings (imperative app-setting updates, **not** a full ARM deploy) |
+| Provisioning state | `Succeeded` — Container App `ca-tfl-api-dev-nhkpyupi` revision `--0000014`; both Function hosts healthy |
+| Scope | Set `Alerts__Enabled=false`; retained `Arrival__Enabled=false`, five-minute arrival timer, and ten-minute line-status timer; removed all `AlertStorage__*` settings from processing and API; made the reduced-cost flags and schedules explicit in Bicep |
+| Cost impact | £0 expected: configuration-only changes, no new resources or paid SKU changes |
 
 Latest verification evidence:
+
+- `az bicep build --file infra/bicep/main.bicep` passed with no Bicep linter
+  warnings.
+- `az deployment group what-if` succeeded before the live changes. It proposed
+  no new resources or paid SKU changes; because the full preview also contained
+  unrelated provider-default noise, no ARM deployment was performed.
+- Processing app settings returned exactly `Alerts__Enabled=false` for the
+  targeted alert-control/legacy-SQL query; no `AlertStorage__*` settings remain.
+- Ingestion app settings confirmed `Arrival__Enabled=false`,
+  `IngestionArrivalsSchedule=0 */5 * * * *`, and
+  `IngestionLineStatusSchedule=0 */10 * * * *`.
+- Container App revision `ca-tfl-api-dev-nhkpyupi--0000014` reached
+  provisioning state `Succeeded`; no `AlertStorage__*` environment variables
+  remain. The dev Bicep parameter now pins the same verified GHCR commit tag
+  currently running in Azure.
+- Resource inventory returned no Azure SQL, Event Hubs, Azure Container
+  Registry, Log Analytics, or Application Insights resources.
+- Ingestion, processing, and API health endpoints passed; the Static Web App
+  returned HTTP 200; `/api/alerts` returned an empty array.
+- Data-service and workload-RBAC smoke tests passed. The diagnostics smoke test
+  correctly reported not applicable because observability is disabled.
+- The live line-status event-flow issue found during the July 30 status review
+  remains separate follow-up work: public hosts are healthy, but the dashboard
+  has no current line-status data and processing showed no executions in the
+  inspected 48-hour window.
+
+Prior verification evidence (July 4, 2026 — ACR → GHCR cutover):
 
 - `Publish API image` GitHub Actions workflow built `src/TflAnalytics.Api/Dockerfile` and pushed `ghcr.io/sses79/tfl-analytics-api:{latest,d4b7caeb…}` on push to `main`; run succeeded.
 - The `tfl-analytics-api` GHCR package was marked **Public**; anonymous manifest pull of both the SHA tag and `latest` returned HTTP 200.
@@ -32,7 +61,9 @@ Latest verification evidence:
 - `az containerapp registry remove --server acrtflnhkpyupi.azurecr.io` succeeded; `properties.configuration.registries` is now empty. Endpoints re-verified 200.
 - `az acr delete -n acrtflnhkpyupi --yes` succeeded; `az acr list` returned no rows, and `/health/live` + `/api/lines/status` re-verified 200 afterward. The ACR-pull role assignment was auto-removed with the registry (it was scoped to the ACR); the API managed identity remains for Key Vault / Table / SignalR.
 - `az resource list ... [?contains(name,'acr') || contains(name,'sql')]` returned no rows.
-- Bicep (`492ec1b`) already stripped the ACR resource, ACR-pull role, `registries` block, and `containerRegistry*` outputs, so IaC now matches the live post-cutover state. A future full deploy is consistent and safe (the `sql` module is gated, `enableSql=false`).
+- Bicep (`492ec1b`) already stripped the ACR resource, ACR-pull role,
+  `registries` block, and `containerRegistry*` outputs. The inactive SQL
+  provisioning module was subsequently removed in July 2026.
 
 Prior verification evidence (June 27, 2026 — Cosmos change-feed migration; commit `0000e786e465`, ARM deployment `cosmos-change-feed-20260627-082434`, provisioning `Succeeded`; ingestion zip `aa038bc8-1017-4839-9f5b-7011a18c094f`, processing zip `e240105c-50ef-4ab0-8f65-63b1d94d3187`; migrated raw transport Event Hubs → Cosmos change feed, added `raw-events`/`leases`, deleted `evhns-tfl-analytics-dev-nhkpyupi`, kept `Arrival__Enabled=false`):
 
@@ -66,7 +97,9 @@ Prior verification evidence (June 23, 2026 alert pause):
 Prior verification evidence (June 23, 2026 SQL Server deletion, no code change):
 
 - `az resource list --resource-group rg-tfl-analytics-dev-uk-south --query "[?contains(name,'sql')]"` returned empty immediately after deletion.
-- Confirmed via DI (`src/TflAnalytics.Infrastructure/DependencyInjection.cs:196`) that `IAlertRepository` resolves to `TableAlertRepository`, not `SqlAlertRepository` — the deleted server had no live consumer.
+- Confirmed via DI at the time that `IAlertRepository` resolved to
+  `TableAlertRepository`, not the then-retained `SqlAlertRepository`; the
+  inactive SQL implementation was subsequently removed in July 2026.
 
 Prior verification evidence (June 22, 2026 Table Storage migration deployment, API image `dev-20260621213648`, ARM deployment `manual-20260621-2142`):
 

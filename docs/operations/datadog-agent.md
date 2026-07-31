@@ -1,5 +1,7 @@
 # Datadog Agent
 
+> [Documentation index](../README.md)
+
 The local Datadog Agent runs as an optional Docker Compose service and acts as
 the shared telemetry collector for the API, Functions, and supporting
 containers.

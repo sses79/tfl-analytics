@@ -73,7 +73,7 @@ Always run `what-if` before an Azure deployment. Summarize resources and likely
 cost impact before creating or changing billable services.
 
 After every Azure deployment, run the checks in
-`docs/post-deployment-verification.md` and update its deployment record with the
+`docs/deployment/post-deployment-verification.md` and update its deployment record with the
 date, commit, deployment name, result, cost impact, and event-flow evidence.
 Do not mark a deployment complete until that file reflects the verified Azure
 state.
