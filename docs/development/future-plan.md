@@ -23,6 +23,9 @@ restoring the eleventh line, and correcting SignalR configuration and RBAC:
   line-status data without requiring paid telemetry.
 
 Arrival ingestion and alert detection remain intentionally disabled.
+Processed `line-status` and `live-events` observations retain 24 hours of
+history; transient `raw-events` retains four hours and the Blob archive remains
+the durable raw record.
 
 ## Phase 1 — Restore The Live Line-Status Path
 
@@ -57,6 +60,10 @@ Completed evidence:
    the least-privilege `SignalR REST API Owner` role.
 6. `scripts/smoke-azure-event-flow.sh` passed with 11 lines and an event age of
    72 seconds against a 1,200-second maximum.
+7. A browser kept `/status` and `/dashboard` open through the scheduled poll and
+   received all 11 `lineStatusChanged` WebSocket invocation frames. The pages
+   updated automatically without a reload; a captured Hammersmith & City frame
+   carried `observedAtUtc=2026-08-01T19:50:00.4900023Z`.
 
 Exit criteria:
 

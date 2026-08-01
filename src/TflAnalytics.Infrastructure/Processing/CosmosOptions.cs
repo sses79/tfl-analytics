@@ -22,5 +22,5 @@ public sealed class CosmosOptions
 
     public bool DisableServerCertificateValidation { get; set; }
 
-    public int DefaultTtlSeconds { get; set; } = 604800;
+    public int DefaultTtlSeconds { get; set; } = 86400;
 }

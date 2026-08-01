@@ -20,13 +20,22 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | August 1, 2026 |
-| Git commit | Phase 1 completion on `dev`, based on `c8fae25` and recorded in PR #39 |
-| Change | Complete line-status recovery: restore all 11 lines, add an API freshness guard, and restore processing-to-SignalR broadcasts |
-| Provisioning state | `Succeeded` — ARM deployments `ingestion-waterloo-city-20260801`, `processing-signalr-settings-20260801`, and `processing-signalr-role-20260801`; Function hosts and public APIs healthy |
-| Scope | Added `waterloo-city`; added the processing SignalR endpoint and `SignalR REST API Owner` RBAC; retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
-| Cost impact | £0 expected: app settings and RBAC only; no SKU or billable resource added. Diagnostic telemetry remains capped at 0.1 GB/day |
+| Git commit | `2ee5d7b` via PR #39; merged to `main` as `419c5ff` |
+| Change | Complete line-status recovery and reduce processed Cosmos observation retention to 24 hours |
+| Provisioning state | `Succeeded` — latest ARM deployment `processed-events-ttl-24h-20260801`; earlier Phase 1 app-setting/RBAC deployments, processing zip `cb0a24a7-f1aa-429b-90fb-beae887231bb`, and Static Web Apps content deployment remain healthy |
+| Scope | Changed only `line-status` and `live-events` default TTL from 604,800 to 86,400 seconds; retained partitions, indexing, conflict resolution, processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
+| Cost impact | No increase expected: no SKU or billable resource added; shorter Cosmos retention can only reduce stored data and query scanning. Diagnostic telemetry remains capped at 0.1 GB/day |
 
 Latest verification evidence:
+
+- Targeted `what-if` proposed exactly two changes: `line-status` and
+  `live-events` `defaultTtl` from 604,800 to 86,400 seconds. Deployment
+  `processed-events-ttl-24h-20260801` succeeded at
+  `2026-08-01T21:00:00.732886Z`. Live reads confirmed both TTLs are 86,400,
+  partition keys remain `/lineId` and `/stationId`, and conflict resolution
+  remains `LastWriterWins`.
+- The post-TTL event-flow smoke passed with 11 lines, `waterloo-city`, and
+  `lastEventUtc=2026-08-01T21:00:00.6355649Z` at an event age of 59 seconds.
 
 - All targeted Bicep `what-if` runs proposed only the intended app-setting or
   RBAC change; no billable resource or SKU changed. The full root `what-if`
@@ -52,6 +61,30 @@ Latest verification evidence:
   REST role propagated. A second deduplication-aware receipt test succeeded with
   only `SignalR REST API Owner`, receiving `circle` at
   `2026-08-01T08:03:19.0394037Z`.
+- After PR #39 merged, processing package deployment
+  `cb0a24a7-f1aa-429b-90fb-beae887231bb` completed at approximately
+  `2026-08-01T18:30Z`. The processing health endpoint and all expected Functions
+  passed verification. A controlled client then received `lineStatusChanged`
+  for `jubilee` at `2026-08-01T18:32:26.8707643Z`; the freshness guard passed
+  with 11 lines and event age 132 seconds.
+- `SignalR broadcast accepted...` is logged at `Information`, while the deployed
+  processing `host.json` intentionally sets `Default=Warning` to control
+  telemetry volume. The acceptance trace is therefore filtered from
+  Application Insights; client receipt is the end-to-end success evidence. The
+  historical `403` remains visible because failures are logged as warnings.
+- Browser DevTools confirmed an active Azure SignalR WebSocket to hub
+  `dashboardhub`. During the scheduled `19:50Z` poll, the browser received all
+  11 `type: 1` `lineStatusChanged` invocation frames and `/status` plus
+  `/dashboard` updated automatically. One captured Hammersmith & City message
+  had `observedAtUtc=2026-08-01T19:50:00.4900023Z`. Access-token query values
+  were excluded from the record.
+- The post-merge dashboard deployment initially failed cleanly because the npm
+  lockfile omitted two Linux WASM peer packages. After pinning those development
+  dependencies and regenerating the lockfile, Docker `npm ci`, the Angular
+  production build, and the Static Web Apps production deployment succeeded.
+  `https://demo.ti5g.com/status` serves `main-VVFKKIPU.js`; its lazy status
+  bundle contains the updated `Cosmos raw-events`, leases, Blob/queue, and
+  ten-minute flow description.
 - The solution build passed without warnings. All 29 runnable .NET tests passed;
   the one opt-in live Azure smoke test was skipped. Angular production build,
   Compose validation, Bicep compilation, shell syntax, and `git diff --check`

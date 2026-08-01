@@ -35,7 +35,7 @@ The Phase 1 compute foundation is deployed:
 | Angular hosting | Static Web Apps Free tier in West Europe |
 | API hosting | Azure Container Apps Consumption, scale to zero, maximum two replicas |
 | API image registry | Public GitHub Container Registry (`ghcr.io/sses79/tfl-analytics-api`); Container App pulls anonymously |
-| Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two seven-day TTL containers |
+| Cosmos DB | Lifetime free tier, shared 1,000 RU/s, two 24-hour processed-event TTL containers |
 | Azure SQL | Removed — alerts now use Table Storage and no SQL provisioning module remains |
 | Azure SignalR | Free F1, local key authentication disabled |
 

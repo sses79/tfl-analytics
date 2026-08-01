@@ -41,7 +41,7 @@ Completed:
 - Ingestion and processing Function packages deployed with public health checks.
 - Angular dashboard deployed to Azure Static Web Apps with production API CORS,
   security headers, and live TfL line-status smoke tests.
-- Cosmos DB free-tier account with shared throughput, seven-day TTL containers,
+- Cosmos DB free-tier account with shared throughput and 24-hour processed-event TTL containers,
   and managed-identity data access.
 - Azure SQL was evaluated and deployed during the original implementation, then
   removed after alert persistence moved to Table Storage.
@@ -71,7 +71,7 @@ Completed:
 - Storage Queue handoff with validation, normalization, retry, and poison queue
   behavior.
 - Idempotent arrival and line-status persistence to partitioned Cosmos DB
-  containers with seven-day TTL.
+  containers, reduced from seven days to 24 hours after the demo.
 - A deterministic Docker full-run test covering WireMock, timers, Blob Storage,
   Queue Storage, and Cosmos DB.
 - Phase 3 deployed to Azure on June 14, 2026 and verified through live raw
@@ -363,7 +363,7 @@ vehicle, expected arrival, and observation window.
 
 - Partition key: `/stationId`
 - Stores live arrivals, status observations, and recent event history.
-- Detailed prediction history has a default TTL of 7 days.
+- Detailed prediction and line-status history has a default TTL of 24 hours.
 - Optimized for low-latency dashboard queries.
 
 ### Data Lake Gen2

@@ -7,7 +7,7 @@ param processingPrincipalId string
 param tags object
 
 param databaseThroughput int = 1000
-param defaultTtlSeconds int = 604800
+param defaultTtlSeconds int = 86400
 param rawEventsTtlSeconds int = 14400
 
 var cosmosDataContributorRoleDefinitionId = '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
@@ -56,6 +56,10 @@ resource liveEvents 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containe
   properties: {
     options: {}
     resource: {
+      conflictResolutionPolicy: {
+        conflictResolutionPath: '/_ts'
+        mode: 'LastWriterWins'
+      }
       defaultTtl: defaultTtlSeconds
       id: 'live-events'
       indexingPolicy: {
@@ -64,6 +68,11 @@ resource liveEvents 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containe
         includedPaths: [
           {
             path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
           }
         ]
       }
@@ -84,6 +93,10 @@ resource lineStatus 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containe
   properties: {
     options: {}
     resource: {
+      conflictResolutionPolicy: {
+        conflictResolutionPath: '/_ts'
+        mode: 'LastWriterWins'
+      }
       defaultTtl: defaultTtlSeconds
       id: 'line-status'
       indexingPolicy: {
@@ -92,6 +105,11 @@ resource lineStatus 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containe
         includedPaths: [
           {
             path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
           }
         ]
       }
