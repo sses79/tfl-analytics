@@ -57,6 +57,10 @@ Completed evidence:
    the least-privilege `SignalR REST API Owner` role.
 6. `scripts/smoke-azure-event-flow.sh` passed with 11 lines and an event age of
    72 seconds against a 1,200-second maximum.
+7. A browser kept `/status` and `/dashboard` open through the scheduled poll and
+   received all 11 `lineStatusChanged` WebSocket invocation frames. The pages
+   updated automatically without a reload; a captured Hammersmith & City frame
+   carried `observedAtUtc=2026-08-01T19:50:00.4900023Z`.
 
 Exit criteria:
 

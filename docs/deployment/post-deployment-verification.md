@@ -63,6 +63,12 @@ Latest verification evidence:
   telemetry volume. The acceptance trace is therefore filtered from
   Application Insights; client receipt is the end-to-end success evidence. The
   historical `403` remains visible because failures are logged as warnings.
+- Browser DevTools confirmed an active Azure SignalR WebSocket to hub
+  `dashboardhub`. During the scheduled `19:50Z` poll, the browser received all
+  11 `type: 1` `lineStatusChanged` invocation frames and `/status` plus
+  `/dashboard` updated automatically. One captured Hammersmith & City message
+  had `observedAtUtc=2026-08-01T19:50:00.4900023Z`. Access-token query values
+  were excluded from the record.
 - The solution build passed without warnings. All 29 runnable .NET tests passed;
   the one opt-in live Azure smoke test was skipped. Angular production build,
   Compose validation, Bicep compilation, shell syntax, and `git diff --check`
