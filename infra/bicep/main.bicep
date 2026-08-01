@@ -109,6 +109,7 @@ module compute 'modules/compute.bicep' = {
     cosmosLineStatusContainerName: 'line-status'
     cosmosRawEventsContainerName: 'raw-events'
     cosmosLeasesContainerName: 'leases'
+    signalRHostname: signalRHostname
     enableArrivalIngestion: enableArrivalIngestion
     enableAlerts: enableAlerts
     ingestionArrivalsSchedule: ingestionArrivalsSchedule

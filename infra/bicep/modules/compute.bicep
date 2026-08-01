@@ -19,6 +19,7 @@ param cosmosLiveEventsContainerName string
 param cosmosLineStatusContainerName string
 param cosmosRawEventsContainerName string
 param cosmosLeasesContainerName string
+param signalRHostname string
 param enableArrivalIngestion bool = false
 param enableAlerts bool = false
 param ingestionArrivalsSchedule string = '0 */5 * * * *'
@@ -323,6 +324,10 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'victoria'
         }
         {
+          name: 'Ingestion__LineIds__10'
+          value: 'waterloo-city'
+        }
+        {
           name: 'DD_ENV'
           value: 'dev'
         }
@@ -503,6 +508,10 @@ resource processingApp 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'Alerts__GoodServiceSeverity'
           value: '10'
+        }
+        {
+          name: 'SignalR__Endpoint'
+          value: 'https://${signalRHostname}'
         }
         {
           name: 'DD_ENV'

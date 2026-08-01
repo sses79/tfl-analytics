@@ -1,6 +1,6 @@
 # TfL Live Analytics Azure Mini Project Plan
 
-> **Current-state note (updated 2026-07-30):** this is the original delivery plan;
+> **Current-state note (updated 2026-08-01):** this is the original delivery plan;
 > parts below are now historical. In the deployed system **Event Hubs was replaced
 > by the Cosmos DB change feed** (2026-06-27), the **Azure SQL server was deleted**
 > (alerts use Table Storage and the SQL Bicep module was removed), and the
@@ -12,6 +12,9 @@
 > `docs/history/ghcr-image-migration.md`,
 > `docs/deployment/post-deployment-verification.md`.
 > Remaining work is tracked in `docs/development/future-plan.md`.
+> The post-demo line-status recovery is complete: all 11 lines are fresh, the
+> Blob/queue/Cosmos path is verified, and a controlled Azure SignalR receipt
+> succeeded. A lightweight freshness smoke test now guards the baseline.
 
 ## Implementation Status
 
@@ -87,8 +90,9 @@ notifications through Azure SignalR Service.
 
 Remaining Phase 5 validation:
 
-- Capture Azure evidence of a browser receiving each SignalR message type and
-  meeting the arrival and line-status latency targets.
+- Line-status SignalR publication has controlled Azure protocol-client evidence.
+  Capture equivalent arrival and alert evidence when those feeds are re-enabled,
+  plus browser UI evidence and latency measurements for each enabled type.
 - Add focused automated coverage for dashboard API queries and SignalR
   publication.
 

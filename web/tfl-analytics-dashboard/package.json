@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "verify:signalr": "node scripts/verify-line-status-signalr.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
