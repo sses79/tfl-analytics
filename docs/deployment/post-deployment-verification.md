@@ -22,9 +22,9 @@ Update this section after every deployment.
 | Date | August 1, 2026 |
 | Git commit | `2ee5d7b` via PR #39; merged to `main` as `419c5ff` |
 | Change | Complete line-status recovery: restore all 11 lines, add an API freshness guard, and restore processing-to-SignalR broadcasts |
-| Provisioning state | `Succeeded` — ARM deployments `ingestion-waterloo-city-20260801`, `processing-signalr-settings-20260801`, and `processing-signalr-role-20260801`; processing zip deployment `cb0a24a7-f1aa-429b-90fb-beae887231bb`; Function hosts and public APIs healthy |
-| Scope | Added `waterloo-city`; added the processing SignalR endpoint and `SignalR REST API Owner` RBAC; deployed the merged processing package; retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
-| Cost impact | £0 expected: app settings, RBAC, and code package only; no SKU or billable resource added. Diagnostic telemetry remains capped at 0.1 GB/day |
+| Provisioning state | `Succeeded` — ARM deployments `ingestion-waterloo-city-20260801`, `processing-signalr-settings-20260801`, and `processing-signalr-role-20260801`; processing zip deployment `cb0a24a7-f1aa-429b-90fb-beae887231bb`; Static Web Apps production content deployment; Function hosts and public endpoints healthy |
+| Scope | Added `waterloo-city`; added the processing SignalR endpoint and `SignalR REST API Owner` RBAC; deployed the merged processing package and dashboard; retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
+| Cost impact | £0 expected: app settings, RBAC, and code/content packages only; no SKU or billable resource added. Diagnostic telemetry remains capped at 0.1 GB/day |
 
 Latest verification evidence:
 
@@ -69,6 +69,13 @@ Latest verification evidence:
   `/dashboard` updated automatically. One captured Hammersmith & City message
   had `observedAtUtc=2026-08-01T19:50:00.4900023Z`. Access-token query values
   were excluded from the record.
+- The post-merge dashboard deployment initially failed cleanly because the npm
+  lockfile omitted two Linux WASM peer packages. After pinning those development
+  dependencies and regenerating the lockfile, Docker `npm ci`, the Angular
+  production build, and the Static Web Apps production deployment succeeded.
+  `https://demo.ti5g.com/status` serves `main-VVFKKIPU.js`; its lazy status
+  bundle contains the updated `Cosmos raw-events`, leases, Blob/queue, and
+  ten-minute flow description.
 - The solution build passed without warnings. All 29 runnable .NET tests passed;
   the one opt-in live Azure smoke test was skipped. Angular production build,
   Compose validation, Bicep compilation, shell syntax, and `git diff --check`
