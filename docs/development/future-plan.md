@@ -2,29 +2,31 @@
 
 > [Documentation index](../README.md)
 
-Status reviewed on July 31, 2026 after the post-demo cost and repository
+Status reviewed on August 1, 2026 after the post-demo cost and repository
 cleanup. This document tracks remaining work; completed delivery history remains
 in [`Plan.md`](../../Plan.md).
 
 ## Current Position
 
 The reduced-cost Azure platform and public hosts are healthy. The live
-line-status data path was restored on July 31 after replacing unresolved
-hierarchical trigger binding expressions with flat host settings:
+line-status data path was restored and verified on August 1 after replacing
+unresolved hierarchical trigger binding expressions with flat host settings,
+restoring the eleventh line, and correcting SignalR configuration and RBAC:
 
-- `GET /api/dashboard/summary` returns a current `lastEventUtc` and 10 monitored
+- `GET /api/dashboard/summary` returns a current `lastEventUtc` and 11 monitored
   lines.
-- `GET /api/lines/status` returns 10 current records.
+- `GET /api/lines/status` returns 11 current records.
 - `ArchiveRawEvents` initializes without indexing errors and processes fresh
   raw events.
-- Arrival ingestion and alert detection are intentionally disabled.
+- A controlled pull reaches an Azure SignalR client as `lineStatusChanged`.
+- `scripts/smoke-azure-event-flow.sh` fails on missing, stale, or incomplete
+  line-status data without requiring paid telemetry.
 
-Do not begin another product phase until line-status ingestion is reliable and
-freshness is measured automatically.
+Arrival ingestion and alert detection remain intentionally disabled.
 
 ## Phase 1 — Restore The Live Line-Status Path
 
-**Status: core event flow restored; reliability evidence remains open**
+**Status: complete — August 1, 2026**
 
 Trace one scheduled or controlled line-status observation through:
 
@@ -39,17 +41,22 @@ PollLineStatus
   -> API and dashboard
 ```
 
-Work:
+Completed evidence:
 
-1. Confirm `PollLineStatus` calls TfL successfully and publishes 11 raw events.
-2. Inspect `raw-events` documents and the `leases` checkpoint state.
-3. Confirm the flat `CosmosTrigger*Name` host settings resolve and
-   `ArchiveRawEvents` produces recent raw Blob objects.
-4. Verify `processing` drains and `processing-poison` remains empty.
-5. Confirm `ProcessQueuedEvent` writes recent `line-status` documents.
-6. Verify `/api/lines/status`, dashboard summary, and SignalR updates.
-7. Add a low-cost event-flow heartbeat or equivalent freshness signal that does
-   not require Log Analytics.
+1. A controlled pull published all 11 configured line-status events, including
+   `waterloo-city`.
+2. The Cosmos change feed advanced through the configured `leases` container,
+   demonstrated by `ArchiveRawEvents` producing a recent gzip Blob for
+   `waterloo-city`.
+3. Both `processing` and `processing-poison` peeked at zero after the controlled
+   run; `ProcessQueuedEvent` persisted current records.
+4. `/api/lines/status` returned 11 lines and dashboard summary advanced to
+   `lastEventUtc=2026-08-01T07:55:09.1456644Z`.
+5. A real `@microsoft/signalr` protocol client received `lineStatusChanged` for
+   the controlled pull. The recovery added the missing processing endpoint and
+   the least-privilege `SignalR REST API Owner` role.
+6. `scripts/smoke-azure-event-flow.sh` passed with 11 lines and an event age of
+   72 seconds against a 1,200-second maximum.
 
 Exit criteria:
 
@@ -89,7 +96,7 @@ Exit criteria:
 
 ## Phase 3 — Automate Baseline Freshness Verification
 
-**Status: documentation complete; automated guard open**
+**Status: local/deployment guard complete; scheduled execution remains open**
 
 Completed:
 
@@ -97,15 +104,13 @@ Completed:
 - Historical migration documents are separated from current runbooks.
 - The July 30 Azure resource state and cost baseline are recorded.
 - The post-deployment record captures the empty line-status condition.
+- `scripts/smoke-azure-event-flow.sh` fails when the API has fewer than 11
+  lines, omits `waterloo-city`, or reports a missing/stale `lastEventUtc`.
+- The post-deployment checklist requires the freshness smoke result.
 
 Remaining:
 
-- Add a lightweight Azure smoke test that fails when:
-  - `/api/lines/status` is empty;
-  - `lastEventUtc` is missing; or
-  - the latest observation exceeds a configurable age.
 - Run that check after deployments and on a low-frequency schedule.
-- Keep the check independent of paid Log Analytics/Application Insights.
 
 Exit criteria:
 
@@ -116,7 +121,7 @@ Exit criteria:
 
 ## Phase 4 — Choose The Next Product Phase
 
-**Status: blocked on Phases 1 and 3**
+**Status: product choice is unblocked; low-frequency scheduling remains in Phase 3**
 
 After reliability is restored, choose one:
 

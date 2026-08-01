@@ -11,7 +11,7 @@ namespace TflAnalytics.Infrastructure.Realtime;
 
 public sealed class SignalRServiceNotifier : IRealtimeNotifier
 {
-    private const string HubName = "DashboardHub";
+    internal const string DashboardHubName = "dashboardhub";
     private static readonly string[] SignalRScopes = ["https://signalr.azure.com/.default"];
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
@@ -25,11 +25,14 @@ public sealed class SignalRServiceNotifier : IRealtimeNotifier
         string endpoint,
         ILogger<SignalRServiceNotifier> logger)
     {
-        _broadcastUrl = $"{endpoint.TrimEnd('/')}/api/v1/hubs/{HubName}";
+        _broadcastUrl = BuildBroadcastUrl(endpoint);
         _credential = new DefaultAzureCredential();
         _httpClient = new HttpClient();
         _logger = logger;
     }
+
+    internal static string BuildBroadcastUrl(string endpoint) =>
+        $"{endpoint.TrimEnd('/')}/api/v1/hubs/{DashboardHubName}";
 
     public Task BroadcastArrivalsAsync(ArrivalsUpdated message, CancellationToken cancellationToken = default) =>
         SendAsync("arrivalsUpdated", message, cancellationToken);
@@ -64,6 +67,12 @@ public sealed class SignalRServiceNotifier : IRealtimeNotifier
                 _logger.LogWarning(
                     "SignalR broadcast failed: {StatusCode} {Target}.",
                     (int)response.StatusCode,
+                    target);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "SignalR broadcast accepted for target {Target}.",
                     target);
             }
         }

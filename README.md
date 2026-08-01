@@ -176,6 +176,21 @@ Local ports:
 Service-by-service verification commands are documented in
 [Local Smoke Tests](./docs/deployment/local-smoke-tests.md).
 
+For the deployed environment, verify the reduced-cost line-status path with:
+
+```bash
+./scripts/smoke-azure-event-flow.sh
+
+cd web/tfl-analytics-dashboard
+API_BASE_URL="https://<api-host>" \
+INGESTION_PULL_URL="https://<ingestion-host>/api/pull" \
+npm run verify:signalr
+```
+
+The first command requires all 11 Tube lines and a fresh dashboard timestamp.
+The second uses the same SignalR client library as Angular and proves that a
+controlled pull produces a live `lineStatusChanged` message.
+
 Datadog logs, APM, DogStatsD, and current instrumentation status are documented
 in the [Datadog Agent guide](./docs/operations/datadog-agent.md).
 

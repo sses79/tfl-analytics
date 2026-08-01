@@ -144,6 +144,7 @@ services:
       Ingestion__LineIds__7: northern
       Ingestion__LineIds__8: piccadilly
       Ingestion__LineIds__9: victoria
+      Ingestion__LineIds__10: waterloo-city
       DD_AGENT_HOST: datadog-agent
       DD_ENV: local
       DD_SERVICE: tfl-analytics-ingestion

@@ -19,14 +19,45 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | July 31, 2026 |
-| Git commit | Uncommitted trigger fix based on `0756be7` (`dev`) |
-| Change | Restore `ArchiveRawEvents` after processing-only telemetry identified unresolved Cosmos trigger binding settings |
-| Provisioning state | `Succeeded` — ARM deployment `processing-trigger-settings-20260731`; processing zip deployment `57534621-461f-45ac-99d4-5a228c85e090`; processing host healthy |
-| Scope | Added flat `CosmosTrigger*Name` host settings, updated the Cosmos trigger binding expressions, and retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
-| Cost impact | £0 expected for the trigger fix; diagnostic telemetry remains capped at 0.1 GB/day with observed usage far below the cap |
+| Date | August 1, 2026 |
+| Git commit | Phase 1 completion on `dev`, based on `c8fae25` and recorded in PR #39 |
+| Change | Complete line-status recovery: restore all 11 lines, add an API freshness guard, and restore processing-to-SignalR broadcasts |
+| Provisioning state | `Succeeded` — ARM deployments `ingestion-waterloo-city-20260801`, `processing-signalr-settings-20260801`, and `processing-signalr-role-20260801`; Function hosts and public APIs healthy |
+| Scope | Added `waterloo-city`; added the processing SignalR endpoint and `SignalR REST API Owner` RBAC; retained processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
+| Cost impact | £0 expected: app settings and RBAC only; no SKU or billable resource added. Diagnostic telemetry remains capped at 0.1 GB/day |
 
 Latest verification evidence:
+
+- All targeted Bicep `what-if` runs proposed only the intended app-setting or
+  RBAC change; no billable resource or SKU changed. The full root `what-if`
+  returned an Azure internal service error, so the deployments used compiled,
+  narrowly scoped templates.
+- A controlled pull published 11 line-status events. The API returned 11 current
+  records including `waterloo-city`; dashboard summary advanced to
+  `lastEventUtc=2026-08-01T07:55:09.1456644Z`.
+- `scripts/smoke-azure-event-flow.sh` passed with `lineStatusCount=11`,
+  `waterlooCityPresent=true`, and event age 72 seconds against the configured
+  1,200-second limit.
+- Blob archive evidence advanced to
+  `eventType=line-status/year=2026/month=08/day=01/hour=07/lineId=waterloo-city/...json.gz`
+  at `2026-08-01T07:42:19Z`. Non-destructive queue peeks returned zero for both
+  `processing` and `processing-poison` after processing completed.
+- The first broadcast attempt exposed two independent configuration defects:
+  processing had no `SignalR__Endpoint`, then Azure returned HTTP 403 because
+  its identity had the app-server role instead of REST-write permission. After
+  the endpoint and `SignalR REST API Owner` role were deployed, a real
+  `@microsoft/signalr` client received `lineStatusChanged` for `victoria` at
+  `2026-08-01T07:55:09.1456644Z`.
+- The obsolete processing `SignalR App Server` assignment was removed after the
+  REST role propagated. A second deduplication-aware receipt test succeeded with
+  only `SignalR REST API Owner`, receiving `circle` at
+  `2026-08-01T08:03:19.0394037Z`.
+- The solution build passed without warnings. All 29 runnable .NET tests passed;
+  the one opt-in live Azure smoke test was skipped. Angular production build,
+  Compose validation, Bicep compilation, shell syntax, and `git diff --check`
+  passed.
+
+Prior verification evidence (July 31, 2026 — Cosmos trigger recovery):
 
 - The solution build passed with no warnings; 28 tests passed and one live Azure
   smoke test was intentionally skipped. Compose configuration passed using
@@ -228,10 +259,14 @@ Expected Functions:
 ./scripts/smoke-azure-data-services.sh
 ./scripts/smoke-azure-workload-rbac.sh
 ./scripts/smoke-azure-diagnostics.sh
+./scripts/smoke-azure-event-flow.sh
 ```
 
 These verify free-tier controls, TTL and partition configuration, managed
 identities, RBAC, and selected diagnostic settings.
+The event-flow smoke additionally requires 11 current line statuses,
+`waterloo-city`, and a fresh dashboard `lastEventUtc`. Override its default
+20-minute limit with `MAX_EVENT_AGE_SECONDS` when necessary.
 
 ## Event Flow
 
@@ -336,6 +371,7 @@ A deployment is complete only when:
 - Public health endpoints pass.
 - Expected Functions are indexed.
 - Management-plane smoke tests pass.
+- `scripts/smoke-azure-event-flow.sh` passes.
 - Raw archives are recent and increasing.
 - Cosmos DB contains recent raw and processed line-status documents.
 - Qualifying alerts complete the Durable workflow exactly once.

@@ -9,6 +9,10 @@ var signalRAppServerRoleDefinitionId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   '420fcaa2-552c-430f-98ca-3264be4806c7'
 )
+var signalRRestApiOwnerRoleDefinitionId = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  'fd53cd77-2268-407a-8f46-7e7863d0f521'
+)
 
 resource signalR 'Microsoft.SignalRService/signalR@2024-03-01' = {
   name: name
@@ -78,12 +82,12 @@ resource apiSignalRRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 resource processingSignalRRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(signalR.id, processingPrincipalId, signalRAppServerRoleDefinitionId)
+  name: guid(signalR.id, processingPrincipalId, signalRRestApiOwnerRoleDefinitionId)
   scope: signalR
   properties: {
     principalId: processingPrincipalId
     principalType: 'ServicePrincipal'
-    roleDefinitionId: signalRAppServerRoleDefinitionId
+    roleDefinitionId: signalRRestApiOwnerRoleDefinitionId
   }
 }
 
