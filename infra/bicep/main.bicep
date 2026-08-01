@@ -32,6 +32,8 @@ param enableAlerts bool = false
 param ingestionArrivalsSchedule string = '0 */5 * * * *'
 @description('NCRONTAB schedule for the line-status timer.')
 param ingestionLineStatusSchedule string = '0 */10 * * * *'
+@description('Retention in seconds for processed arrival and line-status observations.')
+param processedEventsTtlSeconds int = 86400
 param apiImageTag string = 'dev'
 
 @description('Optional custom domain aliasing the Static Web App (e.g. demo.example.com), added to every CORS allowlist alongside the generated hostname.')
@@ -159,6 +161,7 @@ module cosmos 'modules/cosmos.bicep' = {
     apiPrincipalId: apiHosting.outputs.apiPrincipalId
     ingestionPrincipalId: compute.outputs.ingestionDeploymentIdentityPrincipalId
     processingPrincipalId: compute.outputs.processingDeploymentIdentityPrincipalId
+    defaultTtlSeconds: processedEventsTtlSeconds
     tags: commonTags
   }
 }

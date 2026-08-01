@@ -23,6 +23,9 @@ restoring the eleventh line, and correcting SignalR configuration and RBAC:
   line-status data without requiring paid telemetry.
 
 Arrival ingestion and alert detection remain intentionally disabled.
+Processed `line-status` and `live-events` observations retain 24 hours of
+history; transient `raw-events` retains four hours and the Blob archive remains
+the durable raw record.
 
 ## Phase 1 — Restore The Live Line-Status Path
 
