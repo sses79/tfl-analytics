@@ -40,6 +40,14 @@ resource rawContainer 'Microsoft.Storage/storageAccounts/blobServices/containers
   }
 }
 
+resource runtimeControlContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'runtime-control'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource ingestionDeploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobService
   name: 'function-ingestion-deployments'

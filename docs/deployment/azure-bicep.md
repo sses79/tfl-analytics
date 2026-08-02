@@ -40,9 +40,10 @@ The Phase 1 compute foundation is deployed:
 | Azure SignalR | Free F1, local key authentication disabled |
 
 The reduced-cost development parameters are explicit in
-`infra/bicep/environments/dev.bicepparam`: arrival ingestion and alert detection
-are disabled, the arrival timer is scheduled every five minutes but exits
-without calling TfL, and line status is scheduled every ten minutes. Retired
+`infra/bicep/environments/dev.bicepparam`: arrival ingestion is enabled, alert
+detection is disabled, the arrival timer evaluates every minute but normally
+performs work only on five-minute boundaries, and line status is scheduled every
+ten minutes. Retired
 `AlertStorage__*` SQL settings are not deployed to either Function App or the
 API Container App.
 

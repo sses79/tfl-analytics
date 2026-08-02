@@ -16,6 +16,7 @@ using TflAnalytics.Application.Processing;
 using TflAnalytics.Application.Realtime;
 using TflAnalytics.Application.Tfl;
 using TflAnalytics.Infrastructure.Alerts;
+using TflAnalytics.Infrastructure.Ingestion;
 using TflAnalytics.Infrastructure.Messaging;
 using TflAnalytics.Infrastructure.Processing;
 using TflAnalytics.Infrastructure.Realtime;
@@ -35,6 +36,9 @@ public static class DependencyInjection
         services
             .AddOptions<CosmosOptions>()
             .Bind(configuration.GetSection(CosmosOptions.SectionName));
+        services
+            .AddOptions<DemoPollingStorageOptions>()
+            .Bind(configuration.GetSection(DemoPollingStorageOptions.SectionName));
 
         services.AddHttpClient<ITflApiClient, TflApiClient>((serviceProvider, client) =>
         {
@@ -79,6 +83,8 @@ public static class DependencyInjection
         services.AddSingleton<IIngestionPoller, IngestionPoller>();
         services.AddSingleton<IRouteSequenceProvider, CachedRouteSequenceProvider>();
         services.AddSingleton<IDepartureBoardService, DepartureBoardService>();
+        services.AddSingleton<IArrivalDemoPollingStore, BlobArrivalDemoPollingStore>();
+        services.AddSingleton<IArrivalDemoPollingControl, ArrivalDemoPollingControl>();
 
         return services;
     }

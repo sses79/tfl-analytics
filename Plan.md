@@ -6,7 +6,8 @@
 > (alerts use Table Storage and the SQL Bicep module was removed), and the
 > inactive local SQL implementation was removed. The **API image moved from
 > ACR to public GHCR** (2026-07-04). The post-demo development configuration
-> polls line status every 10 minutes and arrivals every five minutes; alert
+> polls line status every 10 minutes and arrivals every five minutes by default;
+> the arrival timer evaluates each minute for an expiring demo boost; alert
 > detection remains disabled. Authoritative current state:
 > `docs/deployment/azure-bicep.md`, `docs/history/cosmos-change-feed-migration.md`,
 > `docs/history/ghcr-image-migration.md`,
@@ -104,7 +105,8 @@ The implemented platform ingests TfL data through Azure Functions, publishes raw
 events to Cosmos DB, processes them through the Cosmos change feed, stores recent
 data and low-cost alert history, and pushes updates to an Angular dashboard
 through Azure SignalR Service. In the reduced-cost post-demo configuration,
-arrival ingestion runs every five minutes, alert detection remains disabled,
+arrival ingestion runs every five minutes by default with an optional
+ten-minute demo boost, alert detection remains disabled,
 and line status is scheduled every 10 minutes.
 
 The first release will monitor Tube data for these configurable stations:
@@ -134,7 +136,7 @@ flowchart LR
     KV[Azure Key Vault]
 
     subgraph Ingestion
-        TF[Timer Trigger Function<br/>Arrivals: 5 minutes<br/>Status: 10 minutes]
+        TF[Timer Trigger Function<br/>Arrivals: 5-minute default / demo boost<br/>Status: 10 minutes]
         RAW[Cosmos DB raw-events]
         CF[Cosmos change-feed trigger]
     end
@@ -308,7 +310,8 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 ## Event Flow
 
 1. Timer-triggered Functions request enabled TfL feeds. In the current
-   environment arrivals run every five minutes and line status every 10 minutes.
+   environment arrivals run every five minutes by default and line status every
+   10 minutes. The arrival timer evaluates each minute for the expiring demo boost.
 2. The Function wraps each response in a versioned event envelope and publishes
    it to the Cosmos DB `raw-events` container.
 3. A Cosmos change-feed-triggered Function archives the raw JSON in Data Lake Gen2 and

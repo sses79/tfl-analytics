@@ -29,7 +29,7 @@ param enableArrivalIngestion bool = false
 @description('Enable alert detection and Durable alert workflows. Disabled in the post-demo development environment.')
 param enableAlerts bool = false
 @description('NCRONTAB schedule for the arrival timer. Arrival__Enabled remains the independent feed switch.')
-param ingestionArrivalsSchedule string = '0 */5 * * * *'
+param ingestionArrivalsSchedule string = '0 * * * * *'
 @description('NCRONTAB schedule for the line-status timer.')
 param ingestionLineStatusSchedule string = '0 */10 * * * *'
 @description('Retention in seconds for processed arrival and line-status observations.')

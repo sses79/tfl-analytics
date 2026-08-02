@@ -245,8 +245,9 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 Reduced-cost development configuration:
 
-- Arrival ingestion is enabled (`Arrival__Enabled=true`) on a five-minute
-  schedule for the five configured stations.
+- Arrival ingestion is enabled (`Arrival__Enabled=true`) for five stations. Its
+  timer evaluates every minute, performs work on five-minute boundaries by
+  default, and supports a Function-key-protected ten-minute demo boost.
 - Alert detection is disabled (`Alerts__Enabled=false`).
 - Line status remains scheduled every ten minutes.
 - Application Insights is connected only to the processing Function for the
