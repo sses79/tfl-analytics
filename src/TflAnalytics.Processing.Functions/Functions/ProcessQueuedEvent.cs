@@ -122,7 +122,12 @@ public sealed class ProcessQueuedEvent
             arrival.Payload.Direction,
             arrival.Payload.ExpectedArrivalUtc,
             arrival.Payload.SecondsToStation,
-            arrival.ObservedAtUtc);
+            arrival.ObservedAtUtc,
+            arrival.Payload.PredictionId,
+            arrival.Payload.VehicleId,
+            arrival.Payload.DestinationStationId,
+            arrival.Payload.Towards,
+            arrival.Payload.CurrentLocation);
 
     private static LineStatusChanged ToRealtimeLineStatus(
         EventEnvelope<LineStatusObserved> status) =>

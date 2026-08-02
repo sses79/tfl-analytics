@@ -15,4 +15,8 @@ public interface ITflApiClient
     Task<IReadOnlyList<Line>> GetLineStatusAsync(
         IEnumerable<string> lineIds,
         CancellationToken cancellationToken = default);
+
+    Task<RouteSequence> GetRouteSequenceAsync(
+        string lineId,
+        CancellationToken cancellationToken = default);
 }

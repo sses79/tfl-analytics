@@ -95,6 +95,7 @@ app.MapGet("/", () => Results.Ok(new
         health = "/health/live",
         stations = "/api/stations",
         arrivals = "/api/stations/{stationId}/arrivals",
+        departureBoard = "/api/stations/{stationId}/departure-board",
         lineStatus = "/api/lines/status",
         alerts = "/api/alerts",
         dashboard = "/api/dashboard/summary",

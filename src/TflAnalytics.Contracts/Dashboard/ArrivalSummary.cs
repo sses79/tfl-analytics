@@ -8,4 +8,11 @@ public sealed record ArrivalSummary(
     string? Direction,
     DateTimeOffset? ExpectedArrivalUtc,
     int SecondsToStation,
-    DateTimeOffset ObservedAtUtc);
+    DateTimeOffset ObservedAtUtc,
+    string? PredictionId = null,
+    string? VehicleId = null,
+    string? StationId = null,
+    string? StationName = null,
+    string? DestinationStationId = null,
+    string? Towards = null,
+    string? CurrentLocation = null);

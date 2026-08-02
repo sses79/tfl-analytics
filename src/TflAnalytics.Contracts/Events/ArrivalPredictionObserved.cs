@@ -11,4 +11,8 @@ public sealed record ArrivalPredictionObserved(
     string? Direction,
     DateTimeOffset? ExpectedArrivalUtc,
     int SecondsToStation,
-    DateTimeOffset? TflTimestampUtc);
+    DateTimeOffset? TflTimestampUtc,
+    string? PredictionId = null,
+    string? DestinationStationId = null,
+    string? Towards = null,
+    string? CurrentLocation = null);

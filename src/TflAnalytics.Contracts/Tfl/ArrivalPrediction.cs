@@ -12,4 +12,7 @@ public sealed record ArrivalPrediction(
     string? Direction,
     DateTimeOffset? ExpectedArrival,
     int TimeToStation,
-    DateTimeOffset? Timestamp);
+    DateTimeOffset? Timestamp,
+    string? DestinationNaptanId = null,
+    string? Towards = null,
+    string? CurrentLocation = null);

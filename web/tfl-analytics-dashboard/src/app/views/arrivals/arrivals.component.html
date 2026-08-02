@@ -1,85 +1,108 @@
 <div class="section-heading">
   <div>
-    <p class="eyebrow">Predictions</p>
-    <h2>Arrivals</h2>
-    <p class="page-intro">
-      The latest platform predictions captured for each monitored station,
-      ordered by observation time.
-    </p>
+    <p class="eyebrow">Passenger information</p>
+    <h2>Departure board</h2>
+    <p class="page-intro">Choose where you are going, find the right platform, then board a train that serves your destination.</p>
   </div>
-  <div class="controls">
-    <div class="control-group">
-      <label for="station">Station</label>
-      <select
-        id="station"
-        [value]="selectedStation()"
-        (change)="onStationChange($any($event.target).value)"
-      >
-        @for (station of stations(); track station.stationId) {
-          <option [value]="station.stationId">{{ stationLabel(station) }}</option>
-        }
-      </select>
-    </div>
-    <button type="button" (click)="loadArrivals()" [disabled]="loading()">
-      <svg
-        class="btn-icon"
-        [class.btn-icon--spinning]="loading()"
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-      >
-        <path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/>
-        <path d="M12.4 2.7V5.5H9.6"/>
-      </svg>
-      Refresh
-    </button>
+  <div class="freshness" [class.freshness--stale]="board()?.isStale">
+    <span class="freshness__dot" aria-hidden="true"></span>
+    {{ freshnessLabel() }}
   </div>
 </div>
 
-<app-data-flow-explainer
-  title="Arrival prediction event flow"
-  description="This page demonstrates the highest-frequency ingestion path. TfL predictions are archived, normalized and stored by station, then served through the API with SignalR updates for newly processed arrivals."
-  eventType="ArrivalObserved"
-  [steps]="flowSteps"
-/>
+<div class="journey-controls">
+  <div class="control-group">
+    <label for="station">Travelling from</label>
+    <select id="station" [value]="selectedStation()" (change)="onStationChange($any($event.target).value)">
+      @for (station of stations(); track station.stationId) {
+        <option [value]="station.stationId">{{ stationLabel(station) }}</option>
+      }
+    </select>
+  </div>
+  <span class="journey-controls__arrow" aria-hidden="true">→</span>
+  <div class="control-group control-group--destination">
+    <label for="destination">Where are you going?</label>
+    <select id="destination" [value]="selectedDestination()" (change)="onDestinationChange($any($event.target).value)">
+      <option value="">Show all departures</option>
+      @for (destination of board()?.destinations ?? []; track destination.stationId) {
+        <option [value]="destination.stationId">{{ destination.stationName }}</option>
+      }
+    </select>
+  </div>
+  <button type="button" (click)="loadBoard()" [disabled]="loading()">Refresh board</button>
+</div>
 
 @if (error()) {
-  <div class="error-banner" role="alert">
-    <strong>Error</strong>
-    <span>{{ error() }}</span>
-  </div>
+  <div class="error-banner" role="alert"><strong>Error</strong><span>{{ error() }}</span></div>
 }
 
-<div class="arrivals-table-wrap" [attr.aria-busy]="loading()">
-  @if (arrivals().length === 0 && !loading()) {
-    <div class="empty-state">
-      <p>No recent arrivals recorded for this station. Arrival ingestion is disabled in the reduced-cost environment.</p>
+@if (selectedDestination() && (board()?.recommendations?.length ?? 0) > 0) {
+  <section class="recommendations" aria-labelledby="recommendation-title">
+    <p class="eyebrow">Recommended direct route</p>
+    <h3 id="recommendation-title">Go to this platform</h3>
+    <div class="recommendation-grid">
+      @for (route of board()?.recommendations ?? []; track route.lineId + route.direction) {
+        <article class="recommendation-card">
+          <div class="line-badge" [attr.data-line]="route.lineId">{{ route.lineName ?? route.lineId }}</div>
+          <div><span>Direction</span><strong>{{ route.direction }}</strong></div>
+          <div><span>Platform</span><strong>{{ route.platformName ?? 'Check station signs' }}</strong></div>
+          <div><span>Towards</span><strong>{{ route.towards ?? 'Follow platform direction' }}</strong></div>
+          <div><span>Journey</span><strong>{{ route.stopsUntilDestination }} stops</strong></div>
+          <ol class="station-strip" aria-label="Direct station sequence">
+            @for (station of route.stations; track station.stationId) {
+              <li [class.station-strip__destination]="station.isDestination">
+                <span class="station-strip__marker"></span>{{ station.stationName }}
+              </li>
+            }
+          </ol>
+        </article>
+      }
     </div>
-  } @else {
-    <table class="arrivals-table">
-      <thead>
-        <tr>
-          <th>Line</th>
-          <th>Destination</th>
-          <th>Platform</th>
-          <th>Arrives in</th>
-          <th>Expected</th>
-          <th>Observed</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (arrival of arrivals(); track arrival.observedAtUtc + arrival.lineId) {
-          <tr>
-            <td data-label="Line"><strong>{{ arrival.lineName ?? arrival.lineId }}</strong></td>
-            <td data-label="Destination">{{ arrival.destinationName ?? '—' }}</td>
-            <td data-label="Platform">{{ arrival.platformName ?? '—' }}</td>
-            <td data-label="Arrives in" class="mono">
-              <span class="arrival-time">{{ secondsLabel(arrival.secondsToStation) }}</span>
-            </td>
-            <td data-label="Expected" class="mono">{{ formatTime(arrival.expectedArrivalUtc) }}</td>
-            <td data-label="Observed" class="mono muted">{{ formatTime(arrival.observedAtUtc) }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  </section>
+} @else if (selectedDestination()) {
+  <div class="advice-banner">No direct route was found in the current TfL route topology. Choose another destination or plan an interchange journey separately.</div>
+}
+
+<section class="platforms" [attr.aria-busy]="loading()">
+  @if ((board()?.platforms?.length ?? 0) === 0 && !loading()) {
+    <div class="empty-state"><p>No current train predictions are available for this station.</p></div>
   }
-</div>
+  @for (platform of board()?.platforms ?? []; track platform.lineId + platform.direction + platform.platformName) {
+    <article class="platform-board">
+      <header>
+        <div>
+          <div class="line-badge" [attr.data-line]="platform.lineId">{{ platform.lineName ?? platform.lineId }}</div>
+          <h3>{{ platform.platformName ?? platform.direction }}</h3>
+        </div>
+        <span class="direction-label">{{ platform.direction }}</span>
+      </header>
+      <div class="train-list">
+        @for (train of platform.trains; track train.predictionId ?? train.vehicleId ?? train.expectedArrivalUtc) {
+          <div class="train-row" [class.train-row--not-suitable]="train.servesSelectedDestination === false">
+            <div class="train-row__eta">{{ countdown(train) }}</div>
+            <div class="train-row__destination">
+              <strong>{{ train.destinationName ?? train.towards ?? 'Destination unavailable' }}</strong>
+              <span>{{ trainState(train) }}</span>
+            </div>
+            @if (train.servesSelectedDestination === true) {
+              <div class="train-row__decision train-row__decision--yes">Board this train</div>
+            } @else if (train.servesSelectedDestination === false) {
+              <div class="train-row__decision train-row__decision--no">Does not serve destination</div>
+            } @else {
+              <div class="train-row__decision">Live prediction</div>
+            }
+          </div>
+        }
+      </div>
+    </article>
+  }
+</section>
+
+<p class="estimate-note">Train position is estimated from TfL prediction text, not GPS tracking.</p>
+
+<app-data-flow-explainer
+  title="Passenger departure-board flow"
+  description="The board combines the latest persisted station snapshot with cached TfL route branches. Direct-route matching checks that the destination follows the origin in the reported direction; SignalR prompts the browser to refresh after each processed batch."
+  eventType="ArrivalPredictionBatchObserved"
+  [steps]="flowSteps"
+/>

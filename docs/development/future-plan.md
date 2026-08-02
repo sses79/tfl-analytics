@@ -177,7 +177,32 @@ complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: design agreed; ready to start after Phase 4 deployment verification**
+**Status: active — passenger board and direct-route API implemented locally August 2, 2026**
+
+Implemented locally:
+
+- TfL prediction persistence retains prediction ID, vehicle ID, destination
+  NaPTAN ID, `towards`, and `currentLocation`.
+- TfL route sequences are retrieved through the existing typed client and
+  cached in-process for 24 hours.
+- The departure-board API returns destination choices, direct-route
+  recommendations, platform groups, ordered trains, freshness, and per-train
+  destination suitability.
+- Direct matching requires destination-after-origin on the same directional
+  branch and rejects trains whose reported terminus occurs before the selected
+  destination.
+- The Angular arrivals page is now a mobile passenger departure board with
+  origin and destination selection, route/platform advice, live local
+  countdowns, platform boards, train-location text, suitability labels, and a
+  clearly stated prediction-not-GPS limitation.
+- SignalR arrival batches refresh the selected departure board through the API.
+
+Remaining before Phase 5 completion:
+
+- implement the time-limited one-minute demo polling boost below;
+- map `currentLocation` onto the station strip as a discrete estimated train
+  position rather than text only;
+- add disruption context and complete deployed browser evidence.
 
 ### Product goal
 

@@ -56,7 +56,11 @@ public sealed class IngestionPoller : IIngestionPoller
                     arrival.Direction,
                     arrival.ExpectedArrival,
                     arrival.TimeToStation,
-                    arrival.Timestamp);
+                    arrival.Timestamp,
+                    arrival.Id,
+                    arrival.DestinationNaptanId,
+                    arrival.Towards,
+                    arrival.CurrentLocation);
 
                 var eventId = EventIdFactory.Create(
                     EventTypes.ArrivalPredictionObserved,
