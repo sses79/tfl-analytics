@@ -12,7 +12,7 @@ public sealed class IngestionPollerTests
         DateTimeOffset.Parse("2026-06-13T12:00:10Z");
 
     [Fact]
-    public async Task PublishesAnArrivalEventForEachPrediction()
+    public async Task PublishesAllArrivalPredictionsInOneBatch()
     {
         var client = new StubTflApiClient
         {
@@ -38,13 +38,16 @@ public sealed class IngestionPollerTests
 
         var count = await poller.PollArrivalsAsync();
 
-        var envelope = Assert.IsType<EventEnvelope<ArrivalPredictionObserved>>(
+        var envelope = Assert.IsType<EventEnvelope<ArrivalPredictionBatchObserved>>(
             Assert.Single(publisher.Events));
         Assert.Equal(1, count);
-        Assert.Equal(EventTypes.ArrivalPredictionObserved, envelope.EventType);
-        Assert.Equal("940GZZLUVIC", envelope.StationId);
-        Assert.Equal("victoria", envelope.LineId);
-        Assert.Equal("245", envelope.Payload.VehicleId);
+        Assert.Equal(EventTypes.ArrivalPredictionBatchObserved, envelope.EventType);
+        Assert.Null(envelope.StationId);
+        Assert.Null(envelope.LineId);
+        var arrival = Assert.Single(envelope.Payload.Arrivals);
+        Assert.Equal("940GZZLUVIC", arrival.StationId);
+        Assert.Equal("victoria", arrival.LineId);
+        Assert.Equal("245", arrival.Payload.VehicleId);
         Assert.Equal(1, envelope.SchemaVersion);
     }
 

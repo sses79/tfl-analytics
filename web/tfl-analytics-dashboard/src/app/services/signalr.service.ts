@@ -6,12 +6,13 @@ import {
 } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
-import { AlertRaised, ArrivalsUpdated, LineStatusChanged } from '../models';
+import { AlertRaised, ArrivalsBatchUpdated, ArrivalsUpdated, LineStatusChanged } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class SignalRService implements OnDestroy {
   readonly connected = signal(false);
   readonly lastArrivalsUpdate = signal<ArrivalsUpdated | null>(null);
+  readonly lastArrivalsBatchUpdate = signal<ArrivalsBatchUpdated | null>(null);
   readonly lastLineStatusChange = signal<LineStatusChanged | null>(null);
   readonly lastAlert = signal<AlertRaised | null>(null);
 
@@ -30,6 +31,9 @@ export class SignalRService implements OnDestroy {
 
     this.connection.on('arrivalsUpdated', (msg: ArrivalsUpdated) =>
       this.lastArrivalsUpdate.set(msg)
+    );
+    this.connection.on('arrivalsBatchUpdated', (msg: ArrivalsBatchUpdated) =>
+      this.lastArrivalsBatchUpdate.set(msg)
     );
     this.connection.on('lineStatusChanged', (msg: LineStatusChanged) =>
       this.lastLineStatusChange.set(msg)

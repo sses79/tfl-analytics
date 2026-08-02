@@ -424,7 +424,8 @@ GET /api/dashboard/summary
 
 SignalR messages:
 
-- `arrivalsUpdated`
+- `arrivalsBatchUpdated` for one arrival notification per poll; legacy
+  `arrivalsUpdated` remains accepted during rollout
 - `lineStatusChanged`
 - `alertRaised`
 

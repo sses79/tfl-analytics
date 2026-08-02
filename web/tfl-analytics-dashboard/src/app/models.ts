@@ -58,6 +58,11 @@ export interface ArrivalsUpdated {
   observedAtUtc: string;
 }
 
+export interface ArrivalsBatchUpdated {
+  arrivals: ArrivalsUpdated[];
+  observedAtUtc: string;
+}
+
 export interface LineStatusChanged {
   lineId: string;
   lineName: string;

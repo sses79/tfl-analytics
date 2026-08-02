@@ -2,7 +2,7 @@ import { Component, OnInit, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { SignalRService } from '../../services/signalr.service';
-import { ArrivalSummary, StationSummary } from '../../models';
+import { ArrivalSummary, ArrivalsUpdated, StationSummary } from '../../models';
 import {
   DataFlowExplainerComponent,
   DataFlowStep
@@ -25,11 +25,11 @@ export class ArrivalsComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly flowSteps: readonly DataFlowStep[] = [
     { service: 'TfL Arrivals API', detail: 'Predictions for five monitored stations', tone: 'source' },
-    { service: 'PollArrivals', detail: 'Disabled in the reduced-cost environment', tone: 'compute' },
-    { service: 'Cosmos change feed', detail: 'ArrivalObserved raw event', tone: 'messaging' },
-    { service: 'ProcessQueuedEvent', detail: 'Normalizes and tracks predictions', tone: 'compute' },
+    { service: 'PollArrivals', detail: 'Every five minutes; publishes one prediction batch', tone: 'compute' },
+    { service: 'Cosmos change feed', detail: 'One raw batch per polling cycle', tone: 'messaging' },
+    { service: 'ProcessQueuedEvent', detail: 'Persists each prediction, then emits one batch update', tone: 'compute' },
     { service: 'Cosmos DB', detail: 'live-events container', tone: 'storage' },
-    { service: 'API + SignalR', detail: 'Station query and fresh arrival push', tone: 'api' },
+    { service: 'API + SignalR', detail: 'Station query and one fresh batch push', tone: 'api' },
     { service: 'Arrivals page', detail: 'Selected station prediction board', tone: 'ui' }
   ];
 
@@ -45,19 +45,18 @@ export class ArrivalsComponent implements OnInit {
     effect(() => {
       const update = this.signalR.lastArrivalsUpdate();
       if (!update || update.stationId !== this.selectedStation()) return;
-      this.arrivals.update(list => {
-        const fresh: ArrivalSummary = {
-          lineId: update.lineId,
-          lineName: update.lineName,
-          destinationName: update.destinationName,
-          platformName: update.platformName,
-          direction: update.direction,
-          expectedArrivalUtc: update.expectedArrivalUtc,
-          secondsToStation: update.secondsToStation,
-          observedAtUtc: update.observedAtUtc
-        };
-        return [fresh, ...list].slice(0, 30);
-      });
+      this.arrivals.update(list => [this.toSummary(update), ...list].slice(0, 30));
+    });
+    effect(() => {
+      const batch = this.signalR.lastArrivalsBatchUpdate();
+      const station = this.selectedStation();
+      if (!batch || !station) return;
+      const fresh = batch.arrivals
+        .filter(update => update.stationId === station)
+        .map(update => this.toSummary(update));
+      if (fresh.length > 0) {
+        this.arrivals.set(fresh.slice(0, 30));
+      }
     });
   }
 
@@ -115,5 +114,18 @@ export class ArrivalsComponent implements OnInit {
     return new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit', minute: '2-digit', second: '2-digit'
     }).format(new Date(iso));
+  }
+
+  private toSummary(update: ArrivalsUpdated): ArrivalSummary {
+    return {
+      lineId: update.lineId,
+      lineName: update.lineName,
+      destinationName: update.destinationName,
+      platformName: update.platformName,
+      direction: update.direction,
+      expectedArrivalUtc: update.expectedArrivalUtc,
+      secondsToStation: update.secondsToStation,
+      observedAtUtc: update.observedAtUtc
+    };
   }
 }
