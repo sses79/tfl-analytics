@@ -19,14 +19,39 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | August 1, 2026 |
-| Git commit | `2ee5d7b` via PR #39; merged to `main` as `419c5ff` |
-| Change | Re-enable five-minute arrival ingestion while keeping alert detection disabled |
-| Provisioning state | `Succeeded` — latest ARM deployment `enable-poll-arrivals-20260802`; prior TTL, processing, and dashboard deployments remain healthy |
-| Scope | Changed only ingestion `Arrival__Enabled` from false to true; retained `Alerts__Enabled=false`, the five-minute arrival schedule, ten-minute line-status schedule, and 24-hour processed-event TTL |
-| Cost impact | No SKU changed automatically. The first pull produced 156 arrival broadcasts; at five-minute frequency this can exceed SignalR Free F1's 20,000-message/day allowance even with one client, so message quota and throttling must be monitored before considering a paid tier |
+| Date | August 2, 2026 |
+| Git commit | `5544012` via PR #41; merged to `main` as `9086df8` |
+| Change | Batch each five-minute arrival poll into one raw event and one SignalR invocation while retaining individual Cosmos persistence |
+| Provisioning state | `Succeeded` — processing Function, Static Web App, then ingestion Function deployed; ingestion zip deployment id `9d0669fa-e137-4862-a7c8-bf5f9ae97a0c` |
+| Scope | Code-only rollout; retained `Arrival__Enabled=true`, `Alerts__Enabled=false`, existing schedules, SKUs, telemetry cap, and TTLs |
+| Cost impact | No resource or SKU changed. A controlled 161-arrival poll fell from 161 application broadcasts to one 58,156-byte invocation. Azure meters outbound payloads in 2-KB units, so this sample is approximately 29 billable message units per connected client rather than 161, an estimated 82% reduction rather than a literal single billed message |
 
 Latest verification evidence:
+
+- Required Bicep compilation and full resource-group `what-if` succeeded before
+  deployment. It proposed no new service or SKU, but reported existing
+  platform-property and observability-tag drift; no ARM deployment was applied
+  during this code-only rollout.
+- The compatibility-safe rollout order was processing, dashboard, then
+  ingestion. Both Function health endpoints returned healthy and Azure indexed
+  all expected Functions. The Static Web App default hostname and
+  `demo.ti5g.com` serve `main-EKSK4KY7.js` with shared bundle
+  `chunk-U6INQ34H.js`, which contains both legacy `arrivalsUpdated` and new
+  `arrivalsBatchUpdated` handlers.
+- A real Azure SignalR protocol client was connected before a controlled pull.
+  The pull returned 161 arrival observations and 11 line statuses; the client
+  received exactly one `arrivalsBatchUpdated` invocation containing all 161
+  arrivals, `observedAtUtc=2026-08-02T09:17:02.971668Z`, and a 58,156-byte JSON
+  payload. The Victoria API returned current records with that same observation
+  timestamp, proving individual Cosmos persistence completed before broadcast.
+- The standard event-flow smoke passed with 11 lines, `waterloo-city`,
+  `lastEventUtc=2026-08-02T09:20:00.3846892Z`, and an event age of 22 seconds.
+  The alerts API remained empty, confirming alert processing stayed disabled.
+- Application Insights did not ingest the matching informational traces because
+  processing intentionally filters `Information` logs. The deploying user also
+  lacks Storage Queue Data Reader, so this verification does not claim a direct
+  queue or poison-queue peek; successful API persistence and the post-persistence
+  SignalR receipt provide end-to-end processing evidence.
 
 - Targeted `what-if` proposed exactly the ingestion app-settings child update.
   Deployment `enable-poll-arrivals-20260802` succeeded at

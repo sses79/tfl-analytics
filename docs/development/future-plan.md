@@ -26,10 +26,10 @@ Arrival ingestion is enabled on a five-minute schedule for five stations.
 Alert detection remains intentionally disabled.
 The first controlled arrival pull published 156 observations. Sending each one
 separately can exceed SignalR Free F1's 20,000-message/day allowance. Arrival
-batching is now implemented in code: each five-minute poll publishes one raw
+batching is deployed: each five-minute poll publishes one raw
 batch, persists its observations individually, and emits one
-`arrivalsBatchUpdated` notification after persistence. Azure deployment and
-live receipt evidence remain outstanding.
+`arrivalsBatchUpdated` notification after persistence. A controlled Azure pull
+on August 2 delivered 161 persisted observations in one live SignalR invocation.
 Processed `line-status` and `live-events` observations retain 24 hours of
 history; transient `raw-events` retains four hours and the Blob archive remains
 the durable raw record.
