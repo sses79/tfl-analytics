@@ -73,6 +73,7 @@ jobs:
             scripts/security-scan.sh \
             scripts/smoke-azure-data-services.sh \
             scripts/smoke-azure-diagnostics.sh \
+            scripts/smoke-azure-event-flow.sh \
             scripts/smoke-azure-workload-rbac.sh
 
       - name: Validate Docker Compose

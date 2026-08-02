@@ -6,7 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPOSITORY_ROOT"
-source "$SCRIPT_DIR/load-azure-outputs.sh"
+
+if [[ -z "${API_BASE_URL:-}" ]]; then
+  source "$SCRIPT_DIR/load-azure-outputs.sh"
+  API_BASE_URL="https://$API_HOSTNAME"
+fi
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required for the Azure event-flow smoke test." >&2
@@ -15,7 +19,7 @@ fi
 
 expected_line_count="${EXPECTED_LINE_COUNT:-11}"
 maximum_age_seconds="${MAXIMUM_EVENT_AGE_SECONDS:-1200}"
-api_base_url="https://$API_HOSTNAME"
+api_base_url="${API_BASE_URL%/}"
 
 line_status_json="$(curl --fail --silent --show-error "$api_base_url/api/lines/status")"
 summary_json="$(curl --fail --silent --show-error "$api_base_url/api/dashboard/summary")"

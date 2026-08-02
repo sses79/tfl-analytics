@@ -66,7 +66,7 @@ public sealed class ProcessQueuedEvent
             result.Alerts.Count);
     }
 
-    private Task BroadcastEventAsync(ProcessingResult result, CancellationToken cancellationToken)
+    internal Task BroadcastEventAsync(ProcessingResult result, CancellationToken cancellationToken)
     {
         if (!result.Created || result.Envelopes.Count == 0)
         {

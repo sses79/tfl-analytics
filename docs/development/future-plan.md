@@ -115,7 +115,7 @@ Exit criteria:
 
 ## Phase 3 — Automate Baseline Freshness Verification
 
-**Status: local/deployment guard complete; scheduled execution remains open**
+**Status: complete in code — August 2, 2026; scheduled runs begin after merge**
 
 Completed:
 
@@ -126,10 +126,12 @@ Completed:
 - `scripts/smoke-azure-event-flow.sh` fails when the API has fewer than 11
   lines, omits `waterloo-city`, or reports a missing/stale `lastEventUtc`.
 - The post-deployment checklist requires the freshness smoke result.
-
-Remaining:
-
-- Run that check after deployments and on a low-frequency schedule.
+- `.github/workflows/azure-freshness.yml` runs the public freshness check hourly
+  and supports manual execution without Azure credentials.
+- The smoke script accepts `API_BASE_URL` for CI while retaining deployment-output
+  discovery for authenticated operator runs.
+- A live execution on August 2 passed with 11 lines, Waterloo & City present,
+  and an event age of 385 seconds against the 1,200-second limit.
 
 Exit criteria:
 
@@ -140,7 +142,7 @@ Exit criteria:
 
 ## Phase 4 — Reliability Closeout Before Passenger Features
 
-**Status: small closeout remains; does not require alerts or authentication**
+**Status: complete in code — August 2, 2026; merge/deployment pending**
 
 Completed:
 
@@ -152,16 +154,16 @@ Completed:
   health, and disabled-alert behavior were verified after deployment.
 - Arrival and line-status transport and SignalR operation counts were reduced by
   batching without adding an Azure service or changing a SKU.
-
-Finish these small reliability tasks before changing the passenger-facing data
-contract:
-
-1. Run `scripts/smoke-azure-event-flow.sh` on a low-frequency GitHub Actions
-   schedule and retain manual post-deployment execution.
-2. Add focused tests proving each processed batch calls its batch notifier once
-   and does not also call the legacy per-item notifier.
-3. Add API query tests proving arrival results use the latest observation,
-   preserve individual predictions, and do not surface stale duplicates.
+- Focused tests prove each processed arrival and line-status batch calls its
+  batch notifier exactly once and never also calls the legacy per-item notifier.
+- The station-arrivals repository now selects only the newest station snapshot,
+  removes duplicate train predictions, orders by ETA, and applies the requested
+  count after deduplication.
+- Arrival query tests cover stale observations, duplicate trains, preservation
+  of distinct predictions, ordering, count limiting, and invalid counts.
+- The full local solution builds without warnings; 33 unit tests and three
+  integration tests pass. The credential-dependent Azure smoke-test project
+  remains intentionally skipped in the default test run.
 
 Exit criteria:
 
@@ -169,11 +171,13 @@ Exit criteria:
 - One batch produces exactly one application notification in automated tests.
 - The station-arrivals API has a tested latest-record and deduplication rule.
 
-These tasks should be one short closeout, not a new infrastructure phase.
+The new query behavior and scheduled workflow must be merged, the API image
+deployed, and the post-deployment checklist recorded before calling Phase 4
+complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: design agreed; implementation starts after Phase 4 closeout**
+**Status: design agreed; ready to start after Phase 4 deployment verification**
 
 ### Product goal
 
@@ -299,10 +303,53 @@ Measure TfL request rate, Function/API executions, SignalR outbound bytes, and
 cache hit rate before changing the production schedule. Prefer existing compute
 and storage; do not add an Azure service unless measurements justify it.
 
+### Time-limited demo polling boost
+
+Keep the normal arrival persistence schedule at five minutes. For demonstrations,
+allow an operator to enable one-minute arrival polling for a maximum of ten
+minutes, after which the system automatically returns to the five-minute
+default. This is an interim demonstration capability, not the production
+freshness design for the passenger departure board.
+
+Implement the boost as runtime scheduling policy rather than by temporarily
+editing the Function App timer setting:
+
+- let the arrival timer evaluate once per minute;
+- outside an active boost, perform the TfL poll only on five-minute boundaries;
+- store an explicit UTC expiry such as `arrivalDemoPollingUntilUtc` in a small,
+  managed-identity-accessible control record;
+- default safely to five-minute polling when the control record is absent,
+  invalid, unavailable, or expired;
+- restrict activation to an authenticated operator command or deployment
+  operation; do not expose a public anonymous endpoint;
+- cap each activation at ten minutes and keep alerts disabled;
+- log activation, expiry, skipped timer evaluations, and boosted polls without
+  recording secrets or high-cardinality prediction identifiers.
+
+Arrival batching remains unchanged during the boost. At the currently observed
+batch size, a ten-minute demonstration adds approximately eight polls, 40 TfL
+requests, eight raw batches, 24 Function executions across the ingestion and
+processing path, and about 272 SignalR billing units per continuously connected
+client. This short burst is compatible with the existing SignalR Free F1
+allowance; continuous one-minute full-batch broadcasting is not.
+
+Demo-boost acceptance criteria:
+
+- an operator can request a ten-minute boost without an Azure deployment or
+  Function host restart;
+- arrival observations update approximately once per minute during the boost;
+- the mode returns automatically to five-minute polling even if the operator
+  disconnects;
+- an expired or unreadable control record cannot leave rapid polling enabled;
+- telemetry records the requested expiry and proves the return to the default;
+- a focused automated test covers normal boundaries, active boost, expiry,
+  invalid state, and control-store failure.
+
 ### Delivery slices
 
 #### 5A — Direct passenger board
 
+- Add the time-limited demo polling boost and its operational control.
 - Add and cache route sequences.
 - Retain the missing TfL prediction fields.
 - Add origin/destination direct-route matching.
@@ -349,6 +396,7 @@ and storage; do not add an Azure service unless measurements justify it.
 ```text
 Schedule freshness guard
   -> add batch-notifier and latest-arrival API tests
+  -> add the time-limited arrival demo polling boost
   -> build direct passenger departure board
   -> add estimated station-sequence view
   -> evaluate TfL Journey API for interchange journeys

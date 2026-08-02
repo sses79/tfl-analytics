@@ -5,9 +5,9 @@
 > DB change feed** (2026-06-27), the **Azure SQL server was deleted** (alerts use
 > Table Storage; the `sql` module is gated off, SQL Server retained only locally),
 > and the **API image moved from ACR to public GHCR** (2026-07-04). The
-> reduced-cost development configuration disables arrival ingestion, alert
-> detection, Log Analytics, and Application Insights, and polls line status
-> every 10 minutes. The inventory and estimates below are historical unless
+> reduced-cost development configuration polls arrivals every five minutes and
+> line status every 10 minutes, keeps alert detection disabled, and enables
+> cost-capped Application Insights. The inventory and estimates below are historical unless
 > explicitly marked current. Authoritative current state:
 > `docs/deployment/azure-bicep.md`,
 > `docs/history/cosmos-change-feed-migration.md`,
