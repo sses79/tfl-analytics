@@ -11,7 +11,7 @@ flowchart LR
     KV[Key Vault]
 
     subgraph Ingestion
-        TIMER[Ingestion Functions<br/>arrivals disabled<br/>line status every 10 min]
+        TIMER[Ingestion Functions<br/>arrivals every 5 min<br/>line status every 10 min]
         RAW[Cosmos DB<br/>raw-events]
     end
 

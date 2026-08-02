@@ -22,7 +22,11 @@ restoring the eleventh line, and correcting SignalR configuration and RBAC:
 - `scripts/smoke-azure-event-flow.sh` fails on missing, stale, or incomplete
   line-status data without requiring paid telemetry.
 
-Arrival ingestion and alert detection remain intentionally disabled.
+Arrival ingestion is enabled on a five-minute schedule for five stations.
+Alert detection remains intentionally disabled.
+The first controlled arrival pull published 156 observations. That rate can
+exceed SignalR Free F1's 20,000-message/day allowance, so arrival broadcast
+batching or a longer schedule is the next reliability/cost-control priority.
 Processed `line-status` and `live-events` observations retain 24 hours of
 history; transient `raw-events` retains four hours and the Blob archive remains
 the durable raw record.
@@ -76,24 +80,23 @@ Exit criteria:
 
 ## Phase 2 — Finish Reduced-Cost Runtime Controls
 
-**Status: mostly complete**
+**Status: active-feed configuration complete; paused-trigger optimization deferred**
 
 Completed:
 
 - Bicep parameters explicitly control arrivals, alerts, and both schedules.
-- Development parameters set arrivals and alerts to disabled.
+- Development parameters independently control arrivals and alerts.
 - The five-minute arrival and ten-minute line-status schedules are explicit.
 - Retired SQL settings, code, package, local container, diagnostics, and
   provisioning module were removed.
-- Live Azure has `Arrival__Enabled=false` and `Alerts__Enabled=false`.
+- Live Azure has `Arrival__Enabled=true` and `Alerts__Enabled=false`.
+- The manual pull endpoint preserves the same arrival feature flag.
 
-Remaining:
+Remaining if arrivals are paused again:
 
-- Disable the `PollArrivals` timer trigger itself while arrivals are paused,
-  rather than invoking it every five minutes and returning immediately.
-- Preserve the manual pull endpoint's existing feature-flag behavior.
-- Add a focused infrastructure or configuration test for the disabled-trigger
-  setting.
+- Set `AzureWebJobs.PollArrivals.Disabled=true` from Bicep so the timer itself
+  stops instead of executing and returning immediately.
+- Add a focused configuration test for that disabled-trigger setting.
 
 Exit criteria:
 

@@ -28,7 +28,7 @@ param observabilityDailyQuotaGb string = '0.1'
 param enableArrivalIngestion bool = false
 @description('Enable alert detection and Durable alert workflows. Disabled in the post-demo development environment.')
 param enableAlerts bool = false
-@description('NCRONTAB schedule for the arrival timer. The timer still runs and exits immediately while arrival ingestion is disabled.')
+@description('NCRONTAB schedule for the arrival timer. Arrival__Enabled remains the independent feed switch.')
 param ingestionArrivalsSchedule string = '0 */5 * * * *'
 @description('NCRONTAB schedule for the line-status timer.')
 param ingestionLineStatusSchedule string = '0 */10 * * * *'

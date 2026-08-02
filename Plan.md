@@ -104,8 +104,8 @@ The implemented platform ingests TfL data through Azure Functions, publishes raw
 events to Cosmos DB, processes them through the Cosmos change feed, stores recent
 data and low-cost alert history, and pushes updates to an Angular dashboard
 through Azure SignalR Service. In the reduced-cost post-demo configuration,
-arrival ingestion and alert detection are disabled and line status is scheduled
-every 10 minutes.
+arrival ingestion runs every five minutes, alert detection remains disabled,
+and line status is scheduled every 10 minutes.
 
 The first release will monitor Tube data for these configurable stations:
 
@@ -307,8 +307,8 @@ storage implementations will live in `TflAnalytics.Infrastructure`.
 
 ## Event Flow
 
-1. A timer-triggered Function requests enabled TfL feeds. In the post-demo
-   environment arrivals are disabled and line status runs every 10 minutes.
+1. Timer-triggered Functions request enabled TfL feeds. In the current
+   environment arrivals run every five minutes and line status every 10 minutes.
 2. The Function wraps each response in a versioned event envelope and publishes
    it to the Cosmos DB `raw-events` container.
 3. A Cosmos change-feed-triggered Function archives the raw JSON in Data Lake Gen2 and
