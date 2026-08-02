@@ -36,11 +36,11 @@ public sealed class IngestionPoller : IIngestionPoller
             return 0;
         }
 
-        var published = 0;
+        var observedAtUtc = _timeProvider.GetUtcNow();
+        var observations = new List<EventEnvelope<ArrivalPredictionObserved>>();
 
         foreach (var stationId in Normalize(_options.StationIds))
         {
-            var observedAtUtc = _timeProvider.GetUtcNow();
             var arrivals = await _tflApiClient.GetArrivalsAsync(stationId, cancellationToken);
 
             foreach (var arrival in arrivals)
@@ -66,7 +66,7 @@ public sealed class IngestionPoller : IIngestionPoller
                     arrival.VehicleId ?? arrival.Id,
                     arrival.ExpectedArrival?.ToUniversalTime().ToString("O"));
 
-                await _eventPublisher.PublishAsync(
+                observations.Add(
                     new EventEnvelope<ArrivalPredictionObserved>(
                         eventId,
                         EventTypes.ArrivalPredictionObserved,
@@ -75,14 +75,34 @@ public sealed class IngestionPoller : IIngestionPoller
                         stationId,
                         arrival.LineId,
                         1,
-                        payload),
-                    cancellationToken);
-
-                published++;
+                        payload));
             }
         }
 
-        return published;
+        if (observations.Count == 0)
+        {
+            return 0;
+        }
+
+        var batchId = EventIdFactory.Create(
+            EventTypes.ArrivalPredictionBatchObserved,
+            observedAtUtc,
+            ArrivalObservationWindow,
+            string.Join(',', observations.Select(item => item.EventId).Order()));
+
+        await _eventPublisher.PublishAsync(
+            new EventEnvelope<ArrivalPredictionBatchObserved>(
+                batchId,
+                EventTypes.ArrivalPredictionBatchObserved,
+                "TfL",
+                observedAtUtc,
+                null,
+                null,
+                1,
+                new ArrivalPredictionBatchObserved(observations)),
+            cancellationToken);
+
+        return observations.Count;
     }
 
     public async Task<int> PollLineStatusAsync(CancellationToken cancellationToken = default)

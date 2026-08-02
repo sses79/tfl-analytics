@@ -8,6 +8,10 @@ public interface IRealtimeNotifier
         ArrivalsUpdated message,
         CancellationToken cancellationToken = default);
 
+    Task BroadcastArrivalsBatchAsync(
+        ArrivalsBatchUpdated message,
+        CancellationToken cancellationToken = default);
+
     Task BroadcastLineStatusAsync(
         LineStatusChanged message,
         CancellationToken cancellationToken = default);

@@ -245,10 +245,10 @@ https://blue-bush-0491f9503.7.azurestaticapps.net
 
 Reduced-cost development configuration:
 
-- Arrival ingestion is disabled (`Arrival__Enabled=false`).
+- Arrival ingestion is enabled (`Arrival__Enabled=true`) on a five-minute
+  schedule for the five configured stations.
 - Alert detection is disabled (`Alerts__Enabled=false`).
-- The arrival timer runs every five minutes but exits without calling TfL while
-  arrivals are disabled; line status is scheduled every ten minutes.
+- Line status remains scheduled every ten minutes.
 - Application Insights is connected only to the processing Function for the
   current trigger investigation. Its Log Analytics workspace has a 0.1 GB/day
   ingestion cap and 30-day retention; ingestion, API, and platform diagnostics

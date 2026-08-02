@@ -21,12 +21,22 @@ Update this section after every deployment.
 |---|---|
 | Date | August 1, 2026 |
 | Git commit | `2ee5d7b` via PR #39; merged to `main` as `419c5ff` |
-| Change | Complete line-status recovery and reduce processed Cosmos observation retention to 24 hours |
-| Provisioning state | `Succeeded` — latest ARM deployment `processed-events-ttl-24h-20260801`; earlier Phase 1 app-setting/RBAC deployments, processing zip `cb0a24a7-f1aa-429b-90fb-beae887231bb`, and Static Web Apps content deployment remain healthy |
-| Scope | Changed only `line-status` and `live-events` default TTL from 604,800 to 86,400 seconds; retained partitions, indexing, conflict resolution, processing-only Application Insights, `Arrival__Enabled=false`, and `Alerts__Enabled=false` |
-| Cost impact | No increase expected: no SKU or billable resource added; shorter Cosmos retention can only reduce stored data and query scanning. Diagnostic telemetry remains capped at 0.1 GB/day |
+| Change | Re-enable five-minute arrival ingestion while keeping alert detection disabled |
+| Provisioning state | `Succeeded` — latest ARM deployment `enable-poll-arrivals-20260802`; prior TTL, processing, and dashboard deployments remain healthy |
+| Scope | Changed only ingestion `Arrival__Enabled` from false to true; retained `Alerts__Enabled=false`, the five-minute arrival schedule, ten-minute line-status schedule, and 24-hour processed-event TTL |
+| Cost impact | No SKU changed automatically. The first pull produced 156 arrival broadcasts; at five-minute frequency this can exceed SignalR Free F1's 20,000-message/day allowance even with one client, so message quota and throttling must be monitored before considering a paid tier |
 
 Latest verification evidence:
+
+- Targeted `what-if` proposed exactly the ingestion app-settings child update.
+  Deployment `enable-poll-arrivals-20260802` succeeded at
+  `2026-08-02T08:47:06.705831Z`; live settings report
+  `Arrival__Enabled=True`, `Alerts__Enabled=false`, arrival schedule every five
+  minutes, and line status every ten minutes.
+- A controlled pull published 156 arrival observations. The Victoria arrivals
+  API returned 20 current results with latest
+  `observedAtUtc=2026-08-02T08:47:47.3882653Z`. Both processing and poison queues
+  drained to zero, and the alerts API remained empty.
 
 - Targeted `what-if` proposed exactly two changes: `line-status` and
   `live-events` `defaultTtl` from 604,800 to 86,400 seconds. Deployment

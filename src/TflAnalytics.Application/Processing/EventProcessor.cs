@@ -45,6 +45,8 @@ public sealed class EventProcessor : IEventProcessor
         {
             EventTypes.ArrivalPredictionObserved =>
                 await CreateArrivalAsync(json, cancellationToken),
+            EventTypes.ArrivalPredictionBatchObserved =>
+                await CreateArrivalBatchAsync(json, cancellationToken),
             EventTypes.LineStatusObserved =>
                 await CreateLineStatusAsync(json, cancellationToken),
             _ => throw new InvalidDataException(
@@ -55,8 +57,8 @@ public sealed class EventProcessor : IEventProcessor
             rawEvent.EventId,
             rawEvent.EventType,
             result.Created,
-            result.Alert is null ? [] : [result.Alert],
-            result.Envelope);
+            result.Alerts,
+            result.Envelopes);
     }
 
     private async Task<EventCreationResult> CreateArrivalAsync(
@@ -65,25 +67,57 @@ public sealed class EventProcessor : IEventProcessor
     {
         var envelope = Deserialize<ArrivalPredictionObserved>(json);
 
-        if (string.IsNullOrWhiteSpace(envelope.StationId)
-            || envelope.StationId != envelope.Payload.StationId)
-        {
-            throw new InvalidDataException(
-                "Arrival event station metadata is missing or inconsistent.");
-        }
+        ValidateArrival(envelope);
 
         var created = await _repository.CreateArrivalAsync(
             envelope,
             cancellationToken);
         if (!created)
         {
-            return new EventCreationResult(false, null);
+            return new EventCreationResult(false, [], []);
         }
 
         var alert = await _alertDetector.DetectArrivalAsync(
             envelope,
             cancellationToken);
-        return new EventCreationResult(true, alert, envelope);
+        return new EventCreationResult(
+            true,
+            alert is null ? [] : [alert],
+            [envelope]);
+    }
+
+    private async Task<EventCreationResult> CreateArrivalBatchAsync(
+        string json,
+        CancellationToken cancellationToken)
+    {
+        var batch = Deserialize<ArrivalPredictionBatchObserved>(json);
+        if (batch.Payload.Arrivals.Count == 0)
+        {
+            throw new InvalidDataException("Arrival batch must contain at least one observation.");
+        }
+
+        var alerts = new List<AlertCandidate>();
+        var arrivals = new List<object>(batch.Payload.Arrivals.Count);
+        var anyCreated = false;
+
+        foreach (var envelope in batch.Payload.Arrivals)
+        {
+            ValidateArrival(envelope);
+            arrivals.Add(envelope);
+            if (!await _repository.CreateArrivalAsync(envelope, cancellationToken))
+            {
+                continue;
+            }
+
+            anyCreated = true;
+            var alert = await _alertDetector.DetectArrivalAsync(envelope, cancellationToken);
+            if (alert is not null)
+            {
+                alerts.Add(alert);
+            }
+        }
+
+        return new EventCreationResult(anyCreated, alerts, anyCreated ? arrivals : []);
     }
 
     private async Task<EventCreationResult> CreateLineStatusAsync(
@@ -104,13 +138,27 @@ public sealed class EventProcessor : IEventProcessor
             cancellationToken);
         if (!created)
         {
-            return new EventCreationResult(false, null);
+            return new EventCreationResult(false, [], []);
         }
 
         var alert = await _alertDetector.DetectLineStatusAsync(
             envelope,
             cancellationToken);
-        return new EventCreationResult(true, alert, envelope);
+        return new EventCreationResult(
+            true,
+            alert is null ? [] : [alert],
+            [envelope]);
+    }
+
+    private static void ValidateArrival(EventEnvelope<ArrivalPredictionObserved> envelope)
+    {
+        if (envelope.EventType != EventTypes.ArrivalPredictionObserved
+            || string.IsNullOrWhiteSpace(envelope.StationId)
+            || envelope.StationId != envelope.Payload.StationId)
+        {
+            throw new InvalidDataException(
+                "Arrival event station metadata is missing or inconsistent.");
+        }
     }
 
     private static EventEnvelope<TPayload> Deserialize<TPayload>(string json) =>
@@ -119,6 +167,6 @@ public sealed class EventProcessor : IEventProcessor
 
     private sealed record EventCreationResult(
         bool Created,
-        AlertCandidate? Alert,
-        object? Envelope = null);
+        IReadOnlyList<AlertCandidate> Alerts,
+        IReadOnlyList<object> Envelopes);
 }

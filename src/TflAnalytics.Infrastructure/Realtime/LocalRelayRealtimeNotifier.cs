@@ -26,6 +26,11 @@ public sealed class LocalRelayRealtimeNotifier : IRealtimeNotifier
         CancellationToken cancellationToken = default) =>
         SendAsync("arrivals", message, cancellationToken);
 
+    public Task BroadcastArrivalsBatchAsync(
+        ArrivalsBatchUpdated message,
+        CancellationToken cancellationToken = default) =>
+        SendAsync("arrivals-batch", message, cancellationToken);
+
     public Task BroadcastLineStatusAsync(
         LineStatusChanged message,
         CancellationToken cancellationToken = default) =>

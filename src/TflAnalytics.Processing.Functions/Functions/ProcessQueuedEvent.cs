@@ -68,29 +68,28 @@ public sealed class ProcessQueuedEvent
 
     private Task BroadcastEventAsync(ProcessingResult result, CancellationToken cancellationToken)
     {
-        if (!result.Created || result.Envelope is null)
+        if (!result.Created || result.Envelopes.Count == 0)
         {
             return Task.CompletedTask;
         }
 
-        if (result.Envelope is EventEnvelope<ArrivalPredictionObserved> arrival)
+        var arrivals = result.Envelopes
+            .OfType<EventEnvelope<ArrivalPredictionObserved>>()
+            .Select(ToRealtimeArrival)
+            .ToArray();
+        if (arrivals.Length > 1 || result.EventType == EventTypes.ArrivalPredictionBatchObserved)
         {
-            return _realtimeNotifier.BroadcastArrivalsAsync(
-                new ArrivalsUpdated(
-                    arrival.StationId ?? string.Empty,
-                    arrival.Payload.StationName,
-                    arrival.Payload.LineId,
-                    arrival.Payload.LineName,
-                    arrival.Payload.DestinationName,
-                    arrival.Payload.PlatformName,
-                    arrival.Payload.Direction,
-                    arrival.Payload.ExpectedArrivalUtc,
-                    arrival.Payload.SecondsToStation,
-                    arrival.ObservedAtUtc),
+            return _realtimeNotifier.BroadcastArrivalsBatchAsync(
+                new ArrivalsBatchUpdated(arrivals, arrivals.Max(item => item.ObservedAtUtc)),
                 cancellationToken);
         }
 
-        if (result.Envelope is EventEnvelope<LineStatusObserved> status)
+        if (arrivals.Length == 1)
+        {
+            return _realtimeNotifier.BroadcastArrivalsAsync(arrivals[0], cancellationToken);
+        }
+
+        if (result.Envelopes[0] is EventEnvelope<LineStatusObserved> status)
         {
             return _realtimeNotifier.BroadcastLineStatusAsync(
                 new LineStatusChanged(
@@ -105,4 +104,18 @@ public sealed class ProcessQueuedEvent
 
         return Task.CompletedTask;
     }
+
+    private static ArrivalsUpdated ToRealtimeArrival(
+        EventEnvelope<ArrivalPredictionObserved> arrival) =>
+        new(
+            arrival.StationId ?? string.Empty,
+            arrival.Payload.StationName,
+            arrival.Payload.LineId,
+            arrival.Payload.LineName,
+            arrival.Payload.DestinationName,
+            arrival.Payload.PlatformName,
+            arrival.Payload.Direction,
+            arrival.Payload.ExpectedArrivalUtc,
+            arrival.Payload.SecondsToStation,
+            arrival.ObservedAtUtc);
 }

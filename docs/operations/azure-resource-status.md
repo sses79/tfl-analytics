@@ -2,7 +2,7 @@
 
 > [Documentation index](../README.md)
 
-## Current state (2026-07-31)
+## Current state (2026-08-02)
 
 Read-only verification against subscription `TfL Analytics Development`
 confirmed the reduced-cost resource set:
@@ -17,23 +17,21 @@ confirmed the reduced-cost resource set:
 - The unused SQL repository, client package, local container, and Bicep
   provisioning module were removed on July 31.
 - API: public GHCR image, `minReplicas=0`, `maxReplicas=2`.
-- Runtime flags: `Arrival__Enabled=false` and `Alerts__Enabled=false`.
-- Schedules: arrival timer every five minutes (exits without a TfL request while
-  disabled), line status every ten minutes.
+- Runtime flags: `Arrival__Enabled=true` and `Alerts__Enabled=false`.
+- Schedules: arrival timer every five minutes, line status every ten minutes.
 
 July 1–30 Cost Management data returned approximately £2.17 for Storage,
 £0.45 residual early-month Container Registry billing, £0.0002 for Key Vault,
 and £0 for Cosmos DB, SignalR, and Functions. From July 20–29, Storage was
 approximately £0.071–£0.080/day and is the main recurring cost.
 
-The hosts and public endpoints were healthy on July 30, but the dashboard data
-was empty. Processing-only telemetry enabled on July 31 identified unresolved
-`%Cosmos__*%` binding expressions, which caused the host to disable
-`ArchiveRawEvents`. The trigger now uses flat `CosmosTrigger*Name` settings. A
-controlled pull successfully traversed `raw-events` through processing and
-restored 10 current line records plus dashboard freshness. `waterloo-city`
-remains absent from the configured line list, so the separate 10-versus-11 gap
-is still open. Host health alone does not prove pipeline health.
+Processing-only telemetry enabled on July 31 identified unresolved
+`%Cosmos__*%` binding expressions, which had disabled `ArchiveRawEvents`. The
+trigger now uses flat `CosmosTrigger*Name` settings, all 11 lines including
+`waterloo-city` are current, and browser SignalR delivery is verified. Processed
+Cosmos history retains 24 hours. On August 2, arrival ingestion was restored for
+five stations while alert detection remained disabled. Host health is backed by
+the event-flow freshness guard rather than treated as pipeline proof by itself.
 
 ## Historical state (2026-06-23)
 

@@ -86,13 +86,16 @@ public sealed class BlobRawEventArchive : IRawEventArchive
         var eventType = rawEvent.EventType switch
         {
             EventTypes.ArrivalPredictionObserved => "arrival",
+            EventTypes.ArrivalPredictionBatchObserved => "arrival-batch",
             EventTypes.LineStatusObserved => "line-status",
             _ => throw new InvalidDataException(
                 $"Unsupported event type '{rawEvent.EventType}'.")
         };
         var partition = rawEvent.StationId is not null
             ? $"stationId={Uri.EscapeDataString(rawEvent.StationId)}"
-            : $"lineId={Uri.EscapeDataString(rawEvent.LineId!)}";
+            : rawEvent.LineId is not null
+                ? $"lineId={Uri.EscapeDataString(rawEvent.LineId)}"
+                : "scope=all-stations";
 
         return string.Join(
             '/',

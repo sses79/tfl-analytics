@@ -58,6 +58,38 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public async Task ProcessesAnArrivalBatchAsIndividualPersistenceOperations()
+    {
+        var arrival = JsonSerializer.Deserialize<EventEnvelope<ArrivalPredictionObserved>>(
+            CreateArrivalJson(), SerializerOptions)!;
+        var batch = new EventEnvelope<ArrivalPredictionBatchObserved>(
+            "batch-1",
+            EventTypes.ArrivalPredictionBatchObserved,
+            "TfL",
+            ObservedAt,
+            null,
+            null,
+            1,
+            new ArrivalPredictionBatchObserved([arrival, arrival with { EventId = "event-2" }]));
+        var repository = new RecordingRepository();
+        var processor = new EventProcessor(
+            new RecordingArchive(JsonSerializer.Serialize(batch, SerializerOptions)),
+            repository,
+            new NoAlertDetector());
+
+        var result = await processor.ProcessAsync(
+            new ProcessingMessage(
+                "batch-1",
+                EventTypes.ArrivalPredictionBatchObserved,
+                "eventType=arrival-batch/batch-1.json.gz",
+                ObservedAt));
+
+        Assert.True(result.Created);
+        Assert.Equal(2, repository.Arrivals.Count);
+        Assert.Equal(2, result.Envelopes.Count);
+    }
+
+    [Fact]
     public async Task ReportsDuplicateRepositoryConflictsWithoutFailing()
     {
         var repository = new RecordingRepository { CreateResult = false };
