@@ -216,6 +216,47 @@ Use the complete
 [Azure post-deployment verification checklist](./post-deployment-verification.md)
 and update its deployment record before marking the release complete.
 
+### Run the ten-minute arrival demo boost
+
+The arrival timer evaluates every minute but normally performs TfL work only on
+five-minute boundaries. A Function-key-protected operation can enable one-minute
+polling for exactly ten minutes; durable Blob state makes the expiry survive a
+host restart and the default resumes automatically.
+
+Retrieve the function-specific key into a shell variable without printing it:
+
+```bash
+ARRIVAL_DEMO_FUNCTION_KEY="$(az functionapp function keys list \
+  --resource-group rg-tfl-analytics-dev-uk-south \
+  --name func-tfl-analytics-ingestion-dev-nhkpyupi \
+  --function-name EnableArrivalDemoPolling \
+  --query default \
+  --output tsv)"
+```
+
+Enable the boost:
+
+```bash
+curl --fail --silent --show-error \
+  --request POST \
+  --header "x-functions-key: $ARRIVAL_DEMO_FUNCTION_KEY" \
+  "https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/operations/arrival-demo-polling"
+```
+
+Check its status using the same key:
+
+```bash
+curl --fail --silent --show-error \
+  --header "x-functions-key: $ARRIVAL_DEMO_FUNCTION_KEY" \
+  "https://func-tfl-analytics-ingestion-dev-nhkpyupi.azurewebsites.net/api/operations/arrival-demo-polling"
+
+unset ARRIVAL_DEMO_FUNCTION_KEY
+```
+
+Do not put the Function key in a URL, documentation, logs, or screenshots. The
+operation always caps the boost at ten minutes; it has no public anonymous
+route and does not enable alert processing.
+
 Load the newest successful deployment outputs:
 
 ```bash

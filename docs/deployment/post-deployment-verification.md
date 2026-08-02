@@ -20,13 +20,39 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | August 2, 2026 |
-| Git commit | `829bc4c` via PR #42; merged to `main` as `adfe425c` |
-| Change | Batch each ten-minute line-status poll into one raw event and one SignalR invocation while retaining individual Cosmos persistence |
-| Provisioning state | `Succeeded` — processing Function, Static Web App, then ingestion Function deployed; ingestion zip deployment id `649a6add-8127-4a1c-abcd-1ab55affa609` |
-| Scope | Code-only rollout; retained `Arrival__Enabled=true`, `Alerts__Enabled=false`, existing schedules, SKUs, telemetry cap, and TTLs |
-| Cost impact | No resource or SKU changed. A controlled 11-line poll fell from 11 application broadcasts to one 2,925-byte invocation. Azure meters outbound payloads in 2-KB units, so this sample is approximately two billable message units per connected client rather than 11, an estimated 82% reduction rather than a literal single billed message |
+| Git commit | `e03f8e9` via PR #45; merged to `main` as `436bac8e3238510e4d8842dbee4251eb0ae3569e` |
+| Change | Phase 5A passenger departure board: enriched predictions, cached TfL route topology, direct-route matching, passenger API, and Angular board |
+| Provisioning state | `Succeeded` — Container App revision `ca-tfl-api-dev-nhkpyupi--0000015`; ingestion zip `551bd104-8252-49b0-9b72-1773343b4dfa`; processing zip `1a5a1e7f-1b60-4091-99c4-8da859371d84`; Static Web App production deployment succeeded |
+| Scope | Scoped code rollout after full Bicep validation/what-if; retained schedules, `Arrival__Enabled=true`, `Alerts__Enabled=false`, existing SKUs, telemetry cap, and TTLs |
+| Cost impact | No resource, SKU, schedule, or capacity changed. Incremental traffic is limited to cached TfL route-sequence requests, at most once per active line per API replica every 24 hours, plus normal passenger API reads |
 
 Latest verification evidence:
+
+- Bicep compilation, ARM validation, and full resource-group `what-if` passed.
+  The preview created or deleted no resource and changed no SKU, but repeated
+  Azure-generated Function, Static Web App, and observability metadata drift.
+  The rollout therefore used the documented scoped code-deployment path rather
+  than applying unrelated ARM changes.
+- GHCR workflow run `30765494779` published immutable API image
+  `436bac8e3238510e4d8842dbee4251eb0ae3569e`. Azure revision
+  `ca-tfl-api-dev-nhkpyupi--0000015` reports `Succeeded` and runs that image.
+- Both deployed Function health endpoints returned healthy after package
+  deployment. The live event-flow smoke passed with 11 lines, Waterloo & City,
+  `lastEventUtc=2026-08-02T20:40:00.5632324Z`, and event age 179 seconds.
+- The live Victoria-to-King's Cross departure-board request returned a fresh
+  snapshot at `2026-08-02T20:45:00.4240846Z`, 60 direct destinations, two route
+  branches, ten platform groups, 20 trains with reported location text, two
+  suitable trains, and 18 trains correctly marked unsuitable. Its first
+  recommendation was Victoria line outbound, Northbound Platform 3, towards
+  Walthamstow Central, with the correct five-stop sequence through Green Park,
+  Oxford Circus, Warren Street, and Euston.
+- The route-sequence endpoint returned two current Victoria branches from TfL.
+  The Static Web App default hostname and `demo.ti5g.com` both serve
+  `chunk-4WGSDX7X.js`, containing `Departure board`, `Board this train`, and the
+  passenger flow explainer.
+- Data-service and workload-RBAC smoke tests passed. Cosmos remains free-tier at
+  1,000 RU/s, SignalR remains Free F1 with local authentication disabled, and
+  no Azure SQL resource exists. Diagnostics remain unchanged.
 
 - Required Bicep compilation and full resource-group `what-if` succeeded before
   the line-status batch rollout. It proposed no new service or SKU but repeated

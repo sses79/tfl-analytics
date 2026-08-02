@@ -177,9 +177,9 @@ complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: active — passenger board and direct-route API implemented locally August 2, 2026**
+**Status: active — Phase 5A deployed and verified August 2, 2026**
 
-Implemented locally:
+Implemented and deployed:
 
 - TfL prediction persistence retains prediction ID, vehicle ID, destination
   NaPTAN ID, `towards`, and `currentLocation`.
@@ -196,6 +196,12 @@ Implemented locally:
   countdowns, platform boards, train-location text, suitability labels, and a
   clearly stated prediction-not-GPS limitation.
 - SignalR arrival batches refresh the selected departure board through the API.
+
+Deployment evidence: Victoria to King's Cross produced the correct Victoria
+line outbound recommendation, Northbound Platform 3, Walthamstow direction,
+and five-stop sequence. The live board classified suitable and unsuitable
+trains from a fresh persisted snapshot, and both dashboard hostnames serve the
+passenger board bundle.
 
 Remaining before Phase 5 completion:
 
@@ -329,6 +335,8 @@ cache hit rate before changing the production schedule. Prefer existing compute
 and storage; do not add an Azure service unless measurements justify it.
 
 ### Time-limited demo polling boost
+
+**Status: implemented locally — August 2, 2026; deployment pending**
 
 Keep the normal arrival persistence schedule at five minutes. For demonstrations,
 allow an operator to enable one-minute arrival polling for a maximum of ten

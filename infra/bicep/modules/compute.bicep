@@ -252,6 +252,14 @@ resource ingestionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: cosmosRawEventsContainerName
         }
         {
+          name: 'DemoPollingStorage__AccountName'
+          value: storageAccountName
+        }
+        {
+          name: 'DemoPollingStorage__ContainerName'
+          value: 'runtime-control'
+        }
+        {
           name: 'IngestionArrivalsSchedule'
           value: ingestionArrivalsSchedule
         }
