@@ -257,7 +257,14 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
                 document.Payload.Direction,
                 document.Payload.ExpectedArrivalUtc,
                 document.Payload.SecondsToStation,
-                document.ObservedAtUtc))
+                document.ObservedAtUtc,
+                document.Payload.PredictionId,
+                document.Payload.VehicleId,
+                document.Payload.StationId,
+                document.Payload.StationName,
+                document.Payload.DestinationStationId,
+                document.Payload.Towards,
+                document.Payload.CurrentLocation))
             .ToArray();
     }
 

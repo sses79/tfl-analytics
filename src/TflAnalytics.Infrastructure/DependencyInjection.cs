@@ -11,6 +11,7 @@ using Microsoft.Azure.Cosmos;
 using TflAnalytics.Application.Alerts;
 using TflAnalytics.Application.Ingestion;
 using TflAnalytics.Application.Messaging;
+using TflAnalytics.Application.Passenger;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Application.Realtime;
 using TflAnalytics.Application.Tfl;
@@ -76,6 +77,8 @@ public static class DependencyInjection
         });
         services.AddSingleton<IEventPublisher, CosmosRawEventPublisher>();
         services.AddSingleton<IIngestionPoller, IngestionPoller>();
+        services.AddSingleton<IRouteSequenceProvider, CachedRouteSequenceProvider>();
+        services.AddSingleton<IDepartureBoardService, DepartureBoardService>();
 
         return services;
     }

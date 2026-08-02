@@ -74,6 +74,29 @@ public sealed class TflApiClientTests
         Assert.Equal(3, attempts);
     }
 
+    [Fact]
+    public async Task GetsRouteSequenceForAllDirections()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(
+            HttpStatusCode.OK,
+            """
+            {
+              "lineId": "victoria",
+              "lineName": "Victoria",
+              "direction": "all",
+              "stopPointSequences": []
+            }
+            """));
+        var client = CreateClient(handler);
+
+        var route = await client.GetRouteSequenceAsync("victoria");
+
+        Assert.Equal("victoria", route.LineId);
+        Assert.Equal(
+            "/Line/victoria/Route/Sequence/all",
+            new Uri("https://api.tfl.test" + Assert.Single(handler.Paths)).AbsolutePath);
+    }
+
     private static TflApiClient CreateClient(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler)

@@ -219,5 +219,10 @@ public sealed class IngestionPollerTests
             IEnumerable<string> lineIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Lines);
+
+        public Task<RouteSequence> GetRouteSequenceAsync(
+            string lineId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new RouteSequence(lineId, lineId, "all", []));
     }
 }

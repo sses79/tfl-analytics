@@ -10,4 +10,9 @@ public sealed record ArrivalsUpdated(
     string? Direction,
     DateTimeOffset? ExpectedArrivalUtc,
     int SecondsToStation,
-    DateTimeOffset ObservedAtUtc);
+    DateTimeOffset ObservedAtUtc,
+    string? PredictionId = null,
+    string? VehicleId = null,
+    string? DestinationStationId = null,
+    string? Towards = null,
+    string? CurrentLocation = null);

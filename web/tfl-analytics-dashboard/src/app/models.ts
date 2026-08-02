@@ -12,6 +12,69 @@ export interface ArrivalSummary {
   expectedArrivalUtc: string | null;
   secondsToStation: number;
   observedAtUtc: string;
+  predictionId: string | null;
+  vehicleId: string | null;
+  stationId: string | null;
+  stationName: string | null;
+  destinationStationId: string | null;
+  towards: string | null;
+  currentLocation: string | null;
+}
+
+export interface DepartureBoard {
+  stationId: string;
+  stationName: string | null;
+  observedAtUtc: string | null;
+  isStale: boolean;
+  destinations: DestinationOption[];
+  recommendations: RouteRecommendation[];
+  platforms: PlatformDepartureBoard[];
+}
+
+export interface DestinationOption {
+  stationId: string;
+  stationName: string;
+  lineIds: string[];
+}
+
+export interface RouteRecommendation {
+  lineId: string;
+  lineName: string | null;
+  direction: string;
+  platformName: string | null;
+  towards: string | null;
+  stopsUntilDestination: number;
+  stations: RouteStation[];
+}
+
+export interface RouteStation {
+  stationId: string;
+  stationName: string;
+  sequence: number;
+  isOrigin: boolean;
+  isDestination: boolean;
+}
+
+export interface PlatformDepartureBoard {
+  lineId: string;
+  lineName: string | null;
+  direction: string;
+  platformName: string | null;
+  trains: PassengerTrain[];
+}
+
+export interface PassengerTrain {
+  predictionId: string | null;
+  vehicleId: string | null;
+  destinationStationId: string | null;
+  destinationName: string | null;
+  towards: string | null;
+  currentLocation: string | null;
+  expectedArrivalUtc: string | null;
+  secondsToStation: number;
+  observedAtUtc: string;
+  servesSelectedDestination: boolean | null;
+  stopsUntilDestination: number | null;
 }
 
 export interface LineStatusSummary {
@@ -56,6 +119,11 @@ export interface ArrivalsUpdated {
   expectedArrivalUtc: string | null;
   secondsToStation: number;
   observedAtUtc: string;
+  predictionId: string | null;
+  vehicleId: string | null;
+  destinationStationId: string | null;
+  towards: string | null;
+  currentLocation: string | null;
 }
 
 export interface ArrivalsBatchUpdated {

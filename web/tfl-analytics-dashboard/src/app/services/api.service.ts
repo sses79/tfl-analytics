@@ -6,6 +6,7 @@ import {
   AlertSummary,
   ArrivalSummary,
   DashboardSummary,
+  DepartureBoard,
   LineStatusSummary,
   StationSummary,
 } from '../models';
@@ -24,6 +25,16 @@ export class ApiService {
     return this.http.get<ArrivalSummary[]>(
       `${this.base}/api/stations/${stationId}/arrivals`,
       { params: { count } }
+    );
+  }
+
+  getDepartureBoard(
+    stationId: string,
+    destinationStationId?: string
+  ): Observable<DepartureBoard> {
+    return this.http.get<DepartureBoard>(
+      `${this.base}/api/stations/${stationId}/departure-board`,
+      destinationStationId ? { params: { destinationStationId } } : {}
     );
   }
 

@@ -60,11 +60,22 @@ public sealed class TflApiClient : ITflApiClient
         return await GetAsync<IReadOnlyList<Line>>($"Line/{ids}/Status", cancellationToken);
     }
 
+    public Task<RouteSequence> GetRouteSequenceAsync(
+        string lineId,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedLineId = RequireId(lineId, nameof(lineId));
+        return GetAsync<RouteSequence>(
+            $"Line/{Uri.EscapeDataString(normalizedLineId)}/Route/Sequence/all?excludeCrowding=true",
+            cancellationToken);
+    }
+
     private async Task<T> GetAsync<T>(string path, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(_options.AppKey))
         {
-            path += $"?app_key={Uri.EscapeDataString(_options.AppKey)}";
+            var separator = path.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+            path += $"{separator}app_key={Uri.EscapeDataString(_options.AppKey)}";
         }
 
         for (var attempt = 0; ; attempt++)
