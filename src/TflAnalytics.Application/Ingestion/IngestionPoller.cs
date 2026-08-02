@@ -115,7 +115,7 @@ public sealed class IngestionPoller : IIngestionPoller
 
         var observedAtUtc = _timeProvider.GetUtcNow();
         var lines = await _tflApiClient.GetLineStatusAsync(lineIds, cancellationToken);
-        var published = 0;
+        var observations = new List<EventEnvelope<LineStatusObserved>>();
 
         foreach (var line in lines)
         {
@@ -136,7 +136,7 @@ public sealed class IngestionPoller : IIngestionPoller
                     status.StatusSeverity.ToString(),
                     status.Reason);
 
-                await _eventPublisher.PublishAsync(
+                observations.Add(
                     new EventEnvelope<LineStatusObserved>(
                         eventId,
                         EventTypes.LineStatusObserved,
@@ -145,14 +145,34 @@ public sealed class IngestionPoller : IIngestionPoller
                         null,
                         line.Id,
                         1,
-                        payload),
-                    cancellationToken);
-
-                published++;
+                        payload));
             }
         }
 
-        return published;
+        if (observations.Count == 0)
+        {
+            return 0;
+        }
+
+        var batchId = EventIdFactory.Create(
+            EventTypes.LineStatusBatchObserved,
+            observedAtUtc,
+            LineStatusObservationWindow,
+            string.Join(',', observations.Select(item => item.EventId).Order()));
+
+        await _eventPublisher.PublishAsync(
+            new EventEnvelope<LineStatusBatchObserved>(
+                batchId,
+                EventTypes.LineStatusBatchObserved,
+                "TfL",
+                observedAtUtc,
+                null,
+                null,
+                1,
+                new LineStatusBatchObserved(observations)),
+            cancellationToken);
+
+        return observations.Count;
     }
 
     private static string[] Normalize(IEnumerable<string> values) =>

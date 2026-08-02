@@ -1,7 +1,7 @@
 import { Component, OnInit, effect, inject, signal } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { SignalRService } from '../../services/signalr.service';
-import { LineStatusSummary } from '../../models';
+import { LineStatusChanged, LineStatusSummary } from '../../models';
 import {
   DataFlowExplainerComponent,
   DataFlowStep
@@ -24,12 +24,12 @@ export class LineStatusComponent implements OnInit {
   protected readonly flowSteps: readonly DataFlowStep[] = [
     { service: 'TfL Line API', detail: 'Current Underground service status', tone: 'source' },
     { service: 'PollLineStatus', detail: 'Polls every ten minutes', tone: 'compute' },
-    { service: 'Cosmos raw-events', detail: 'Stores each LineStatusObserved envelope', tone: 'messaging' },
+    { service: 'Cosmos raw-events', detail: 'Stores one batch for all monitored lines', tone: 'messaging' },
     { service: 'ArchiveRawEvents', detail: 'Change feed uses leases to checkpoint progress', tone: 'compute' },
-    { service: 'Blob + queue', detail: 'Archives the raw event and queues processing', tone: 'messaging' },
-    { service: 'ProcessQueuedEvent', detail: 'Normalizes and compares the latest status', tone: 'compute' },
+    { service: 'Blob + queue', detail: 'Archives and queues one polling-cycle batch', tone: 'messaging' },
+    { service: 'ProcessQueuedEvent', detail: 'Persists each line, then emits one batch update', tone: 'compute' },
     { service: 'Cosmos line-status', detail: 'Stores the current status for each line', tone: 'storage' },
-    { service: 'API + SignalR', detail: 'Returns current data and pushes status changes', tone: 'api' },
+    { service: 'API + SignalR', detail: 'Returns current data and pushes one status batch', tone: 'api' },
     { service: 'Line status page', detail: 'Service cards update in the browser', tone: 'ui' }
   ];
 
@@ -56,14 +56,7 @@ export class LineStatusComponent implements OnInit {
       if (!update) return;
       this.lines.update(lines => {
         const idx = lines.findIndex(l => l.lineId === update.lineId);
-        const updated: LineStatusSummary = {
-          lineId: update.lineId,
-          lineName: update.lineName,
-          statusSeverity: update.statusSeverity,
-          statusSeverityDescription: update.statusSeverityDescription,
-          reason: update.reason,
-          observedAtUtc: update.observedAtUtc
-        };
+        const updated = this.toSummary(update);
         if (idx >= 0) {
           const copy = [...lines];
           copy[idx] = updated;
@@ -72,6 +65,12 @@ export class LineStatusComponent implements OnInit {
         return [...lines, updated];
       });
       this.lastUpdated.set(new Date());
+    });
+    effect(() => {
+      const batch = this.signalR.lastLineStatusesBatchChange();
+      if (!batch) return;
+      this.lines.set(batch.lineStatuses.map(status => this.toSummary(status)));
+      this.lastUpdated.set(new Date(batch.observedAtUtc));
     });
   }
 
@@ -110,5 +109,16 @@ export class LineStatusComponent implements OnInit {
           hour: '2-digit', minute: '2-digit', second: '2-digit'
         }).format(d)
       : 'Awaiting data';
+  }
+
+  private toSummary(status: LineStatusChanged): LineStatusSummary {
+    return {
+      lineId: status.lineId,
+      lineName: status.lineName,
+      statusSeverity: status.statusSeverity,
+      statusSeverityDescription: status.statusSeverityDescription,
+      reason: status.reason,
+      observedAtUtc: status.observedAtUtc
+    };
   }
 }

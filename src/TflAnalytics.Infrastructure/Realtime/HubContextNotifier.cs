@@ -19,6 +19,9 @@ public sealed class HubContextNotifier<THub> : IRealtimeNotifier where THub : Hu
     public Task BroadcastLineStatusAsync(LineStatusChanged message, CancellationToken cancellationToken = default) =>
         _hubContext.Clients.All.SendAsync("lineStatusChanged", message, cancellationToken);
 
+    public Task BroadcastLineStatusesBatchAsync(LineStatusesBatchChanged message, CancellationToken cancellationToken = default) =>
+        _hubContext.Clients.All.SendAsync("lineStatusesBatchChanged", message, cancellationToken);
+
     public Task BroadcastAlertAsync(AlertRaised message, CancellationToken cancellationToken = default) =>
         _hubContext.Clients.All.SendAsync("alertRaised", message, cancellationToken);
 }

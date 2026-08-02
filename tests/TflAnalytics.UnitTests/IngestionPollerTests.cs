@@ -52,7 +52,7 @@ public sealed class IngestionPollerTests
     }
 
     [Fact]
-    public async Task PublishesEachLineStatusWithNoStationPartition()
+    public async Task PublishesAllLineStatusesInOneBatch()
     {
         var client = new StubTflApiClient
         {
@@ -67,6 +67,16 @@ public sealed class IngestionPollerTests
                             9,
                             "Minor Delays",
                             "Fixture disruption.")
+                    ]),
+                new Line(
+                    "central",
+                    "Central",
+                    "tube",
+                    [
+                        new LineStatus(
+                            10,
+                            "Good Service",
+                            null)
                     ])
             ]
         };
@@ -75,12 +85,15 @@ public sealed class IngestionPollerTests
 
         var count = await poller.PollLineStatusAsync();
 
-        var envelope = Assert.IsType<EventEnvelope<LineStatusObserved>>(
+        var envelope = Assert.IsType<EventEnvelope<LineStatusBatchObserved>>(
             Assert.Single(publisher.Events));
-        Assert.Equal(1, count);
+        Assert.Equal(2, count);
         Assert.Null(envelope.StationId);
-        Assert.Equal("victoria", envelope.LineId);
-        Assert.Equal(9, envelope.Payload.StatusSeverity);
+        Assert.Null(envelope.LineId);
+        Assert.Equal(2, envelope.Payload.LineStatuses.Count);
+        var status = envelope.Payload.LineStatuses[0];
+        Assert.Equal("victoria", status.LineId);
+        Assert.Equal(9, status.Payload.StatusSeverity);
     }
 
     [Fact]

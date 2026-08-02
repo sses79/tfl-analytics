@@ -426,7 +426,8 @@ SignalR messages:
 
 - `arrivalsBatchUpdated` for one arrival notification per poll; legacy
   `arrivalsUpdated` remains accepted during rollout
-- `lineStatusChanged`
+- `lineStatusesBatchChanged` for one line-status notification per poll; legacy
+  `lineStatusChanged` remains accepted during rollout
 - `alertRaised`
 
 The Angular dashboard shows:

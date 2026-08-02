@@ -27,6 +27,7 @@ implementation records.
 ## Development
 
 - [Future work plan](./development/future-plan.md)
+- [Arrival batching learning guide](./development/arrival-batching-learning-guide.md)
 - [API CORS configuration](./development/pi-cors.md)
 - [Custom-domain CORS incident record](./development/cors.md)
 - [Security and PII scan record](./development/security-pii.md)

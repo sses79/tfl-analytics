@@ -43,6 +43,9 @@ public sealed class SignalRServiceNotifier : IRealtimeNotifier
     public Task BroadcastLineStatusAsync(LineStatusChanged message, CancellationToken cancellationToken = default) =>
         SendAsync("lineStatusChanged", message, cancellationToken);
 
+    public Task BroadcastLineStatusesBatchAsync(LineStatusesBatchChanged message, CancellationToken cancellationToken = default) =>
+        SendAsync("lineStatusesBatchChanged", message, cancellationToken);
+
     public Task BroadcastAlertAsync(AlertRaised message, CancellationToken cancellationToken = default) =>
         SendAsync("alertRaised", message, cancellationToken);
 

@@ -88,6 +88,7 @@ public sealed class BlobRawEventArchive : IRawEventArchive
             EventTypes.ArrivalPredictionObserved => "arrival",
             EventTypes.ArrivalPredictionBatchObserved => "arrival-batch",
             EventTypes.LineStatusObserved => "line-status",
+            EventTypes.LineStatusBatchObserved => "line-status-batch",
             _ => throw new InvalidDataException(
                 $"Unsupported event type '{rawEvent.EventType}'.")
         };
@@ -95,7 +96,9 @@ public sealed class BlobRawEventArchive : IRawEventArchive
             ? $"stationId={Uri.EscapeDataString(rawEvent.StationId)}"
             : rawEvent.LineId is not null
                 ? $"lineId={Uri.EscapeDataString(rawEvent.LineId)}"
-                : "scope=all-stations";
+                : rawEvent.EventType == EventTypes.LineStatusBatchObserved
+                    ? "scope=all-lines"
+                    : "scope=all-stations";
 
         return string.Join(
             '/',

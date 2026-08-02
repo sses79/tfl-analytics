@@ -89,17 +89,22 @@ public sealed class ProcessQueuedEvent
             return _realtimeNotifier.BroadcastArrivalsAsync(arrivals[0], cancellationToken);
         }
 
-        if (result.Envelopes[0] is EventEnvelope<LineStatusObserved> status)
+        var statuses = result.Envelopes
+            .OfType<EventEnvelope<LineStatusObserved>>()
+            .Select(ToRealtimeLineStatus)
+            .ToArray();
+        if (statuses.Length > 1 || result.EventType == EventTypes.LineStatusBatchObserved)
         {
-            return _realtimeNotifier.BroadcastLineStatusAsync(
-                new LineStatusChanged(
-                    status.Payload.LineId,
-                    status.Payload.LineName,
-                    status.Payload.StatusSeverity,
-                    status.Payload.StatusSeverityDescription,
-                    status.Payload.Reason,
-                    status.ObservedAtUtc),
+            return _realtimeNotifier.BroadcastLineStatusesBatchAsync(
+                new LineStatusesBatchChanged(
+                    statuses,
+                    statuses.Max(item => item.ObservedAtUtc)),
                 cancellationToken);
+        }
+
+        if (statuses.Length == 1)
+        {
+            return _realtimeNotifier.BroadcastLineStatusAsync(statuses[0], cancellationToken);
         }
 
         return Task.CompletedTask;
@@ -118,4 +123,14 @@ public sealed class ProcessQueuedEvent
             arrival.Payload.ExpectedArrivalUtc,
             arrival.Payload.SecondsToStation,
             arrival.ObservedAtUtc);
+
+    private static LineStatusChanged ToRealtimeLineStatus(
+        EventEnvelope<LineStatusObserved> status) =>
+        new(
+            status.Payload.LineId,
+            status.Payload.LineName,
+            status.Payload.StatusSeverity,
+            status.Payload.StatusSeverityDescription,
+            status.Payload.Reason,
+            status.ObservedAtUtc);
 }

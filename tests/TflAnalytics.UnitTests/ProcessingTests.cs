@@ -90,6 +90,52 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public async Task ProcessesALineStatusBatchAsIndividualPersistenceOperations()
+    {
+        var status = new EventEnvelope<LineStatusObserved>(
+            "line-1",
+            EventTypes.LineStatusObserved,
+            "TfL",
+            ObservedAt,
+            null,
+            "victoria",
+            1,
+            new LineStatusObserved("victoria", "Victoria", 10, "Good Service", null));
+        var batch = new EventEnvelope<LineStatusBatchObserved>(
+            "line-batch-1",
+            EventTypes.LineStatusBatchObserved,
+            "TfL",
+            ObservedAt,
+            null,
+            null,
+            1,
+            new LineStatusBatchObserved(
+                [status, status with
+                {
+                    EventId = "line-2",
+                    LineId = "central",
+                    Payload = new LineStatusObserved(
+                        "central", "Central", 9, "Minor Delays", "Fixture disruption.")
+                }]));
+        var repository = new RecordingRepository();
+        var processor = new EventProcessor(
+            new RecordingArchive(JsonSerializer.Serialize(batch, SerializerOptions)),
+            repository,
+            new NoAlertDetector());
+
+        var result = await processor.ProcessAsync(
+            new ProcessingMessage(
+                "line-batch-1",
+                EventTypes.LineStatusBatchObserved,
+                "eventType=line-status-batch/line-batch-1.json.gz",
+                ObservedAt));
+
+        Assert.True(result.Created);
+        Assert.Equal(2, repository.LineStatuses.Count);
+        Assert.Equal(2, result.Envelopes.Count);
+    }
+
+    [Fact]
     public async Task ReportsDuplicateRepositoryConflictsWithoutFailing()
     {
         var repository = new RecordingRepository { CreateResult = false };

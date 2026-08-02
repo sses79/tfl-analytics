@@ -16,6 +16,10 @@ public interface IRealtimeNotifier
         LineStatusChanged message,
         CancellationToken cancellationToken = default);
 
+    Task BroadcastLineStatusesBatchAsync(
+        LineStatusesBatchChanged message,
+        CancellationToken cancellationToken = default);
+
     Task BroadcastAlertAsync(
         AlertRaised message,
         CancellationToken cancellationToken = default);
