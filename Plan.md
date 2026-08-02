@@ -6,8 +6,8 @@
 > (alerts use Table Storage and the SQL Bicep module was removed), and the
 > inactive local SQL implementation was removed. The **API image moved from
 > ACR to public GHCR** (2026-07-04). The post-demo development configuration
-> polls line status every 10 minutes; arrival ingestion and alert detection are
-> disabled. Authoritative current state:
+> polls line status every 10 minutes and arrivals every five minutes; alert
+> detection remains disabled. Authoritative current state:
 > `docs/deployment/azure-bicep.md`, `docs/history/cosmos-change-feed-migration.md`,
 > `docs/history/ghcr-image-migration.md`,
 > `docs/deployment/post-deployment-verification.md`.
@@ -134,7 +134,7 @@ flowchart LR
     KV[Azure Key Vault]
 
     subgraph Ingestion
-        TF[Timer Trigger Function<br/>Arrivals: disabled<br/>Status: 10 minutes]
+        TF[Timer Trigger Function<br/>Arrivals: 5 minutes<br/>Status: 10 minutes]
         RAW[Cosmos DB raw-events]
         CF[Cosmos change-feed trigger]
     end

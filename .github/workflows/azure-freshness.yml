@@ -1,0 +1,27 @@
+name: Azure freshness
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-freshness
+  cancel-in-progress: true
+
+jobs:
+  line-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      API_BASE_URL: https://ca-tfl-api-dev-nhkpyupi.livelypebble-dde4d540.uksouth.azurecontainerapps.io
+      EXPECTED_LINE_COUNT: "11"
+      MAXIMUM_EVENT_AGE_SECONDS: "1200"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify deployed line-status freshness
+        run: ./scripts/smoke-azure-event-flow.sh

@@ -173,44 +173,111 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
         CancellationToken cancellationToken = default)
     {
         await EnsureInitializedAsync(cancellationToken);
-        var query = new QueryDefinition(
-            "SELECT c.lineId, c.observedAtUtc, c.payload FROM c ORDER BY c.observedAtUtc DESC");
-
         var container = _cosmosClient.GetContainer(
             _options.DatabaseName,
             _options.LiveEventsContainerName);
-        using var iterator = container.GetItemQueryIterator<ArrivalQueryDocument>(
-            query,
+
+        using var latestObservationIterator = container.GetItemQueryIterator<DateTimeOffset>(
+            new QueryDefinition(
+                "SELECT TOP 1 VALUE c.observedAtUtc FROM c ORDER BY c.observedAtUtc DESC"),
             requestOptions: new QueryRequestOptions
             {
                 PartitionKey = new PartitionKey(stationId),
-                MaxItemCount = maxCount
+                MaxItemCount = 1
             });
 
-        var results = new List<ArrivalSummary>();
-        while (iterator.HasMoreResults && results.Count < maxCount)
+        if (!latestObservationIterator.HasMoreResults)
         {
-            var page = await iterator.ReadNextAsync(cancellationToken);
-            foreach (var doc in page)
-            {
-                results.Add(new ArrivalSummary(
-                    doc.LineId,
-                    doc.Payload.LineName,
-                    doc.Payload.DestinationName,
-                    doc.Payload.PlatformName,
-                    doc.Payload.Direction,
-                    doc.Payload.ExpectedArrivalUtc,
-                    doc.Payload.SecondsToStation,
-                    doc.ObservedAtUtc));
-
-                if (results.Count >= maxCount)
-                {
-                    break;
-                }
-            }
+            return [];
         }
 
-        return results;
+        var latestObservationPage = await latestObservationIterator.ReadNextAsync(cancellationToken);
+        if (latestObservationPage.Count == 0)
+        {
+            return [];
+        }
+
+        var latestObservedAtUtc = latestObservationPage.Resource.First();
+        var snapshotQuery = new QueryDefinition(
+                """
+                SELECT c.lineId, c.observedAtUtc, c.payload
+                FROM c
+                WHERE c.observedAtUtc = @observedAtUtc
+                """)
+            .WithParameter("@observedAtUtc", latestObservedAtUtc);
+        using var snapshotIterator = container.GetItemQueryIterator<ArrivalQueryDocument>(
+            snapshotQuery,
+            requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(stationId),
+                MaxItemCount = Math.Max(maxCount, 100)
+            });
+
+        var snapshot = new List<ArrivalQueryDocument>();
+        while (snapshotIterator.HasMoreResults)
+        {
+            var page = await snapshotIterator.ReadNextAsync(cancellationToken);
+            snapshot.AddRange(page.Resource);
+        }
+
+        return SelectLatestArrivalSnapshot(snapshot, maxCount);
+    }
+
+    internal static IReadOnlyList<ArrivalSummary> SelectLatestArrivalSnapshot(
+        IEnumerable<ArrivalQueryDocument> documents,
+        int maxCount)
+    {
+        if (maxCount <= 0)
+        {
+            return [];
+        }
+
+        var materialized = documents.ToArray();
+        if (materialized.Length == 0)
+        {
+            return [];
+        }
+
+        var latestObservedAtUtc = materialized.Max(document => document.ObservedAtUtc);
+        return materialized
+            .Where(document => document.ObservedAtUtc == latestObservedAtUtc)
+            .GroupBy(ArrivalIdentity, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group
+                .OrderBy(document => document.Payload.ExpectedArrivalUtc)
+                .ThenBy(document => document.Payload.SecondsToStation)
+                .First())
+            .OrderBy(document => document.Payload.ExpectedArrivalUtc)
+            .ThenBy(document => document.Payload.SecondsToStation)
+            .Take(maxCount)
+            .Select(document => new ArrivalSummary(
+                document.LineId,
+                document.Payload.LineName,
+                document.Payload.DestinationName,
+                document.Payload.PlatformName,
+                document.Payload.Direction,
+                document.Payload.ExpectedArrivalUtc,
+                document.Payload.SecondsToStation,
+                document.ObservedAtUtc))
+            .ToArray();
+    }
+
+    private static string ArrivalIdentity(ArrivalQueryDocument document)
+    {
+        if (!string.IsNullOrWhiteSpace(document.Payload.VehicleId))
+        {
+            return string.Join('|',
+                document.LineId,
+                document.Payload.VehicleId,
+                document.Payload.Direction,
+                document.Payload.DestinationName);
+        }
+
+        return string.Join('|',
+            document.LineId,
+            document.Payload.Direction,
+            document.Payload.DestinationName,
+            document.Payload.PlatformName,
+            document.Payload.ExpectedArrivalUtc);
     }
 
     public async Task<IReadOnlyList<LineStatusSummary>> GetCurrentLineStatusAsync(
@@ -364,7 +431,7 @@ public sealed class CosmosEventRepository : IEventRepository, IObservationHistor
         [property: JsonProperty("statusSeverity")] int StatusSeverity,
         [property: JsonProperty("statusSeverityDescription")] string StatusSeverityDescription);
 
-    private sealed record ArrivalQueryDocument(
+    internal sealed record ArrivalQueryDocument(
         [property: JsonProperty("lineId")] string LineId,
         [property: JsonProperty("observedAtUtc")] DateTimeOffset ObservedAtUtc,
         [property: JsonProperty("payload")] ArrivalPredictionObserved Payload);

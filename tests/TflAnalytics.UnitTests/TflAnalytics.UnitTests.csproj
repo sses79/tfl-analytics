@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\TflAnalytics.Application\TflAnalytics.Application.csproj" />
     <ProjectReference Include="..\..\src\TflAnalytics.Contracts\TflAnalytics.Contracts.csproj" />
     <ProjectReference Include="..\..\src\TflAnalytics.Infrastructure\TflAnalytics.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\TflAnalytics.Processing.Functions\TflAnalytics.Processing.Functions.csproj" />
   </ItemGroup>
 
 </Project>
