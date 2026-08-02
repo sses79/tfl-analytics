@@ -35,6 +35,7 @@ export class DashboardComponent implements OnInit {
   constructor() {
     effect(() => {
       const _ = this.signalR.lastLineStatusChange();
+      const batch = this.signalR.lastLineStatusesBatchChange();
       const __ = this.signalR.lastArrivalsUpdate();
       const ___ = this.signalR.lastArrivalsBatchUpdate();
       this.load();

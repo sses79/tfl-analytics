@@ -167,29 +167,30 @@ not on the arrival timer. `PollArrivals` uses `IngestionArrivalsSchedule` every
 five minutes, while `PollLineStatus` uses `IngestionLineStatusSchedule` every
 ten minutes.
 
-Today one line-status poll normally publishes about 11 raw events and 11
-`lineStatusChanged` invocations. A compatible design would add:
+The same pattern is now implemented in code for line status. One poll normally
+produces about 11 observations, which are carried by:
 
 ```text
 LineStatusBatchObserved
   -> individual LineStatusObserved inner envelopes
   -> individual line-status Cosmos persistence
-  -> one LineStatusesBatchChanged browser notification
+  -> one lineStatusesBatchChanged browser notification
 ```
 
-The same consumer-first deployment sequence should be used. The likely saving
+The same consumer-first deployment sequence must still be used before enabling
+the batch producer in Azure. The likely saving
 is smaller than arrivals because there are only about 11 items per ten-minute
 poll, but it would still reduce raw Cosmos, Blob, queue, Function, and SignalR
 operations. Measure the serialized batch first: disruption reasons can make a
 line-status payload larger than expected.
 
-Before implementation, add focused tests for:
+The ingestion and processing tests now cover one outer batch and individual
+persistence. Remaining focused coverage should prove:
 
-1. eleven statuses producing one outer batch;
-2. individual line persistence and deduplication;
-3. exactly one batch notifier call;
-4. the status page replacing all current statuses from one batch;
-5. legacy `lineStatusChanged` compatibility during rollout.
+1. exactly one batch notifier call;
+2. the status page replacing all current statuses from one batch;
+3. legacy `lineStatusChanged` compatibility during rollout;
+4. a controlled Azure WebSocket receipt after deployment.
 
 ## Try It
 

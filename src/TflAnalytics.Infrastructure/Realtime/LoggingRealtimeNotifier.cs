@@ -37,6 +37,14 @@ public sealed class LoggingRealtimeNotifier : IRealtimeNotifier
         return Task.CompletedTask;
     }
 
+    public Task BroadcastLineStatusesBatchAsync(LineStatusesBatchChanged message, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "SignalR broadcast (no-op): lineStatusesBatchChanged — {LineCount} lines.",
+            message.LineStatuses.Count);
+        return Task.CompletedTask;
+    }
+
     public Task BroadcastAlertAsync(AlertRaised message, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug(

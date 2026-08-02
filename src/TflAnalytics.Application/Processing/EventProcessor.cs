@@ -49,6 +49,8 @@ public sealed class EventProcessor : IEventProcessor
                 await CreateArrivalBatchAsync(json, cancellationToken),
             EventTypes.LineStatusObserved =>
                 await CreateLineStatusAsync(json, cancellationToken),
+            EventTypes.LineStatusBatchObserved =>
+                await CreateLineStatusBatchAsync(json, cancellationToken),
             _ => throw new InvalidDataException(
                 $"Unsupported event type '{rawEvent.EventType}'.")
         };
@@ -126,12 +128,7 @@ public sealed class EventProcessor : IEventProcessor
     {
         var envelope = Deserialize<LineStatusObserved>(json);
 
-        if (string.IsNullOrWhiteSpace(envelope.LineId)
-            || envelope.LineId != envelope.Payload.LineId)
-        {
-            throw new InvalidDataException(
-                "Line-status event line metadata is missing or inconsistent.");
-        }
+        ValidateLineStatus(envelope);
 
         var created = await _repository.CreateLineStatusAsync(
             envelope,
@@ -150,6 +147,40 @@ public sealed class EventProcessor : IEventProcessor
             [envelope]);
     }
 
+    private async Task<EventCreationResult> CreateLineStatusBatchAsync(
+        string json,
+        CancellationToken cancellationToken)
+    {
+        var batch = Deserialize<LineStatusBatchObserved>(json);
+        if (batch.Payload.LineStatuses.Count == 0)
+        {
+            throw new InvalidDataException("Line-status batch must contain at least one observation.");
+        }
+
+        var alerts = new List<AlertCandidate>();
+        var statuses = new List<object>(batch.Payload.LineStatuses.Count);
+        var anyCreated = false;
+
+        foreach (var envelope in batch.Payload.LineStatuses)
+        {
+            ValidateLineStatus(envelope);
+            statuses.Add(envelope);
+            if (!await _repository.CreateLineStatusAsync(envelope, cancellationToken))
+            {
+                continue;
+            }
+
+            anyCreated = true;
+            var alert = await _alertDetector.DetectLineStatusAsync(envelope, cancellationToken);
+            if (alert is not null)
+            {
+                alerts.Add(alert);
+            }
+        }
+
+        return new EventCreationResult(anyCreated, alerts, anyCreated ? statuses : []);
+    }
+
     private static void ValidateArrival(EventEnvelope<ArrivalPredictionObserved> envelope)
     {
         if (envelope.EventType != EventTypes.ArrivalPredictionObserved
@@ -158,6 +189,17 @@ public sealed class EventProcessor : IEventProcessor
         {
             throw new InvalidDataException(
                 "Arrival event station metadata is missing or inconsistent.");
+        }
+    }
+
+    private static void ValidateLineStatus(EventEnvelope<LineStatusObserved> envelope)
+    {
+        if (envelope.EventType != EventTypes.LineStatusObserved
+            || string.IsNullOrWhiteSpace(envelope.LineId)
+            || envelope.LineId != envelope.Payload.LineId)
+        {
+            throw new InvalidDataException(
+                "Line-status event line metadata is missing or inconsistent.");
         }
     }
 

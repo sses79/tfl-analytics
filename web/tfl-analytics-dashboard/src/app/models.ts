@@ -72,6 +72,11 @@ export interface LineStatusChanged {
   observedAtUtc: string;
 }
 
+export interface LineStatusesBatchChanged {
+  lineStatuses: LineStatusChanged[];
+  observedAtUtc: string;
+}
+
 export interface AlertRaised {
   alertId: string;
   ruleType: string;

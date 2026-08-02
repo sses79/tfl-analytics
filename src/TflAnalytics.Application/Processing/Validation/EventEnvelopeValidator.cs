@@ -25,7 +25,8 @@ internal static class EventEnvelopeValidator
 
         if (eventType != EventTypes.ArrivalPredictionObserved
             && eventType != EventTypes.ArrivalPredictionBatchObserved
-            && eventType != EventTypes.LineStatusObserved)
+            && eventType != EventTypes.LineStatusObserved
+            && eventType != EventTypes.LineStatusBatchObserved)
         {
             throw new InvalidDataException($"Unsupported event type '{eventType}'.");
         }

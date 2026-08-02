@@ -74,6 +74,10 @@ if (app.Environment.IsDevelopment())
         (LineStatusChanged message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
             notifier.BroadcastLineStatusAsync(message, cancellationToken));
     app.MapPost(
+        "/internal/realtime/line-status-batch",
+        (LineStatusesBatchChanged message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
+            notifier.BroadcastLineStatusesBatchAsync(message, cancellationToken));
+    app.MapPost(
         "/internal/realtime/alerts",
         (AlertRaised message, IRealtimeNotifier notifier, CancellationToken cancellationToken) =>
             notifier.BroadcastAlertAsync(message, cancellationToken));

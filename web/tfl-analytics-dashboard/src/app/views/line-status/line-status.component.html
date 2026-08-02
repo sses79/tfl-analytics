@@ -26,7 +26,7 @@
 
 <app-data-flow-explainer
   title="Line status event flow"
-  description="Every ten minutes, the ingestion Function publishes TfL line observations to the Cosmos DB raw-events container. A checkpointed change-feed trigger archives and queues each event; processing then updates the line-status container, which the API returns here and SignalR refreshes when a status changes."
+  description="Every ten minutes, the ingestion Function publishes one batch of TfL line observations to the Cosmos DB raw-events container. A checkpointed change-feed trigger archives and queues the batch; processing persists each current line status, then SignalR refreshes this page with one batch update."
   eventType="LineStatusObserved"
   [steps]="flowSteps"
 />
