@@ -30,9 +30,9 @@ batching is deployed: each five-minute poll publishes one raw
 batch, persists its observations individually, and emits one
 `arrivalsBatchUpdated` notification after persistence. A controlled Azure pull
 on August 2 delivered 161 persisted observations in one live SignalR invocation.
-The equivalent line-status batching path is implemented in code and retains the
-legacy single-line contract for rollout compatibility; Azure deployment and a
-controlled `lineStatusesBatchChanged` receipt remain outstanding.
+The equivalent line-status batching path is deployed and retains the legacy
+single-line contract for rollout compatibility. A controlled Azure pull on
+August 2 delivered all 11 lines in one `lineStatusesBatchChanged` invocation.
 Processed `line-status` and `live-events` observations retain 24 hours of
 history; transient `raw-events` retains four hours and the Blob archive remains
 the durable raw record.

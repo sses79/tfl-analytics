@@ -20,13 +20,30 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | August 2, 2026 |
-| Git commit | `5544012` via PR #41; merged to `main` as `9086df8` |
-| Change | Batch each five-minute arrival poll into one raw event and one SignalR invocation while retaining individual Cosmos persistence |
-| Provisioning state | `Succeeded` — processing Function, Static Web App, then ingestion Function deployed; ingestion zip deployment id `9d0669fa-e137-4862-a7c8-bf5f9ae97a0c` |
+| Git commit | `829bc4c` via PR #42; merged to `main` as `adfe425c` |
+| Change | Batch each ten-minute line-status poll into one raw event and one SignalR invocation while retaining individual Cosmos persistence |
+| Provisioning state | `Succeeded` — processing Function, Static Web App, then ingestion Function deployed; ingestion zip deployment id `649a6add-8127-4a1c-abcd-1ab55affa609` |
 | Scope | Code-only rollout; retained `Arrival__Enabled=true`, `Alerts__Enabled=false`, existing schedules, SKUs, telemetry cap, and TTLs |
-| Cost impact | No resource or SKU changed. A controlled 161-arrival poll fell from 161 application broadcasts to one 58,156-byte invocation. Azure meters outbound payloads in 2-KB units, so this sample is approximately 29 billable message units per connected client rather than 161, an estimated 82% reduction rather than a literal single billed message |
+| Cost impact | No resource or SKU changed. A controlled 11-line poll fell from 11 application broadcasts to one 2,925-byte invocation. Azure meters outbound payloads in 2-KB units, so this sample is approximately two billable message units per connected client rather than 11, an estimated 82% reduction rather than a literal single billed message |
 
 Latest verification evidence:
+
+- Required Bicep compilation and full resource-group `what-if` succeeded before
+  the line-status batch rollout. It proposed no new service or SKU but repeated
+  known metadata/platform drift, so no ARM deployment was applied.
+- Processing, dashboard, then ingestion were deployed in consumer-first order.
+  Both Function health endpoints were healthy and Azure indexed all expected
+  Functions. The Static Web App production environment reached `Ready`; both
+  its default hostname and `demo.ti5g.com` serve `main-3D4S4N6J.js` with shared
+  bundle `chunk-5IC4ZMT3.js`, which contains legacy `lineStatusChanged` and new
+  `lineStatusesBatchChanged` handlers.
+- A real Azure SignalR protocol client was connected before a controlled pull.
+  The pull returned 164 arrivals and 11 line statuses. The client received one
+  `lineStatusesBatchChanged` invocation containing all 11 configured line IDs,
+  including `waterloo-city`, at
+  `observedAtUtc=2026-08-02T12:54:16.0861992Z`; its JSON payload was 2,925 bytes.
+- The standard event-flow smoke passed with 11 lines, `waterloo-city`, the same
+  `lastEventUtc`, and an event age of 130 seconds. The alerts API remained empty.
 
 - Required Bicep compilation and full resource-group `what-if` succeeded before
   deployment. It proposed no new service or SKU, but reported existing
