@@ -8,7 +8,9 @@ import {
   DashboardSummary,
   DepartureBoard,
   LineStatusSummary,
+  JourneyPlan,
   StationSummary,
+  StopPointSearchResult,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +38,24 @@ export class ApiService {
       `${this.base}/api/stations/${stationId}/departure-board`,
       destinationStationId ? { params: { destinationStationId } } : {}
     );
+  }
+
+  getJourneys(
+    stationId: string,
+    destinationStationId: string,
+    preference: string,
+    accessibility: string[]
+  ): Observable<JourneyPlan> {
+    return this.http.get<JourneyPlan>(
+      `${this.base}/api/stations/${stationId}/journeys/${destinationStationId}`,
+      { params: { preference, accessibility } }
+    );
+  }
+
+  searchStations(query: string): Observable<StopPointSearchResult> {
+    return this.http.get<StopPointSearchResult>(`${this.base}/api/stations/search`, {
+      params: { query }
+    });
   }
 
   getLineStatus(): Observable<LineStatusSummary[]> {

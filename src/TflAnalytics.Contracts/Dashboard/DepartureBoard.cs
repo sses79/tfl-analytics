@@ -7,7 +7,8 @@ public sealed record DepartureBoard(
     bool IsStale,
     IReadOnlyList<DestinationOption> Destinations,
     IReadOnlyList<RouteRecommendation> Recommendations,
-    IReadOnlyList<PlatformDepartureBoard> Platforms);
+    IReadOnlyList<PlatformDepartureBoard> Platforms,
+    IReadOnlyList<PassengerDisruption> Disruptions);
 
 public sealed record DestinationOption(
     string StationId,
@@ -41,7 +42,10 @@ public sealed record PassengerTrain(
     int SecondsToStation,
     DateTimeOffset ObservedAtUtc,
     bool? ServesSelectedDestination,
-    int? StopsUntilDestination);
+    int? StopsUntilDestination,
+    string PredictionState,
+    string? EstimatedStationId,
+    string PredictionStateLabel);
 
 public sealed record RouteStation(
     string StationId,
@@ -49,3 +53,10 @@ public sealed record RouteStation(
     int Sequence,
     bool IsOrigin,
     bool IsDestination);
+
+public sealed record PassengerDisruption(
+    string LineId,
+    string LineName,
+    string Status,
+    string? Reason,
+    DateTimeOffset ObservedAtUtc);

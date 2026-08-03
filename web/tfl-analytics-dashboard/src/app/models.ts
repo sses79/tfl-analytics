@@ -29,6 +29,7 @@ export interface DepartureBoard {
   destinations: DestinationOption[];
   recommendations: RouteRecommendation[];
   platforms: PlatformDepartureBoard[];
+  disruptions: PassengerDisruption[];
 }
 
 export interface DestinationOption {
@@ -75,6 +76,36 @@ export interface PassengerTrain {
   observedAtUtc: string;
   servesSelectedDestination: boolean | null;
   stopsUntilDestination: number | null;
+  predictionState: 'unknown' | 'betweenStations' | 'approachingStation' | 'atPlatform';
+  estimatedStationId: string | null;
+  predictionStateLabel: string;
+}
+
+export interface PassengerDisruption {
+  lineId: string;
+  lineName: string;
+  status: string;
+  reason: string | null;
+  observedAtUtc: string;
+}
+
+export interface JourneyPlan { journeys: Journey[]; }
+export interface StopPointSearchResult { matches: StopPointSearchMatch[]; }
+export interface StopPointSearchMatch { id: string; name: string; modes: string[] | null; }
+export interface Journey {
+  duration: number;
+  startDateTime: string | null;
+  arrivalDateTime: string | null;
+  legs: JourneyLeg[];
+}
+export interface JourneyLeg {
+  duration: number;
+  departurePoint: { naptanId: string | null; commonName: string | null } | null;
+  arrivalPoint: { naptanId: string | null; commonName: string | null } | null;
+  instruction: { summary: string | null; detailed: string | null } | null;
+  mode: { id: string | null; name: string | null } | null;
+  routeOptions: { name: string | null; directions: string[] | null }[] | null;
+  disruptions: { category: string | null; description: string | null }[] | null;
 }
 
 export interface LineStatusSummary {

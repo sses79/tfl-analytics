@@ -41,6 +41,16 @@ public sealed class TflApiClient : ITflApiClient
             cancellationToken);
     }
 
+    public Task<StopPointSearchResult> SearchStopPointsAsync(
+        string query,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedQuery = RequireId(query, nameof(query));
+        return GetAsync<StopPointSearchResult>(
+            $"StopPoint/Search/{Uri.EscapeDataString(normalizedQuery)}?modes=tube%2Cdlr%2Coverground%2Celizabeth-line&includeHubs=true",
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Line>> GetLineStatusAsync(
         IEnumerable<string> lineIds,
         CancellationToken cancellationToken = default)
@@ -69,6 +79,42 @@ public sealed class TflApiClient : ITflApiClient
             $"Line/{Uri.EscapeDataString(normalizedLineId)}/Route/Sequence/all?excludeCrowding=true",
             cancellationToken);
     }
+
+    public Task<JourneyPlan> GetJourneyPlanAsync(
+        string fromStationId,
+        string toStationId,
+        string journeyPreference,
+        IReadOnlyList<string> accessibilityPreferences,
+        CancellationToken cancellationToken = default)
+    {
+        var from = RequireId(fromStationId, nameof(fromStationId));
+        var to = RequireId(toStationId, nameof(toStationId));
+        var preference = journeyPreference switch
+        {
+            "leasttime" or "leastwalking" or "leastinterchange" => journeyPreference,
+            _ => "leastinterchange"
+        };
+        var query = new List<string>
+        {
+            "mode=tube%2Cdlr%2Coverground%2Celizabeth-line%2Cwalking",
+            $"journeyPreference={preference}",
+            "useRealTimeLiveArrivals=true",
+            "includeAlternativeRoutes=true",
+            "applyHtmlMarkup=false"
+        };
+        query.AddRange(accessibilityPreferences
+            .Where(IsSupportedAccessibilityPreference)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(value => $"accessibilityPreference={Uri.EscapeDataString(value)}"));
+
+        return GetAsync<JourneyPlan>(
+            $"Journey/JourneyResults/{Uri.EscapeDataString(from)}/to/{Uri.EscapeDataString(to)}?{string.Join('&', query)}",
+            cancellationToken);
+    }
+
+    private static bool IsSupportedAccessibilityPreference(string value) =>
+        value is "noSolidStairs" or "noEscalators" or "noElevators"
+            or "stepFreeToVehicle" or "stepFreeToPlatform";
 
     private async Task<T> GetAsync<T>(string path, CancellationToken cancellationToken)
     {

@@ -31,7 +31,7 @@ export RESOURCE_GROUP="${RESOURCE_GROUP:-rg-tfl-analytics-dev-uk-south}"
 if [[ -z "${DEPLOYMENT:-}" ]]; then
   DEPLOYMENT="$(az deployment group list \
     --resource-group "$RESOURCE_GROUP" \
-    --query "sort_by([?properties.provisioningState=='Succeeded' && properties.outputs.storageAccountName.value != null], &properties.timestamp)[-1].name" \
+    --query "sort_by([?properties.provisioningState=='Succeeded' && properties.outputs.storageAccountName.value != null && properties.outputs.ingestionFunctionAppName.value != null && properties.outputs.processingFunctionAppName.value != null && properties.outputs.apiAppHostname.value != null], &properties.timestamp)[-1].name" \
     --output tsv)"
 fi
 

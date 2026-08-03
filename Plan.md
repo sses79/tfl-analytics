@@ -89,6 +89,11 @@ line-status, arrivals, and alert views backed by Cosmos DB and Table Storage que
 endpoints. Processing Functions publish arrival, line-status, and alert
 notifications through Azure SignalR Service.
 
+The passenger departure-board extension was added in August 2026. Phase 5A is
+deployed; Phase 5B discrete train-state and disruption context plus Phase 5C
+TfL Journey Planner alternatives, interchanges, and accessibility preferences
+are implemented locally pending deployment verification.
+
 Remaining Phase 5 validation:
 
 - Line-status SignalR publication has controlled Azure protocol-client evidence.

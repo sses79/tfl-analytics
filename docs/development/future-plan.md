@@ -177,7 +177,7 @@ complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: active — Phase 5A deployed and verified August 2, 2026**
+**Status: active — Phase 5A deployed; Phase 5B and 5C implemented locally August 3, 2026**
 
 Implemented and deployed:
 
@@ -196,6 +196,8 @@ Implemented and deployed:
   countdowns, platform boards, train-location text, suitability labels, and a
   clearly stated prediction-not-GPS limitation.
 - SignalR arrival batches refresh the selected departure board through the API.
+- Operators can enable one-minute arrival polling for up to ten minutes; durable
+  expiry restores the five-minute default automatically.
 
 Deployment evidence: Victoria to King's Cross produced the correct Victoria
 line outbound recommendation, Northbound Platform 3, Walthamstow direction,
@@ -205,10 +207,9 @@ passenger board bundle.
 
 Remaining before Phase 5 completion:
 
-- implement the time-limited one-minute demo polling boost below;
-- map `currentLocation` onto the station strip as a discrete estimated train
-  position rather than text only;
-- add disruption context and complete deployed browser evidence.
+- deploy Phase 5B and 5C and capture browser evidence against live TfL data;
+- verify Journey Planner responses for a route requiring an interchange and for
+  a step-free preference.
 
 ### Product goal
 
@@ -336,7 +337,7 @@ and storage; do not add an Azure service unless measurements justify it.
 
 ### Time-limited demo polling boost
 
-**Status: implemented locally — August 2, 2026; deployment pending**
+**Status: complete and deployed — August 2, 2026**
 
 Keep the normal arrival persistence schedule at five minutes. For demonstrations,
 allow an operator to enable one-minute arrival polling for a maximum of ten
@@ -392,16 +393,27 @@ Demo-boost acceptance criteria:
 
 #### 5B — Station sequence and train state
 
+**Status: implemented locally — August 3, 2026; deployment pending**
+
 - Add the ordered station strip and stops remaining.
 - Map `currentLocation` to discrete station/approaching/at-platform states.
 - Add disruption context without re-enabling the alert workflow.
 - Clearly label estimated movement and stale data.
 
-#### 5C — Journey planning, deferred
+#### 5C — Journey planning
+
+**Status: implemented locally — August 3, 2026; deployment pending**
 
 - Add interchanges, alternatives, accessibility preferences, and
   disruption-aware routing through TfL's Journey API rather than building a
   complete routing engine in this repository.
+
+The implementation proxies typed TfL Journey Planner results through the API,
+supports least-time, least-walking, and least-interchange preferences plus a
+step-free-to-platform option, surfaces per-leg disruption detail, and caches
+identical requests for one minute to bound upstream traffic. Passengers can
+search TfL stations beyond the direct-route list; station-search results are
+cached for 24 hours.
 
 ### Success criteria for 5A
 

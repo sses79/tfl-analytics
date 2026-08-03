@@ -20,13 +20,44 @@ Update this section after every deployment.
 | Field | Latest verified value |
 |---|---|
 | Date | August 2, 2026 |
-| Git commit | `e03f8e9` via PR #45; merged to `main` as `436bac8e3238510e4d8842dbee4251eb0ae3569e` |
-| Change | Phase 5A passenger departure board: enriched predictions, cached TfL route topology, direct-route matching, passenger API, and Angular board |
-| Provisioning state | `Succeeded` — Container App revision `ca-tfl-api-dev-nhkpyupi--0000015`; ingestion zip `551bd104-8252-49b0-9b72-1773343b4dfa`; processing zip `1a5a1e7f-1b60-4091-99c4-8da859371d84`; Static Web App production deployment succeeded |
-| Scope | Scoped code rollout after full Bicep validation/what-if; retained schedules, `Arrival__Enabled=true`, `Alerts__Enabled=false`, existing SKUs, telemetry cap, and TTLs |
-| Cost impact | No resource, SKU, schedule, or capacity changed. Incremental traffic is limited to cached TfL route-sequence requests, at most once per active line per API replica every 24 hours, plus normal passenger API reads |
+| Git commit | `9d5effb` via PR #46; merged to `main` as `290b8c9b3656c606ee9a14aa578591dbadb86585` |
+| Change | Time-limited arrival demo polling: one-minute timer evaluation, five-minute default policy, protected ten-minute boost, and durable expiry |
+| Provisioning state | `Succeeded` — storage deployment `demo-polling-storage-20260802`; Container App revision `ca-tfl-api-dev-nhkpyupi--0000016`; ingestion zip `913dac21-d4c9-4ed1-8248-dab4427fb6fc`; processing zip `4fe45a5f-d2e7-436b-8ced-e75dab1d7b8a` |
+| Scope | Added private `runtime-control` Blob container and three ingestion settings; deployed merged API and Function packages; retained `Arrival__Enabled=true`, `Alerts__Enabled=false`, line-status schedule, SKUs, telemetry cap, and TTLs |
+| Cost impact | No service, SKU, throughput, or capacity changed. Baseline adds approximately 34,560 short timer evaluations and Blob reads per month; expected cost is pennies and remains within current Function execution allowance based on measured workload |
 
 Latest verification evidence:
+
+- PR #46 passed backend, dashboard, infrastructure, dependency, and full-history
+  secret checks. GHCR workflow run `30768753258` published immutable image
+  `290b8c9b3656c606ee9a14aa578591dbadb86585`; Container App revision
+  `ca-tfl-api-dev-nhkpyupi--0000016` runs that image with provisioning
+  `Succeeded`.
+- Root Bicep compilation and ARM validation passed. Azure returned an internal
+  service error for the full root `what-if` (tracking ID
+  `4f5a6860-6bb8-4eee-a91b-6ad766d6e207`). The targeted storage preview proposed
+  exactly one create, `runtime-control`, with no deletion or SKU change, so the
+  deployment used that narrow module plus scoped ingestion app-setting updates.
+- Live settings report `IngestionArrivalsSchedule=0 * * * * *`, storage account
+  `sttflnhkpyupi`, and control container `runtime-control`. The private container
+  exists, and Azure indexed `EnableArrivalDemoPolling` plus
+  `GetArrivalDemoPollingStatus` alongside the existing ingestion Functions.
+- A protected activation at `2026-08-02T22:02:14.7605103Z` returned a fixed
+  expiry of `22:12:14.7605103Z`. The passenger page visibly updated each minute;
+  API evidence advanced on off-boundary minutes including `22:04`, `22:06`,
+  `22:11`, and `22:12`.
+- At `22:12:38Z`, protected status returned `enabled=false`, interval five, and
+  reason `baseline-skip`. The latest snapshot stayed at `22:12` throughout
+  minutes 13 and 14, then advanced at the normal `22:15` boundary. This proves
+  both automatic expiry and restoration of the five-minute default without an
+  operator action or host restart.
+- Both Function health endpoints returned healthy. The final standard event-flow
+  smoke passed with 11 lines, Waterloo & City, and event age 420 seconds against
+  the 1,200-second limit. Alerts remained disabled.
+- The targeted storage deployment became the newest successful ARM deployment
+  but intentionally lacks application outputs. `load-azure-outputs.sh` now
+  selects only a deployment containing storage, API, ingestion, and processing
+  outputs, preventing future package scripts from choosing partial deployments.
 
 - Bicep compilation, ARM validation, and full resource-group `what-if` passed.
   The preview created or deleted no resource and changed no SKU, but repeated

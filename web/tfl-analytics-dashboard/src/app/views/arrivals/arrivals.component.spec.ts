@@ -21,6 +21,7 @@ describe('ArrivalsComponent', () => {
         { stationId: '940GZZLUKSX', stationName: "King's Cross", sequence: 5, isOrigin: false, isDestination: true }
       ]
     }],
+    disruptions: [{ lineId: 'victoria', lineName: 'Victoria', status: 'Minor Delays', reason: 'Signal failure', observedAtUtc: '2026-08-02T12:00:00Z' }],
     platforms: [{
       lineId: 'victoria', lineName: 'Victoria', direction: 'inbound',
       platformName: 'Northbound - Platform 3',
@@ -30,7 +31,8 @@ describe('ArrivalsComponent', () => {
         towards: 'Walthamstow Central', currentLocation: 'Approaching Victoria',
         expectedArrivalUtc: '2026-08-02T12:02:00Z', secondsToStation: 120,
         observedAtUtc: '2026-08-02T12:00:00Z', servesSelectedDestination: true,
-        stopsUntilDestination: 5
+        stopsUntilDestination: 5, predictionState: 'approachingStation',
+        estimatedStationId: '940GZZLUVIC', predictionStateLabel: 'Approaching Victoria'
       }]
     }]
   };
@@ -38,7 +40,12 @@ describe('ArrivalsComponent', () => {
   beforeEach(async () => {
     const api = {
       getStations: vi.fn(() => of([{ stationId: board.stationId, name: board.stationName }])),
-      getDepartureBoard: vi.fn(() => of(board))
+      getDepartureBoard: vi.fn(() => of(board)),
+      searchStations: vi.fn(() => of({ matches: [] })),
+      getJourneys: vi.fn(() => of({ journeys: [{ duration: 18, startDateTime: null, arrivalDateTime: null, legs: [
+        { duration: 18, departurePoint: null, arrivalPoint: null, instruction: { summary: 'Take the Victoria line', detailed: null }, mode: { id: 'tube', name: 'tube' }, routeOptions: [], disruptions: [] }
+      ] }]
+      }))
     };
     const realtime = { lastArrivalsBatchUpdate: signal(null) };
 
@@ -72,5 +79,7 @@ describe('ArrivalsComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.recommendation-card')?.textContent).toContain('5 stops');
     expect(element.querySelector('.train-row__decision--yes')?.textContent).toContain('Board this train');
+    expect(element.querySelector('.journey-card')?.textContent).toContain('Take the Victoria line');
+    expect(element.querySelector('.train-position')).not.toBeNull();
   });
 });

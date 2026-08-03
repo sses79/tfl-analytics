@@ -60,6 +60,18 @@ public sealed class DepartureBoardService : IDepartureBoardService
             ? (DateTimeOffset?)null
             : arrivals.Max(arrival => arrival.ObservedAtUtc);
 
+        var currentLineStatus = await _repository.GetCurrentLineStatusAsync(cancellationToken);
+        var disruptions = currentLineStatus
+            .Where(status => lineIds.Contains(status.LineId, StringComparer.OrdinalIgnoreCase))
+            .Where(status => status.StatusSeverity != 10)
+            .Select(status => new PassengerDisruption(
+                status.LineId,
+                status.LineName,
+                status.StatusSeverityDescription,
+                status.Reason,
+                status.ObservedAtUtc))
+            .ToArray();
+
         return new DepartureBoard(
             stationId,
             arrivals.FirstOrDefault()?.StationName,
@@ -68,7 +80,8 @@ public sealed class DepartureBoardService : IDepartureBoardService
                 || _timeProvider.GetUtcNow() - observedAtUtc.Value > StaleAfter,
             destinations,
             recommendations,
-            platforms);
+            platforms,
+            disruptions);
     }
 
     private static IReadOnlyList<DestinationOption> BuildDestinations(
@@ -180,6 +193,7 @@ public sealed class DepartureBoardService : IDepartureBoardService
                     && TrainReachesDestination(arrival, candidate));
         }
 
+        var state = ResolvePredictionState(arrival, branches);
         return new PassengerTrain(
             arrival.PredictionId,
             arrival.VehicleId,
@@ -191,8 +205,47 @@ public sealed class DepartureBoardService : IDepartureBoardService
             arrival.SecondsToStation,
             arrival.ObservedAtUtc,
             selectedDestinationStationId is null ? null : match is not null,
-            match?.Stops);
+            match?.Stops,
+            state.State,
+            state.StationId,
+            state.Label);
     }
+
+    private static ResolvedTrainState ResolvePredictionState(
+        ArrivalSummary arrival,
+        IEnumerable<StopPointSequence> branches)
+    {
+        var location = arrival.CurrentLocation?.Trim();
+        if (string.IsNullOrWhiteSpace(location))
+        {
+            return new("unknown", null, "Location not reported");
+        }
+
+        var state = location.Contains("At Platform", StringComparison.OrdinalIgnoreCase)
+            ? "atPlatform"
+            : location.Contains("Approaching", StringComparison.OrdinalIgnoreCase)
+                ? "approachingStation"
+                : "betweenStations";
+        var stops = branches
+            .Where(branch => string.Equals(branch.LineId, arrival.LineId, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(branch => branch.StopPoint)
+            .DistinctBy(StationId, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(stop => stop.Name.Length);
+        var stop = stops.FirstOrDefault(candidate =>
+            location.Contains(NormalizeStationName(candidate.Name), StringComparison.OrdinalIgnoreCase));
+
+        var estimatedStationId = stop is null ? null : StationId(stop);
+        if (estimatedStationId is null && state == "atPlatform")
+        {
+            estimatedStationId = arrival.StationId;
+        }
+
+        return new(state, estimatedStationId, location);
+    }
+
+    private static string NormalizeStationName(string name) =>
+        name.Replace(" Underground Station", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace(" Station", string.Empty, StringComparison.OrdinalIgnoreCase);
 
     private static bool TrainReachesDestination(ArrivalSummary arrival, RouteMatch match)
     {
@@ -256,4 +309,9 @@ public sealed class DepartureBoardService : IDepartureBoardService
         int OriginIndex,
         int DestinationIndex,
         int Stops);
+
+    private sealed record ResolvedTrainState(
+        string State,
+        string? StationId,
+        string Label);
 }

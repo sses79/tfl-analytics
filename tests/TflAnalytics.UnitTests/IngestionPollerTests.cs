@@ -224,5 +224,18 @@ public sealed class IngestionPollerTests
             string lineId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new RouteSequence(lineId, lineId, "all", []));
+
+        public Task<JourneyPlan> GetJourneyPlanAsync(
+            string fromStationId,
+            string toStationId,
+            string journeyPreference,
+            IReadOnlyList<string> accessibilityPreferences,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new JourneyPlan([]));
+
+        public Task<StopPointSearchResult> SearchStopPointsAsync(
+            string query,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new StopPointSearchResult([]));
     }
 }
