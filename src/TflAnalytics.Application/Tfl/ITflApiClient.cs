@@ -12,11 +12,22 @@ public interface ITflApiClient
         string stationId,
         CancellationToken cancellationToken = default);
 
+    Task<StopPointSearchResult> SearchStopPointsAsync(
+        string query,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Line>> GetLineStatusAsync(
         IEnumerable<string> lineIds,
         CancellationToken cancellationToken = default);
 
     Task<RouteSequence> GetRouteSequenceAsync(
         string lineId,
+        CancellationToken cancellationToken = default);
+
+    Task<JourneyPlan> GetJourneyPlanAsync(
+        string fromStationId,
+        string toStationId,
+        string journeyPreference,
+        IReadOnlyList<string> accessibilityPreferences,
         CancellationToken cancellationToken = default);
 }

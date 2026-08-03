@@ -27,9 +27,24 @@
       @for (destination of board()?.destinations ?? []; track destination.stationId) {
         <option [value]="destination.stationId">{{ destination.stationName }}</option>
       }
+      @if (searchedDestination(); as destination) {
+        <option [value]="destination.id">{{ destination.name }}</option>
+      }
     </select>
+    <div class="destination-search">
+      <input type="search" placeholder="Search any TfL station" aria-label="Search any TfL destination"
+        [value]="destinationQuery()" (input)="destinationQuery.set($any($event.target).value)" (keyup.enter)="searchDestinations()">
+      <button type="button" (click)="searchDestinations()">Search</button>
+    </div>
+    @if (destinationMatches().length > 0) {
+      <ul class="destination-matches">
+        @for (match of destinationMatches(); track match.id) {
+          <li><button type="button" (click)="selectSearchedDestination(match)">{{ match.name }}</button></li>
+        }
+      </ul>
+    }
   </div>
-  <button type="button" (click)="loadBoard()" [disabled]="loading()">Refresh board</button>
+  <button class="refresh-button" type="button" (click)="loadBoard()" [disabled]="loading()">Refresh board</button>
 </div>
 
 @if (error()) {
@@ -51,7 +66,12 @@
           <ol class="station-strip" aria-label="Direct station sequence">
             @for (station of route.stations; track station.stationId) {
               <li [class.station-strip__destination]="station.isDestination">
-                <span class="station-strip__marker"></span>{{ station.stationName }}
+                <span class="station-strip__marker"></span>
+                @for (train of trainsAtStation(route, station.stationId); track train.predictionId ?? train.vehicleId) {
+                  <span class="train-position" [class.train-position--platform]="train.predictionState === 'atPlatform'"
+                    [attr.title]="train.predictionStateLabel" aria-label="Estimated train: {{ train.predictionStateLabel }}">▰</span>
+                }
+                {{ station.stationName }}
               </li>
             }
           </ol>
@@ -61,6 +81,50 @@
   </section>
 } @else if (selectedDestination()) {
   <div class="advice-banner">No direct route was found in the current TfL route topology. Choose another destination or plan an interchange journey separately.</div>
+}
+
+@if ((board()?.disruptions?.length ?? 0) > 0) {
+  <section class="disruptions" aria-labelledby="disruption-title">
+    <h3 id="disruption-title">Service information for this board</h3>
+    @for (disruption of board()?.disruptions ?? []; track disruption.lineId) {
+      <div><strong>{{ disruption.lineName }} — {{ disruption.status }}</strong><span>{{ disruption.reason ?? 'Check TfL for details.' }}</span></div>
+    }
+  </section>
+}
+
+@if (selectedDestination()) {
+  <section class="journey-planner" aria-labelledby="journey-title">
+    <div class="journey-planner__heading">
+      <div><p class="eyebrow">TfL Journey Planner</p><h3 id="journey-title">Alternatives and interchanges</h3></div>
+      <div class="journey-options">
+        <label>Preference
+          <select [value]="journeyPreference()" (change)="onJourneyPreferenceChange($any($event.target).value)">
+            <option value="leastinterchange">Fewer changes</option>
+            <option value="leasttime">Fastest</option>
+            <option value="leastwalking">Less walking</option>
+          </select>
+        </label>
+        <label class="check-option"><input type="checkbox" [checked]="stepFree()" (change)="onStepFreeChange($any($event.target).checked)"> Step-free to platform</label>
+      </div>
+    </div>
+    @if (journeyLoading()) { <p>Finding current journeys…</p> }
+    <div class="journey-results">
+      @for (journey of journeyPlan()?.journeys ?? []; track $index) {
+        <article class="journey-card">
+          <header><strong>{{ journey.duration }} min</strong><span>{{ journeyChanges(journey.legs) }} change(s)</span></header>
+          <ol>
+            @for (leg of journey.legs; track $index) {
+              <li><strong>{{ leg.mode?.name ?? 'Travel' }}</strong><span>{{ leg.instruction?.summary ?? (leg.departurePoint?.commonName + ' to ' + leg.arrivalPoint?.commonName) }}</span>
+                @for (disruption of leg.disruptions ?? []; track $index) { <em>{{ disruption.description }}</em> }
+              </li>
+            }
+          </ol>
+        </article>
+      } @empty {
+        @if (!journeyLoading()) { <p>No journey alternatives are currently available.</p> }
+      }
+    </div>
+  </section>
 }
 
 <section class="platforms" [attr.aria-busy]="loading()">
@@ -98,7 +162,7 @@
   }
 </section>
 
-<p class="estimate-note">Train position is estimated from TfL prediction text, not GPS tracking.</p>
+<p class="estimate-note">Train positions are discrete estimates from TfL prediction text, not GPS tracking.</p>
 
 <app-data-flow-explainer
   title="Passenger departure-board flow"

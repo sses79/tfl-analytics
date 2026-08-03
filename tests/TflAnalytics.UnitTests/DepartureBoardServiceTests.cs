@@ -23,6 +23,8 @@ public sealed class DepartureBoardServiceTests
         Assert.Equal("inbound", recommendation.Direction);
         Assert.Equal(5, recommendation.StopsUntilDestination);
         Assert.True(Assert.Single(board.Platforms).Trains[0].ServesSelectedDestination);
+        Assert.Equal("approachingStation", board.Platforms[0].Trains[0].PredictionState);
+        Assert.Equal("940GZZLUVIC", board.Platforms[0].Trains[0].EstimatedStationId);
         Assert.False(board.IsStale);
     }
 
@@ -46,6 +48,18 @@ public sealed class DepartureBoardServiceTests
 
         Assert.DoesNotContain(board.Destinations, item => item.StationId == "940GZZLUBXN");
         Assert.Contains(board.Destinations, item => item.StationId == "940GZZLUKSX");
+    }
+
+    [Fact]
+    public async Task IncludesCurrentDisruptionWithoutRunningAlertWorkflow()
+    {
+        var service = CreateService([CreateArrival("940GZZLUWWL")]);
+
+        var board = await service.GetAsync("940GZZLUVIC");
+
+        var disruption = Assert.Single(board.Disruptions);
+        Assert.Equal("Minor Delays", disruption.Status);
+        Assert.Equal("Signal failure", disruption.Reason);
     }
 
     private static DepartureBoardService CreateService(IReadOnlyList<ArrivalSummary> arrivals) =>
@@ -136,7 +150,9 @@ public sealed class DepartureBoardServiceTests
 
         public Task<IReadOnlyList<LineStatusSummary>> GetCurrentLineStatusAsync(
             CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
+            Task.FromResult<IReadOnlyList<LineStatusSummary>>([
+                new("victoria", "Victoria", 9, "Minor Delays", "Signal failure", Now)
+            ]);
     }
 
     private sealed class FixedTimeProvider : TimeProvider

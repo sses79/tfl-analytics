@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddSingleton<IIngestionPoller, IngestionPoller>();
         services.AddSingleton<IRouteSequenceProvider, CachedRouteSequenceProvider>();
         services.AddSingleton<IDepartureBoardService, DepartureBoardService>();
+        services.AddSingleton<IJourneyPlanner, CachedJourneyPlanner>();
         services.AddSingleton<IArrivalDemoPollingStore, BlobArrivalDemoPollingStore>();
         services.AddSingleton<IArrivalDemoPollingControl, ArrivalDemoPollingControl>();
 

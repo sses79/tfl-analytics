@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TflAnalytics.Application.Passenger;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Contracts.Dashboard;
+using TflAnalytics.Contracts.Tfl;
 
 namespace TflAnalytics.Api.Controllers;
 
@@ -11,13 +12,16 @@ public sealed class ArrivalsController : ControllerBase
 {
     private readonly IEventRepository _eventRepository;
     private readonly IDepartureBoardService _departureBoardService;
+    private readonly IJourneyPlanner _journeyPlanner;
 
     public ArrivalsController(
         IEventRepository eventRepository,
-        IDepartureBoardService departureBoardService)
+        IDepartureBoardService departureBoardService,
+        IJourneyPlanner journeyPlanner)
     {
         _eventRepository = eventRepository;
         _departureBoardService = departureBoardService;
+        _journeyPlanner = journeyPlanner;
     }
 
     [HttpGet("{stationId}/arrivals")]
@@ -26,6 +30,12 @@ public sealed class ArrivalsController : ControllerBase
         [FromQuery] int count = 20,
         CancellationToken cancellationToken = default) =>
         _eventRepository.GetRecentArrivalsAsync(stationId, count, cancellationToken);
+
+    [HttpGet("search")]
+    public Task<StopPointSearchResult> SearchStations(
+        [FromQuery] string query,
+        CancellationToken cancellationToken = default) =>
+        _journeyPlanner.SearchStationsAsync(query, cancellationToken);
 
     [HttpGet("{stationId}/departure-board")]
     public Task<DepartureBoard> GetDepartureBoard(
@@ -44,4 +54,18 @@ public sealed class ArrivalsController : ControllerBase
         (await _departureBoardService.GetAsync(
             stationId,
             cancellationToken: cancellationToken)).Destinations;
+
+    [HttpGet("{stationId}/journeys/{destinationStationId}")]
+    public Task<JourneyPlan> GetJourneys(
+        string stationId,
+        string destinationStationId,
+        [FromQuery] string preference = "leastinterchange",
+        [FromQuery] string[]? accessibility = null,
+        CancellationToken cancellationToken = default) =>
+        _journeyPlanner.GetAsync(
+            stationId,
+            destinationStationId,
+            preference,
+            accessibility ?? [],
+            cancellationToken);
 }

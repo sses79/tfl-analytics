@@ -97,6 +97,33 @@ public sealed class TflApiClientTests
             new Uri("https://api.tfl.test" + Assert.Single(handler.Paths)).AbsolutePath);
     }
 
+    [Fact]
+    public async Task GetsAccessibleJourneyAlternativesWithSafeOptions()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(
+            HttpStatusCode.OK,
+            """
+            { "journeys": [{ "duration": 18, "legs": [] }] }
+            """));
+        var client = CreateClient(handler);
+
+        var plan = await client.GetJourneyPlanAsync(
+            "940GZZLUVIC",
+            "940GZZLULNB",
+            "leastwalking",
+            ["stepFreeToPlatform", "unsupported"]);
+
+        Assert.Equal(18, Assert.Single(plan.Journeys).Duration);
+        var uri = Assert.Single(handler.Uris);
+        Assert.Equal(
+            "/Journey/JourneyResults/940GZZLUVIC/to/940GZZLULNB",
+            uri.AbsolutePath);
+        Assert.Contains("journeyPreference=leastwalking", uri.Query);
+        Assert.Contains("accessibilityPreference=stepFreeToPlatform", uri.Query);
+        Assert.DoesNotContain("unsupported", uri.Query);
+        Assert.Contains("includeAlternativeRoutes=true", uri.Query);
+    }
+
     private static TflApiClient CreateClient(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler)
@@ -131,12 +158,14 @@ public sealed class TflApiClientTests
         }
 
         public List<string> Paths { get; } = [];
+        public List<Uri> Uris { get; } = [];
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             Paths.Add(request.RequestUri!.AbsolutePath);
+            Uris.Add(request.RequestUri);
             return Task.FromResult(_responseFactory(request));
         }
     }
