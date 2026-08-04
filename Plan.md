@@ -92,13 +92,16 @@ notifications through Azure SignalR Service.
 The passenger departure-board extension was added in August 2026. Phase 5A is
 deployed; Phase 5B discrete train-state and disruption context plus Phase 5C
 TfL Journey Planner alternatives, interchanges, and accessibility preferences
-are implemented locally pending deployment verification.
+were deployed and verified on August 3, 2026.
+
+Phase 5D passenger journey normalization, destination-combobox search, duplicate
+removal, progressive route detail, and accessibility-warning consolidation were
+implemented locally on August 4, 2026 and await deployment verification.
 
 Remaining Phase 5 validation:
 
-- Line-status SignalR publication has controlled Azure protocol-client evidence.
-  Capture equivalent arrival and alert evidence when those feeds are re-enabled,
-  plus browser UI evidence and latency measurements for each enabled type.
+- Line-status and arrival SignalR publication have live Azure evidence. Alert
+  evidence remains deferred because alert processing is intentionally disabled.
 - Add focused automated coverage for dashboard API queries and SignalR
   publication.
 

@@ -84,6 +84,31 @@ public sealed class DepartureBoardService : IDepartureBoardService
             disruptions);
     }
 
+    public async Task<IReadOnlyList<DestinationOption>> GetDestinationsAsync(
+        string stationId,
+        CancellationToken cancellationToken = default)
+    {
+        var arrivals = await _repository.GetRecentArrivalsAsync(stationId, 200, cancellationToken);
+        var branches = await GetRouteBranchesAsync(arrivals, cancellationToken);
+        return BuildDestinations(stationId, branches);
+    }
+
+    private async Task<IReadOnlyList<StopPointSequence>> GetRouteBranchesAsync(
+        IReadOnlyList<ArrivalSummary> arrivals,
+        CancellationToken cancellationToken)
+    {
+        var lineIds = arrivals
+            .Select(arrival => arrival.LineId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var routeSequences = await Task.WhenAll(
+            lineIds.Select(lineId => _routes.GetAsync(lineId, cancellationToken)));
+        return routeSequences
+            .SelectMany(sequence => sequence.StopPointSequences)
+            .Where(branch => branch.StopPoint.Count > 1)
+            .ToArray();
+    }
+
     private static IReadOnlyList<DestinationOption> BuildDestinations(
         string originStationId,
         IEnumerable<StopPointSequence> branches) =>

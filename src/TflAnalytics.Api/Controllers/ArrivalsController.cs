@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using TflAnalytics.Application.Passenger;
 using TflAnalytics.Application.Processing;
 using TflAnalytics.Contracts.Dashboard;
-using TflAnalytics.Contracts.Tfl;
 
 namespace TflAnalytics.Api.Controllers;
 
@@ -32,10 +31,11 @@ public sealed class ArrivalsController : ControllerBase
         _eventRepository.GetRecentArrivalsAsync(stationId, count, cancellationToken);
 
     [HttpGet("search")]
-    public Task<StopPointSearchResult> SearchStations(
+    public Task<StationSearchResponse> SearchStations(
         [FromQuery] string query,
+        [FromQuery] string? originStationId = null,
         CancellationToken cancellationToken = default) =>
-        _journeyPlanner.SearchStationsAsync(query, cancellationToken);
+        _journeyPlanner.SearchStationsAsync(query, originStationId, cancellationToken);
 
     [HttpGet("{stationId}/departure-board")]
     public Task<DepartureBoard> GetDepartureBoard(
@@ -56,7 +56,7 @@ public sealed class ArrivalsController : ControllerBase
             cancellationToken: cancellationToken)).Destinations;
 
     [HttpGet("{stationId}/journeys/{destinationStationId}")]
-    public Task<JourneyPlan> GetJourneys(
+    public Task<PassengerJourneyPlan> GetJourneys(
         string stationId,
         string destinationStationId,
         [FromQuery] string preference = "leastinterchange",

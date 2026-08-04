@@ -42,10 +42,14 @@ describe('ArrivalsComponent', () => {
       getStations: vi.fn(() => of([{ stationId: board.stationId, name: board.stationName }])),
       getDepartureBoard: vi.fn(() => of(board)),
       searchStations: vi.fn(() => of({ matches: [] })),
-      getJourneys: vi.fn(() => of({ journeys: [{ duration: 18, startDateTime: null, arrivalDateTime: null, legs: [
-        { duration: 18, departurePoint: null, arrivalPoint: null, instruction: { summary: 'Take the Victoria line', detailed: null }, mode: { id: 'tube', name: 'tube' }, routeOptions: [], disruptions: [] }
-      ] }]
-      }))
+      getJourneys: vi.fn(() => of({ duplicateCountRemoved: 1, journeys: [{
+        id: 'journey-1', labels: ['Recommended', 'Fastest'], durationMinutes: 18,
+        departureUtc: '2026-08-02T12:05:00Z', arrivalUtc: '2026-08-02T12:23:00Z',
+        changeCount: 0, walkingMinutes: 2, accessibilitySummary: null, disruptions: [],
+        legs: [{ kind: 'transport', mode: 'tube', lineName: 'Victoria', towards: 'Walthamstow Central',
+          fromStationId: board.stationId, fromName: 'Victoria', toStationId: '940GZZLUKSX',
+          toName: "King's Cross", durationMinutes: 18, instruction: 'Victoria line to King’s Cross' }]
+      }] }))
     };
     const realtime = { lastArrivalsBatchUpdate: signal(null) };
 
@@ -71,15 +75,50 @@ describe('ArrivalsComponent', () => {
   });
 
   it('shows route advice and train suitability after destination selection', () => {
-    const select = fixture.nativeElement.querySelector('#destination') as HTMLSelectElement;
-    select.value = '940GZZLUKSX';
-    select.dispatchEvent(new Event('change'));
+    const input = fixture.nativeElement.querySelector('#destination-combobox') as HTMLInputElement;
+    input.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    const directOption = fixture.nativeElement.querySelector('.destination-matches > button') as HTMLButtonElement;
+    directOption.click();
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.recommendation-card')?.textContent).toContain('5 stops');
     expect(element.querySelector('.train-row__decision--yes')?.textContent).toContain('Board this train');
-    expect(element.querySelector('.journey-card')?.textContent).toContain('Take the Victoria line');
+    expect(element.querySelector('.journey-card')).toBeNull();
+    (element.querySelector('.alternatives-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(element.querySelector('.journey-card')?.textContent).toContain('18 min');
+    expect(element.querySelector('.journey-card')?.textContent).toContain('Direct');
     expect(element.querySelector('.train-position')).not.toBeNull();
+  });
+
+  it('supports keyboard destination selection through one combobox', () => {
+    const input = fixture.nativeElement.querySelector('#destination-combobox') as HTMLInputElement;
+    input.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    fixture.detectChanges();
+
+    expect(input.value).toBe("King's Cross");
+    expect(fixture.nativeElement.querySelector('#destination-listbox')).toBeNull();
+  });
+
+  it('does not select an undefined destination when no keyboard matches exist', () => {
+    const component = fixture.componentInstance as unknown as {
+      clearDestination(): void;
+      openDestinations(): void;
+      onDestinationKeydown(event: KeyboardEvent): void;
+    };
+    component.clearDestination();
+    component.openDestinations();
+
+    expect(() => {
+      component.onDestinationKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+      component.onDestinationKeydown(new KeyboardEvent('keydown', { key: 'Enter' }));
+    }).not.toThrow();
   });
 });

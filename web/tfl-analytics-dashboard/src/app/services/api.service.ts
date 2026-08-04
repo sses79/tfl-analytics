@@ -8,9 +8,9 @@ import {
   DashboardSummary,
   DepartureBoard,
   LineStatusSummary,
-  JourneyPlan,
+  PassengerJourneyPlan,
   StationSummary,
-  StopPointSearchResult,
+  StationSearchResponse,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -45,16 +45,16 @@ export class ApiService {
     destinationStationId: string,
     preference: string,
     accessibility: string[]
-  ): Observable<JourneyPlan> {
-    return this.http.get<JourneyPlan>(
+  ): Observable<PassengerJourneyPlan> {
+    return this.http.get<PassengerJourneyPlan>(
       `${this.base}/api/stations/${stationId}/journeys/${destinationStationId}`,
       { params: { preference, accessibility } }
     );
   }
 
-  searchStations(query: string): Observable<StopPointSearchResult> {
-    return this.http.get<StopPointSearchResult>(`${this.base}/api/stations/search`, {
-      params: { query }
+  searchStations(query: string, originStationId: string): Observable<StationSearchResponse> {
+    return this.http.get<StationSearchResponse>(`${this.base}/api/stations/search`, {
+      params: { query, originStationId }
     });
   }
 

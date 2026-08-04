@@ -11,5 +11,5 @@ param enableAlerts = false
 param ingestionArrivalsSchedule = '0 * * * * *'
 param ingestionLineStatusSchedule = '0 */10 * * * *'
 param processedEventsTtlSeconds = 86400
-param apiImageTag = '290b8c9b3656c606ee9a14aa578591dbadb86585'
+param apiImageTag = '2ca20127e55e196d37b421d5422c0071939df13d'
 param dashboardCustomDomain = 'demo.ti5g.com'

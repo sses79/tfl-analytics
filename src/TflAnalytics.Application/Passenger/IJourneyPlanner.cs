@@ -1,14 +1,15 @@
-using TflAnalytics.Contracts.Tfl;
+using TflAnalytics.Contracts.Dashboard;
 
 namespace TflAnalytics.Application.Passenger;
 
 public interface IJourneyPlanner
 {
-    Task<StopPointSearchResult> SearchStationsAsync(
+    Task<StationSearchResponse> SearchStationsAsync(
         string query,
+        string? originStationId = null,
         CancellationToken cancellationToken = default);
 
-    Task<JourneyPlan> GetAsync(
+    Task<PassengerJourneyPlan> GetAsync(
         string fromStationId,
         string toStationId,
         string journeyPreference,
