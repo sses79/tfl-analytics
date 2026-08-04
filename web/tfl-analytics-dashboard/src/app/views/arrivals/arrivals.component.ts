@@ -166,13 +166,18 @@ export class ArrivalsComponent implements OnInit, OnDestroy {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (!this.destinationOpen()) this.destinationOpen.set(true);
+      if (matches.length === 0) {
+        this.activeDestinationIndex.set(-1);
+        return;
+      }
       const direction = event.key === 'ArrowDown' ? 1 : -1;
       this.activeDestinationIndex.set(Math.max(0, Math.min(matches.length - 1, this.activeDestinationIndex() + direction)));
       return;
     }
-    if (event.key === 'Enter' && this.destinationOpen() && this.activeDestinationIndex() >= 0) {
+    const activeMatch = matches[this.activeDestinationIndex()];
+    if (event.key === 'Enter' && this.destinationOpen() && activeMatch) {
       event.preventDefault();
-      this.selectDestination(matches[this.activeDestinationIndex()]);
+      this.selectDestination(activeMatch);
     }
   }
 

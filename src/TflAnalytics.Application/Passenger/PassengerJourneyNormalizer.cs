@@ -64,11 +64,10 @@ public static class PassengerJourneyNormalizer
                 directById.ContainsKey(match.Id)))
             .GroupBy(match => match.StationId, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
-            .GroupBy(match => match.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.OrderByDescending(match => match.IsDirect).First())
             .OrderBy(match => SearchRank(match.DisplayName, normalizedQuery))
             .ThenByDescending(match => match.IsDirect)
             .ThenBy(match => match.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(match => match.StationId, StringComparer.OrdinalIgnoreCase)
             .Take(12)
             .ToArray();
         return new StationSearchResponse(matches);
@@ -90,9 +89,7 @@ public static class PassengerJourneyNormalizer
                 group.First().disruption.Description!.Trim(),
                 group.Select(item => item.index).Distinct().Order().ToArray()))
             .ToArray();
-        var accessConflict = accessibilityRequested && disruptions.Any(disruption =>
-            disruption.Summary.Contains("no step free", StringComparison.OrdinalIgnoreCase)
-            || disruption.Summary.Contains("faulty lift", StringComparison.OrdinalIgnoreCase));
+        var accessConflict = accessibilityRequested && disruptions.Any(IsAccessibilityDisruption);
         return new(signature, journey.Duration, journey.StartDateTime, journey.ArrivalDateTime,
             Math.Max(0, transportLegs.Length - 1),
             legs.Where(leg => leg.Kind != "transport").Sum(leg => leg.DurationMinutes),
@@ -139,7 +136,18 @@ public static class PassengerJourneyNormalizer
         journey.ChangeCount, journey.WalkingMinutes, journey.AccessibilitySummary, journey.Legs, journey.Disruptions);
 
     private static TimeSpan DepartureDifference(DateTimeOffset? left, DateTimeOffset? right) =>
-        left is null || right is null ? TimeSpan.Zero : (left.Value - right.Value).Duration();
+        left is null || right is null ? TimeSpan.MaxValue : (left.Value - right.Value).Duration();
+    private static bool IsAccessibilityDisruption(PassengerJourneyDisruption disruption)
+    {
+        if (disruption.Category?.Contains("access", StringComparison.OrdinalIgnoreCase) is true) return true;
+
+        var summary = disruption.Summary;
+        return summary.Contains("step free", StringComparison.OrdinalIgnoreCase)
+            || summary.Contains("step-free", StringComparison.OrdinalIgnoreCase)
+            || summary.Contains("lift", StringComparison.OrdinalIgnoreCase)
+            || summary.Contains("wheelchair", StringComparison.OrdinalIgnoreCase)
+            || summary.Contains("mobility", StringComparison.OrdinalIgnoreCase);
+    }
     private static string NormalizePoint(string? id, string? name) =>
         !string.IsNullOrWhiteSpace(id) ? id.ToUpperInvariant() : NormalizeStationName(name).ToUpperInvariant();
     private static int SearchRank(string name, string query) =>

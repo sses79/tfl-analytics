@@ -46,6 +46,31 @@ public sealed class CachedJourneyPlannerTests
     }
 
     [Fact]
+    public async Task KeepsEquivalentJourneysWhenDepartureTimeIsUnknown()
+    {
+        var first = new Journey(20, null, null, [Tube("A", "B", "District", "")]);
+        var second = new Journey(22, null, null, [Tube("A", "B", "District", "")]);
+        var planner = new CachedJourneyPlanner(new StubClient(new JourneyPlan([first, second])), new StubDepartureBoards(), TimeProvider.System);
+
+        var plan = await planner.GetAsync("from", "to", "leasttime", []);
+
+        Assert.Equal(2, plan.Journeys.Count);
+        Assert.Equal(0, plan.DuplicateCountRemoved);
+    }
+
+    [Fact]
+    public async Task DetectsAlternativeLiftAccessibilityWording()
+    {
+        var journey = new Journey(20, DateTimeOffset.Parse("2026-08-04T10:00:00Z"), null,
+            [Tube("A", "B", "District", "Access lift unavailable")]);
+        var planner = new CachedJourneyPlanner(new StubClient(new JourneyPlan([journey])), new StubDepartureBoards(), TimeProvider.System);
+
+        var plan = await planner.GetAsync("from", "to", "leasttime", ["stepFreeToPlatform"]);
+
+        Assert.Equal("Does not meet selected access need", Assert.Single(plan.Journeys).AccessibilitySummary);
+    }
+
+    [Fact]
     public async Task NormalizesDeduplicatesAndRanksStationSearchForOrigin()
     {
         var client = new StubClient(search: new StopPointSearchResult([
@@ -108,6 +133,8 @@ public sealed class CachedJourneyPlannerTests
     {
         private readonly IReadOnlyList<DestinationOption> _destinations;
         public StubDepartureBoards(IReadOnlyList<DestinationOption>? destinations = null) => _destinations = destinations ?? [];
+        public Task<IReadOnlyList<DestinationOption>> GetDestinationsAsync(string stationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_destinations);
         public Task<DepartureBoard> GetAsync(string stationId, string? destinationStationId = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(new DepartureBoard(stationId, null, null, true, _destinations, [], [], []));
     }

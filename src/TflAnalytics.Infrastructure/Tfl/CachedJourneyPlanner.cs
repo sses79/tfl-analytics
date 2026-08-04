@@ -77,13 +77,21 @@ public sealed class CachedJourneyPlanner : IJourneyPlanner
         var raw = await _client.SearchStopPointsAsync(query, cancellationToken);
         var directDestinations = string.IsNullOrWhiteSpace(originStationId)
             ? []
-            : (await _departureBoards.GetAsync(originStationId, cancellationToken: cancellationToken))
-                .Destinations;
+            : await _departureBoards.GetDestinationsAsync(originStationId, cancellationToken);
         var result = PassengerJourneyNormalizer.NormalizeStations(raw, directDestinations, normalizedQuery);
 
         if (_searchCache.Count >= MaximumSearchEntries)
         {
-            _searchCache.Clear();
+            foreach (var expired in _searchCache.Where(entry => entry.Value.ExpiresAtUtc <= now))
+            {
+                _searchCache.TryRemove(expired.Key, out _);
+            }
+
+            if (_searchCache.Count >= MaximumSearchEntries)
+            {
+                var oldest = _searchCache.MinBy(entry => entry.Value.ExpiresAtUtc);
+                if (!string.IsNullOrEmpty(oldest.Key)) _searchCache.TryRemove(oldest.Key, out _);
+            }
         }
         _searchCache[key] = new(result, now.Add(SearchCacheDuration));
         return result;

@@ -106,4 +106,19 @@ describe('ArrivalsComponent', () => {
     expect(input.value).toBe("King's Cross");
     expect(fixture.nativeElement.querySelector('#destination-listbox')).toBeNull();
   });
+
+  it('does not select an undefined destination when no keyboard matches exist', () => {
+    const component = fixture.componentInstance as unknown as {
+      clearDestination(): void;
+      openDestinations(): void;
+      onDestinationKeydown(event: KeyboardEvent): void;
+    };
+    component.clearDestination();
+    component.openDestinations();
+
+    expect(() => {
+      component.onDestinationKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+      component.onDestinationKeydown(new KeyboardEvent('keydown', { key: 'Enter' }));
+    }).not.toThrow();
+  });
 });
