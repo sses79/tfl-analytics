@@ -100,6 +100,7 @@ public sealed class TflApiClient : ITflApiClient
             $"journeyPreference={preference}",
             "useRealTimeLiveArrivals=true",
             "includeAlternativeRoutes=true",
+            "calcOneDirection=true",
             "applyHtmlMarkup=false"
         };
         query.AddRange(accessibilityPreferences

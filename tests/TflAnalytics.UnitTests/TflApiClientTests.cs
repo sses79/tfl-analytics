@@ -122,6 +122,7 @@ public sealed class TflApiClientTests
         Assert.Contains("accessibilityPreference=stepFreeToPlatform", uri.Query);
         Assert.DoesNotContain("unsupported", uri.Query);
         Assert.Contains("includeAlternativeRoutes=true", uri.Query);
+        Assert.Contains("calcOneDirection=true", uri.Query);
     }
 
     private static TflApiClient CreateClient(HttpMessageHandler handler)

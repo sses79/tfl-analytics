@@ -21,27 +21,46 @@
   </div>
   <span class="journey-controls__arrow" aria-hidden="true">→</span>
   <div class="control-group control-group--destination">
-    <label for="destination">Where are you going?</label>
-    <select id="destination" [value]="selectedDestination()" (change)="onDestinationChange($any($event.target).value)">
-      <option value="">Show all departures</option>
-      @for (destination of board()?.destinations ?? []; track destination.stationId) {
-        <option [value]="destination.stationId">{{ destination.stationName }}</option>
+    <label for="destination-combobox">Where are you going?</label>
+    <div class="destination-combobox">
+      <input id="destination-combobox" type="search" role="combobox" autocomplete="off"
+        placeholder="Search TfL rail stations" aria-label="Where are you going?"
+        aria-controls="destination-listbox" [attr.aria-expanded]="destinationOpen()"
+        [attr.aria-activedescendant]="activeDestinationIndex() >= 0 && visibleDestinationMatches()[activeDestinationIndex()] ? optionId(visibleDestinationMatches()[activeDestinationIndex()]) : null"
+        [value]="destinationQuery()" (focus)="openDestinations()"
+        (input)="onDestinationInput($any($event.target).value)" (keydown)="onDestinationKeydown($event)">
+      @if (destinationQuery()) {
+        <button class="destination-combobox__clear" type="button" aria-label="Clear destination" (click)="clearDestination()">×</button>
       }
-      @if (searchedDestination(); as destination) {
-        <option [value]="destination.id">{{ destination.name }}</option>
-      }
-    </select>
-    <div class="destination-search">
-      <input type="search" placeholder="Search any TfL station" aria-label="Search any TfL destination"
-        [value]="destinationQuery()" (input)="destinationQuery.set($any($event.target).value)" (keyup.enter)="searchDestinations()">
-      <button type="button" (click)="searchDestinations()">Search</button>
     </div>
-    @if (destinationMatches().length > 0) {
-      <ul class="destination-matches">
-        @for (match of destinationMatches(); track match.id) {
-          <li><button type="button" (click)="selectSearchedDestination(match)">{{ match.name }}</button></li>
+    @if (destinationOpen()) {
+      <div id="destination-listbox" class="destination-matches" role="listbox">
+        @if (destinationSearchState() === 'loading') { <p class="search-state" aria-live="polite">Searching TfL stations…</p> }
+        @if (directMatches().length > 0) {
+          <p class="destination-group">Direct from {{ board()?.stationName ?? 'this station' }}</p>
+          @for (match of directMatches(); track match.stationId; let index = $index) {
+            <button type="button" role="option" [id]="optionId(match)"
+              [class.destination-match--active]="visibleDestinationMatches().indexOf(match) === activeDestinationIndex()"
+              (mousedown)="$event.preventDefault()" (click)="selectDestination(match)">
+              <strong>{{ match.displayName }}</strong><span>{{ matchMeta(match) }}</span>
+            </button>
+          }
         }
-      </ul>
+        @if (interchangeMatches().length > 0) {
+          <p class="destination-group">Other stations — journey with changes</p>
+          @for (match of interchangeMatches(); track match.stationId) {
+            <button type="button" role="option" [id]="optionId(match)"
+              [class.destination-match--active]="visibleDestinationMatches().indexOf(match) === activeDestinationIndex()"
+              (mousedown)="$event.preventDefault()" (click)="selectDestination(match)">
+              <strong>{{ match.displayName }}</strong><span>{{ matchMeta(match) }}</span>
+            </button>
+          }
+        }
+        @if (destinationSearchState() === 'empty') { <p class="search-state">No TfL rail station found for “{{ destinationQuery() }}”.</p> }
+        @if (destinationSearchState() === 'error') {
+          <p class="search-state" role="alert">Station search is temporarily unavailable. <button type="button" (click)="retryDestinationSearch()">Retry</button></p>
+        }
+      </div>
     }
   </div>
   <button class="refresh-button" type="button" (click)="loadBoard()" [disabled]="loading()">Refresh board</button>
@@ -80,7 +99,7 @@
     </div>
   </section>
 } @else if (selectedDestination()) {
-  <div class="advice-banner">No direct route was found in the current TfL route topology. Choose another destination or plan an interchange journey separately.</div>
+  <div class="advice-banner"><strong>Journey with changes</strong><span>No direct train serves this destination. Compare the interchange routes below.</span></div>
 }
 
 @if ((board()?.disruptions?.length ?? 0) > 0) {
@@ -92,7 +111,13 @@
   </section>
 }
 
-@if (selectedDestination()) {
+@if (selectedDestination() && hasDirectRecommendation()) {
+  <button class="alternatives-toggle" type="button" (click)="toggleAlternatives()" [attr.aria-expanded]="showAlternatives()">
+    {{ showAlternatives() ? 'Hide other routes' : 'See other routes' }}
+  </button>
+}
+
+@if (selectedDestination() && showAlternatives()) {
   <section class="journey-planner" aria-labelledby="journey-title">
     <div class="journey-planner__heading">
       <div><p class="eyebrow">TfL Journey Planner</p><h3 id="journey-title">Alternatives and interchanges</h3></div>
@@ -107,21 +132,42 @@
         <label class="check-option"><input type="checkbox" [checked]="stepFree()" (change)="onStepFreeChange($any($event.target).checked)"> Step-free to platform</label>
       </div>
     </div>
-    @if (journeyLoading()) { <p>Finding current journeys…</p> }
-    <div class="journey-results">
-      @for (journey of journeyPlan()?.journeys ?? []; track $index) {
-        <article class="journey-card">
-          <header><strong>{{ journey.duration }} min</strong><span>{{ journeyChanges(journey.legs) }} change(s)</span></header>
-          <ol>
-            @for (leg of journey.legs; track $index) {
-              <li><strong>{{ leg.mode?.name ?? 'Travel' }}</strong><span>{{ leg.instruction?.summary ?? (leg.departurePoint?.commonName + ' to ' + leg.arrivalPoint?.commonName) }}</span>
-                @for (disruption of leg.disruptions ?? []; track $index) { <em>{{ disruption.description }}</em> }
-              </li>
+    @if (journeyLoading()) { <p class="journey-state" aria-live="polite">Updating journey options…</p> }
+    @if (journeyError()) { <p class="journey-state" role="alert">{{ journeyError() }} <button type="button" (click)="loadJourneys()">Retry</button></p> }
+    <div class="journey-results" aria-live="polite">
+      @for (journey of journeyPlan()?.journeys ?? []; track journey.id) {
+        <article class="journey-card" [class.journey-card--access-warning]="journey.accessibilitySummary">
+          <div class="journey-card__badges">
+            @for (label of journey.labels; track label) { <span>{{ label }}</span> }
+          </div>
+          <header>
+            <div><strong>{{ journey.durationMinutes }} min</strong><span>{{ journey.changeCount === 0 ? 'Direct' : journey.changeCount + ' change(s)' }}</span></div>
+            <div class="journey-card__times"><span>Depart {{ formatTime(journey.departureUtc) }}</span><span>Arrive {{ formatTime(journey.arrivalUtc) }}</span></div>
+          </header>
+          <p class="journey-card__lines">{{ mainLines(journey) }}</p>
+          @if (journey.accessibilitySummary) { <p class="access-warning">{{ journey.accessibilitySummary }}</p> }
+          @if (journey.disruptions.length > 0) { <p class="disruption-summary">{{ journey.disruptions[0].summary }}</p> }
+          <button class="journey-details-toggle" type="button" (click)="toggleJourney(journey.id)"
+            [attr.aria-expanded]="expandedJourneyId() === journey.id">
+            {{ expandedJourneyId() === journey.id ? 'Hide journey details' : 'View journey details' }}
+          </button>
+          @if (expandedJourneyId() === journey.id) {
+            <ol class="journey-legs">
+              @for (leg of journey.legs; track $index) {
+                <li [attr.data-kind]="leg.kind"><strong>{{ leg.lineName ?? leg.mode }}</strong><span>{{ leg.instruction }}</span>
+                  @if (leg.kind === 'walk' && leg.durationMinutes > 0) { <em>{{ leg.durationMinutes }} min walk</em> }
+                </li>
+              }
+            </ol>
+            @if (journey.disruptions.length > 0) {
+              <details class="journey-disruptions"><summary>Service and accessibility details</summary>
+                @for (disruption of journey.disruptions; track disruption.summary) { <p>{{ disruption.summary }}</p> }
+              </details>
             }
-          </ol>
+          }
         </article>
       } @empty {
-        @if (!journeyLoading()) { <p>No journey alternatives are currently available.</p> }
+        @if (!journeyLoading() && !journeyError()) { <p>No current journey alternatives are available.</p> }
       }
     </div>
   </section>

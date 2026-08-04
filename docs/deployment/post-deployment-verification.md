@@ -19,14 +19,44 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | August 2, 2026 |
-| Git commit | `9d5effb` via PR #46; merged to `main` as `290b8c9b3656c606ee9a14aa578591dbadb86585` |
-| Change | Time-limited arrival demo polling: one-minute timer evaluation, five-minute default policy, protected ten-minute boost, and durable expiry |
-| Provisioning state | `Succeeded` — storage deployment `demo-polling-storage-20260802`; Container App revision `ca-tfl-api-dev-nhkpyupi--0000016`; ingestion zip `913dac21-d4c9-4ed1-8248-dab4427fb6fc`; processing zip `4fe45a5f-d2e7-436b-8ced-e75dab1d7b8a` |
-| Scope | Added private `runtime-control` Blob container and three ingestion settings; deployed merged API and Function packages; retained `Arrival__Enabled=true`, `Alerts__Enabled=false`, line-status schedule, SKUs, telemetry cap, and TTLs |
-| Cost impact | No service, SKU, throughput, or capacity changed. Baseline adds approximately 34,560 short timer evaluations and Blob reads per month; expected cost is pennies and remains within current Function execution allowance based on measured workload |
+| Date | August 3, 2026 |
+| Git commit | PR #47 merged to `main` as `2ca20127e55e196d37b421d5422c0071939df13d` |
+| Change | Passenger departure board Phase 5B and 5C: estimated train state, disruption context, TfL station search, and accessible Journey Planner alternatives |
+| Provisioning state | `Succeeded` — Container App revision `ca-tfl-api-dev-nhkpyupi--0000017`; Static Web App production environment `Ready` |
+| Scope | Deployed the immutable merged API image and Angular production bundle only; Function packages and infrastructure were unchanged; `Alerts__Enabled=false` retained |
+| Cost impact | No service, SKU, throughput, or capacity changed. One-minute journey-result caching and 24-hour station-search caching bound TfL/API traffic; expected cost impact is negligible |
 
 Latest verification evidence:
+
+- PR #47 and its Angular security follow-up passed backend, dashboard,
+  infrastructure, dependency, and secret checks. GHCR workflow run
+  `30853770873` published immutable API image
+  `2ca20127e55e196d37b421d5422c0071939df13d`; revision
+  `ca-tfl-api-dev-nhkpyupi--0000017` runs that image with provisioning
+  `Succeeded`.
+- Bicep compilation, ARM validation, and the full resource-group `what-if`
+  succeeded. The preview proposed no new service or SKU but repeated known
+  Azure-generated Function, observability, and Static Web App drift. The rollout
+  therefore used scoped API and dashboard deployment instead of applying
+  unrelated ARM changes.
+- The Static Web App production environment reached `Ready`; `demo.ti5g.com`
+  serves `main-PZPB7IDX.js` and arrivals chunk `chunk-3NXE3GCD.js`, containing
+  the Journey Planner, step-free option, interchange alternatives, and estimated
+  train UI.
+- A live Victoria departure board was fresh with eight platform groups, one
+  current disruption, and a train mapped to `betweenStations` near High Street
+  Kensington. Station search returned Camden Town, and the step-free Victoria
+  to London Bridge Journey Planner request returned three journeys; the first
+  contained four legs.
+- Both Function health endpoints and API health returned healthy. The standard
+  event-flow smoke passed with all 11 lines, Waterloo & City, and event age 519
+  seconds against the 1,200-second limit. `Alerts__Enabled=false` and the alerts
+  API remained empty.
+- Data-service and workload-RBAC smoke tests passed: Cosmos remains free-tier at
+  1,000 RU/s, SignalR remains Free F1 with local authentication disabled, Azure
+  SQL remains absent, and each workload retains its least-privilege managed
+  identity roles. Diagnostic-setting checks remain intentionally not applicable
+  while infrastructure observability is disabled.
 
 - PR #46 passed backend, dashboard, infrastructure, dependency, and full-history
   secret checks. GHCR workflow run `30768753258` published immutable image

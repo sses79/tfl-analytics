@@ -177,7 +177,7 @@ complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: active — Phase 5A deployed; Phase 5B and 5C implemented locally August 3, 2026**
+**Status: Phase 5A–5C deployed; Phase 5D implemented locally August 4, 2026**
 
 Implemented and deployed:
 
@@ -205,11 +205,11 @@ and five-stop sequence. The live board classified suitable and unsuitable
 trains from a fresh persisted snapshot, and both dashboard hostnames serve the
 passenger board bundle.
 
-Remaining before Phase 5 completion:
-
-- deploy Phase 5B and 5C and capture browser evidence against live TfL data;
-- verify Journey Planner responses for a route requiring an interchange and for
-  a step-free preference.
+Phase 5B/5C deployment evidence: the live board returned a discrete
+between-stations estimate and current disruption context; station search found
+Camden Town; and a step-free Victoria-to-London Bridge request returned three
+current alternatives with a multi-leg interchange journey. The production
+dashboard bundle contains the new passenger controls.
 
 ### Product goal
 
@@ -223,8 +223,10 @@ Where am I going?
   -> when will it arrive?
 ```
 
-The first release supports direct Underground journeys from the five monitored
-origin stations. Interchanges and full journey planning are deferred.
+The deployed release supports direct Underground journeys from the five
+monitored origins plus TfL Journey Planner results for interchange journeys.
+Phase 5D below will refine those technically correct results into a simpler
+passenger decision experience.
 
 ### Passenger screen
 
@@ -310,6 +312,8 @@ Proposed API surface:
 ```http
 GET /api/stations/{stationId}/departure-board
 GET /api/stations/{stationId}/destinations
+GET /api/stations/search?query={stationName}
+GET /api/stations/{stationId}/journeys/{destinationStationId}
 GET /api/lines/{lineId}/route-sequences
 ```
 
@@ -393,7 +397,7 @@ Demo-boost acceptance criteria:
 
 #### 5B — Station sequence and train state
 
-**Status: implemented locally — August 3, 2026; deployment pending**
+**Status: complete and deployed — August 3, 2026**
 
 - Add the ordered station strip and stops remaining.
 - Map `currentLocation` to discrete station/approaching/at-platform states.
@@ -402,7 +406,7 @@ Demo-boost acceptance criteria:
 
 #### 5C — Journey planning
 
-**Status: implemented locally — August 3, 2026; deployment pending**
+**Status: complete and deployed — August 3, 2026**
 
 - Add interchanges, alternatives, accessibility preferences, and
   disruption-aware routing through TfL's Journey API rather than building a
@@ -414,6 +418,238 @@ step-free-to-platform option, surfaces per-leg disruption detail, and caches
 identical requests for one minute to bound upstream traffic. Passengers can
 search TfL stations beyond the direct-route list; station-search results are
 cached for 24 hours.
+
+#### 5D — Passenger-first journey results redesign
+
+**Status: implemented locally — August 4, 2026; deployment pending**
+
+The deployed Journey Planner exposes too much of TfL's raw response structure.
+It can show duplicate alternatives, repeat the same disruption under several
+legs, give station-entry and exit walking legs the same weight as train legs,
+and label a journey “0 changes” while rendering three technical legs. This is
+accurate at API level but difficult for a passenger to scan quickly.
+
+The local implementation now returns normalized passenger journeys, requests a
+single temporal direction, removes passenger-equivalent routes, consolidates
+disruptions, and calculates changes from transport legs. The dashboard uses one
+debounced accessible destination combobox, keeps direct departure advice
+primary, and progressively reveals alternative-route detail. Azure and live
+browser acceptance evidence remain pending deployment.
+
+The live departure board remains the primary experience. When a direct train is
+available, show the direct line, platform, and next suitable trains first. Hide
+Journey Planner results behind a secondary **See other routes** action. When no
+direct route exists, open Journey Planner automatically and label it **Journey
+with changes**.
+
+##### Destination discovery
+
+The current destination experience combines a direct-destination `<select>`
+with a separate free-text search field and Search button. A searched station is
+then inserted back into the select. This exposes the implementation boundary to
+passengers and makes it unclear why some stations appear immediately while
+others require a separate interaction.
+
+Replace both controls with one accessible searchable combobox:
+
+```text
+Where are you going?
+[ Barking________________________________ ]
+
+Suggested direct destinations
+  Green Park                 Victoria line
+  Oxford Circus              Victoria line
+
+Other TfL stations
+  Barking                    District · Hammersmith & City
+  Barkingside                Central
+```
+
+- opening an empty field shows useful destinations reachable directly from the
+  selected origin;
+- typing searches the supported TfL rail network after a 250–300 ms debounce,
+  without a separate Search button;
+- selecting a result closes the list, retains a clear removable selection, and
+  starts direct-route matching or interchange planning as appropriate;
+- clearing the destination restores direct suggestions without resetting the
+  origin;
+- Arrow Up/Down changes the active option, Enter selects, Escape closes, and
+  focus and `aria-activedescendant` follow the accessible-combobox pattern;
+- recent destinations may be stored locally on the device, but must not be sent
+  to telemetry or shared between users.
+
+Normalize TfL search responses into passenger stations before display:
+
+- collapse entrances, platforms, and child StopPoint records into one canonical
+  parent station;
+- remove duplicate station IDs and names;
+- remove suffixes such as “Underground Station” from display labels while
+  retaining the canonical NaPTAN ID internally;
+- prefer Underground, DLR, Elizabeth line, and Overground stations and exclude
+  unrelated bus stops until multimodal planning is intentionally supported;
+- include served modes and lines so passengers can distinguish similar names;
+- return a dashboard-specific result contract containing canonical station ID,
+  display name, modes, lines, and whether it is directly reachable from the
+  selected origin.
+
+Rank normalized results deterministically:
+
+1. exact station-name match;
+2. station names beginning with the query;
+3. directly reachable stations;
+4. major interchange stations;
+5. remaining partial-name matches;
+6. alphabetical order as the final tie-breaker.
+
+Group results by the passenger decision rather than the source API:
+
+```text
+DIRECT FROM KING'S CROSS
+Baker Street
+Piccadilly Circus
+
+OTHER STATIONS — JOURNEY WITH CHANGES
+Barking
+Barkingside
+```
+
+The combobox must distinguish empty, loading, no-match, error, selected, and
+cached-result states. Keep existing usable results visible while a new request
+loads. A no-match message should repeat the sanitized query and suggest a close
+station only when confidence is high. A TfL failure should offer Retry without
+resetting the origin or typed destination.
+
+On the client, cancel or ignore obsolete requests so a slower response for an
+older query cannot replace newer results. Require at least two characters for a
+network search. On the server, cache normalized bounded results rather than an
+unlimited set of raw free-text responses; include the origin in the ranking
+context without logging query text or passenger accessibility choices.
+
+##### Result hierarchy
+
+Each collapsed result card should answer the passenger's decision in one view:
+
+```text
+Recommended · 51 min · Direct
+Hammersmith & City line
+King's Cross St. Pancras -> Barking
+Depart 10:24 · Arrive 11:15
+Accessibility issue at King's Cross
+[View journey details]
+```
+
+Show at most three distinct results and assign useful labels rather than array
+numbers:
+
+1. **Recommended** — best result for the selected passenger preference.
+2. **Fastest** — only when materially different from Recommended.
+3. **Fewer changes** or **Less walking** — only when it offers a genuine
+   passenger trade-off.
+
+If two labels resolve to the same route, show one card with multiple badges.
+Do not show an alternative merely because TfL returned another internal timing
+or routing object.
+
+##### Normalization and deduplication
+
+- request `calcOneDirection=true` so TfL does not calculate equivalent journeys
+  in both temporal directions;
+- build a passenger-route signature from each non-walking leg's mode, line,
+  boarding stop, and alighting stop;
+- normalize station IDs/names and ignore station-entry or exit walking legs in
+  the signature;
+- group matching signatures and keep the best result according to the selected
+  preference, using duration and walking time as deterministic tie-breakers;
+- retain departure-time variants only when their departure times differ by a
+  meaningful threshold, initially five minutes;
+- calculate changes as `max(transportLegCount - 1, 0)`, never from the raw leg
+  count;
+- add focused fixtures for exact duplicates, near-duplicates, circular routes,
+  missing line names, and results that differ only by walking transfer detail.
+
+The API should return a normalized passenger contract instead of passing the
+TfL response shape directly:
+
+```text
+PassengerJourney
+  id, labels, durationMinutes, departureUtc, arrivalUtc
+  changeCount, walkingMinutes, accessibilitySummary
+  legs: mode, lineName, towards, from, to, durationMinutes
+  disruptions: stationId, stationName, summary, affectedLegIndexes
+```
+
+##### Progressive journey detail
+
+Collapsed cards show duration, departure/arrival time, changes, main lines, and
+one concise warning. Expanding **View journey details** reveals a passenger
+sequence:
+
+```text
+Enter King's Cross St. Pancras
+  -> Hammersmith & City line towards Barking
+  -> Exit at Barking
+```
+
+Collapse short station-entry and exit walks into **Enter station** and **Exit
+station**. Keep a walking leg visible when it is a real street-level interchange
+between different stations, and show its duration prominently.
+
+##### Disruptions and accessibility
+
+- deduplicate disruption text by stable station/category/description key;
+- show each warning once at journey level and associate it with affected legs;
+- use a short summary on the card and place TfL's full description in expanded
+  detail;
+- never present a route as step-free when TfL reports a conflicting lift or
+  access disruption;
+- rank a route that violates the selected accessibility preference below a
+  compliant alternative and label it **Does not meet selected access need**;
+- preserve TfL wording in detail while avoiding repeated paragraphs.
+
+##### Interaction states
+
+- preserve the selected origin, destination, preference, and expanded card
+  across SignalR refreshes;
+- show a skeleton or compact loading state without clearing the current usable
+  result;
+- explain no-result, TfL-unavailable, and stale-result states separately;
+- provide a retry action without resetting the passenger's selections;
+- keep keyboard focus predictable and announce refreshed journey results through
+  an appropriate ARIA live region;
+- use line colours as supporting cues only, retaining text labels and accessible
+  contrast.
+
+##### Cost and reliability boundaries
+
+Keep the existing one-minute server cache and 24-hour station-search cache. The
+normalization layer operates on the cached response and introduces no Azure
+service. Record cache hit rate, TfL latency, normalized result count, duplicate
+count removed, and upstream failures using low-cardinality telemetry. Do not log
+free-text searches, passenger accessibility choices, or complete journey IDs.
+
+##### Acceptance criteria
+
+- the King's Cross-to-Barking example shows one 51-minute direct Hammersmith &
+  City result, not two duplicates, plus the genuinely different interchange
+  route;
+- repeated King's Cross accessibility text appears once per journey;
+- a direct route says **Direct**, while the Northern/Elizabeth/District option
+  correctly says **2 changes**;
+- departure and arrival times distinguish genuinely different services;
+- direct departure-board advice remains above journey alternatives;
+- Journey Planner opens automatically only when no direct route exists;
+- destination selection uses one keyboard-accessible combobox rather than a
+  select plus separate Search button;
+- `Barking` ranks ahead of `Barkingside` for the exact query and duplicate
+  platform/entrance records collapse into one passenger station;
+- direct destinations and destinations requiring changes appear in separate,
+  clearly labelled result groups;
+- obsolete search responses cannot replace results for the latest query, and
+  no-match or TfL-error states retain the passenger's current input;
+- mobile, keyboard, screen-reader, loading, error, stale-data, and expanded-card
+  states have focused Angular coverage;
+- live Azure verification covers one direct journey, one interchange journey,
+  one duplicate-producing fixture, and one accessibility disruption.
 
 ### Success criteria for 5A
 
@@ -445,4 +681,5 @@ Schedule freshness guard
   -> build direct passenger departure board
   -> add estimated station-sequence view
   -> evaluate TfL Journey API for interchange journeys
+  -> normalize and redesign journey results for passenger decisions
 ```

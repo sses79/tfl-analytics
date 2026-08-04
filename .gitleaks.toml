@@ -21,5 +21,6 @@ regexTarget = "match"
 regexes = [
   '''d4b7caeb97de686899e0810ff7e3f5551878e649''',
   '''436bac8e3238510e4d8842dbee4251eb0ae3569e''',
-  '''290b8c9b3656c606ee9a14aa578591dbadb86585'''
+  '''290b8c9b3656c606ee9a14aa578591dbadb86585''',
+  '''2ca20127e55e196d37b421d5422c0071939df13d'''
 ]

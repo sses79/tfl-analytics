@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using TflAnalytics.Application.Passenger;
 using TflAnalytics.Application.Tfl;
+using TflAnalytics.Contracts.Dashboard;
 using TflAnalytics.Contracts.Tfl;
 
 namespace TflAnalytics.Infrastructure.Tfl;
@@ -9,18 +10,24 @@ public sealed class CachedJourneyPlanner : IJourneyPlanner
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan SearchCacheDuration = TimeSpan.FromHours(24);
-    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private const int MaximumSearchEntries = 100;
+    private readonly ConcurrentDictionary<string, JourneyCacheEntry> _journeyCache = new();
     private readonly ConcurrentDictionary<string, SearchCacheEntry> _searchCache = new();
     private readonly ITflApiClient _client;
+    private readonly IDepartureBoardService _departureBoards;
     private readonly TimeProvider _timeProvider;
 
-    public CachedJourneyPlanner(ITflApiClient client, TimeProvider timeProvider)
+    public CachedJourneyPlanner(
+        ITflApiClient client,
+        IDepartureBoardService departureBoards,
+        TimeProvider timeProvider)
     {
         _client = client;
+        _departureBoards = departureBoards;
         _timeProvider = timeProvider;
     }
 
-    public async Task<JourneyPlan> GetAsync(
+    public async Task<PassengerJourneyPlan> GetAsync(
         string fromStationId,
         string toStationId,
         string journeyPreference,
@@ -33,37 +40,55 @@ public sealed class CachedJourneyPlanner : IJourneyPlanner
             journeyPreference.Trim().ToLowerInvariant(),
             string.Join(',', accessibilityPreferences.Order(StringComparer.OrdinalIgnoreCase)));
         var now = _timeProvider.GetUtcNow();
-        if (_cache.TryGetValue(key, out var cached) && cached.ExpiresAtUtc > now)
+        if (_journeyCache.TryGetValue(key, out var cached) && cached.ExpiresAtUtc > now)
         {
             return cached.Plan;
         }
 
-        var plan = await _client.GetJourneyPlanAsync(
+        var raw = await _client.GetJourneyPlanAsync(
             fromStationId,
             toStationId,
             journeyPreference,
             accessibilityPreferences,
             cancellationToken);
-        _cache[key] = new(plan, now.Add(CacheDuration));
+        var plan = PassengerJourneyNormalizer.NormalizeJourneys(raw, journeyPreference, accessibilityPreferences.Count > 0);
+        _journeyCache[key] = new(plan, now.Add(CacheDuration));
         return plan;
     }
 
-    public async Task<StopPointSearchResult> SearchStationsAsync(
+    public async Task<StationSearchResponse> SearchStationsAsync(
         string query,
+        string? originStationId = null,
         CancellationToken cancellationToken = default)
     {
-        var key = query.Trim().ToUpperInvariant();
+        var normalizedQuery = PassengerJourneyNormalizer.NormalizeStationName(query);
+        if (normalizedQuery.Length < 2)
+        {
+            return new StationSearchResponse([]);
+        }
+
+        var key = $"{originStationId?.Trim().ToUpperInvariant()}|{normalizedQuery.ToUpperInvariant()}";
         var now = _timeProvider.GetUtcNow();
         if (_searchCache.TryGetValue(key, out var cached) && cached.ExpiresAtUtc > now)
         {
             return cached.Result;
         }
 
-        var result = await _client.SearchStopPointsAsync(query, cancellationToken);
+        var raw = await _client.SearchStopPointsAsync(query, cancellationToken);
+        var directDestinations = string.IsNullOrWhiteSpace(originStationId)
+            ? []
+            : (await _departureBoards.GetAsync(originStationId, cancellationToken: cancellationToken))
+                .Destinations;
+        var result = PassengerJourneyNormalizer.NormalizeStations(raw, directDestinations, normalizedQuery);
+
+        if (_searchCache.Count >= MaximumSearchEntries)
+        {
+            _searchCache.Clear();
+        }
         _searchCache[key] = new(result, now.Add(SearchCacheDuration));
         return result;
     }
 
-    private sealed record CacheEntry(JourneyPlan Plan, DateTimeOffset ExpiresAtUtc);
-    private sealed record SearchCacheEntry(StopPointSearchResult Result, DateTimeOffset ExpiresAtUtc);
+    private sealed record JourneyCacheEntry(PassengerJourneyPlan Plan, DateTimeOffset ExpiresAtUtc);
+    private sealed record SearchCacheEntry(StationSearchResponse Result, DateTimeOffset ExpiresAtUtc);
 }
