@@ -106,9 +106,9 @@ signalr_role_count="$(az role assignment list \
 [[ "$cosmos_database" == "$COSMOS_DATABASE" ]]
 [[ "$cosmos_throughput" == "1000" ]]
 [[ "$live_events_partition_key" == "/stationId" ]]
-[[ "$live_events_ttl" == "604800" ]]
+[[ "$live_events_ttl" == "86400" ]]
 [[ "$line_status_partition_key" == "/lineId" ]]
-[[ "$line_status_ttl" == "604800" ]]
+[[ "$line_status_ttl" == "86400" ]]
 [[ "$cosmos_role_count" == "3" ]]
 [[ "$signalr_sku" == "Free_F1" ]]
 [[ "$signalr_local_auth_disabled" == "true" ]]
@@ -119,6 +119,6 @@ sql_summary="  Azure SQL: not deployed; provisioning module removed"
 printf '%s\n' \
   "Azure data-service smoke tests passed:" \
   "  Table Storage: alerts table exists" \
-  "  Cosmos DB: free tier, 1000 RU/s, seven-day TTL, three data-role assignments" \
+  "  Cosmos DB: free tier, 1000 RU/s, 24-hour TTL, three data-role assignments" \
   "$sql_summary" \
   "  SignalR: Free_F1, local authentication disabled, two app-server roles"

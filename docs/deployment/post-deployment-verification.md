@@ -19,14 +19,50 @@ Update this section after every deployment.
 
 | Field | Latest verified value |
 |---|---|
-| Date | August 3, 2026 |
-| Git commit | PR #47 merged to `main` as `2ca20127e55e196d37b421d5422c0071939df13d` |
-| Change | Passenger departure board Phase 5B and 5C: estimated train state, disruption context, TfL station search, and accessible Journey Planner alternatives |
-| Provisioning state | `Succeeded` — Container App revision `ca-tfl-api-dev-nhkpyupi--0000017`; Static Web App production environment `Ready` |
+| Date | August 4, 2026 |
+| Git commit | PR #49 merged to `main` as `901eac842d383761692cf721cd656c714f6eb086` |
+| Change | Phase 5D passenger-first journey results: normalized alternatives, accessible destination combobox, deterministic station search, consolidated disruptions, and review hardening |
+| Provisioning state | `Succeeded` — Container App revision `ca-tfl-api-dev-nhkpyupi--0000018`; Static Web App production environment `Ready` |
 | Scope | Deployed the immutable merged API image and Angular production bundle only; Function packages and infrastructure were unchanged; `Alerts__Enabled=false` retained |
-| Cost impact | No service, SKU, throughput, or capacity changed. One-minute journey-result caching and 24-hour station-search caching bound TfL/API traffic; expected cost impact is negligible |
+| Cost impact | No service, SKU, throughput, retention, or capacity changed. Existing one-minute journey caching and bounded 24-hour station-search caching remain; expected cost impact is negligible |
 
 Latest verification evidence:
+
+- PR #49 passed backend, dashboard, infrastructure, dependency, and secret
+  checks. GHCR workflow run `30908344280` published immutable API image
+  `901eac842d383761692cf721cd656c714f6eb086`; Container App revision
+  `ca-tfl-api-dev-nhkpyupi--0000018` runs that image with provisioning
+  `Succeeded`.
+- Bicep compilation, ARM validation, and the full resource-group `what-if`
+  succeeded. The preview proposed no resource creation, deletion, SKU,
+  throughput, retention, or capacity change, but repeated known Azure-generated
+  Function, Storage, RBAC, observability-tag, and Static Web App metadata drift.
+  The rollout therefore used the documented scoped API and dashboard deployment
+  path instead of applying unrelated ARM changes.
+- The Static Web App production environment reached `Ready`; `demo.ti5g.com`
+  serves arrivals bundle `chunk-XYRFFYA4.js` with the Phase 5D alternatives UI.
+  The API, ingestion Function, and processing Function health endpoints all
+  returned healthy. `Alerts__Enabled=false` remains set.
+- The live Victoria departure board was fresh at
+  `2026-08-04T12:25:00.0299963Z`, with 60 destinations and nine platform
+  groups. The standard event-flow smoke passed with all 11 lines, Waterloo &
+  City, and event age 241 seconds against the 1,200-second limit.
+- A live King's Cross-to-Barking journey request returned three direct
+  Hammersmith & City services departing at 13:34, 13:44, and 13:54. These are
+  visible timetable variants beyond the five-minute deduplication threshold,
+  rather than identical same-departure responses. Automated fixtures verify
+  exact duplicate removal, null-time handling, alternative accessibility
+  wording, and empty-combobox keyboard safety.
+- Exact `Barking` ranked before `Barking Riverside` and `Barkingside`, but TfL
+  returned canonical hub ID `HUBBKG`; direct-destination data uses the
+  Underground StopPoint ID. Canonical parent/child ID matching therefore
+  remains a follow-up before the direct-search acceptance criterion is fully
+  satisfied.
+- Data-service and workload-RBAC smoke tests passed. Cosmos remains free-tier
+  at 1,000 RU/s, `line-status` and `live-events` retain 24-hour TTLs, SignalR
+  remains Free F1 with local authentication disabled, and Azure SQL remains
+  absent. A stale seven-day assertion and summary in the data-service smoke
+  script were corrected to the deployed 24-hour baseline.
 
 - PR #47 and its Angular security follow-up passed backend, dashboard,
   infrastructure, dependency, and secret checks. GHCR workflow run

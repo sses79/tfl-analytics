@@ -177,7 +177,7 @@ complete in Azure. No new infrastructure or SKU is required.
 
 ## Phase 5 — Passenger Station Departure Board
 
-**Status: Phase 5A–5C deployed; Phase 5D implemented locally August 4, 2026**
+**Status: Phase 5A–5D deployed; Phase 5D verified August 4, 2026 with canonical station-ID follow-up**
 
 Implemented and deployed:
 
@@ -421,7 +421,7 @@ cached for 24 hours.
 
 #### 5D — Passenger-first journey results redesign
 
-**Status: implemented locally — August 4, 2026; deployment pending**
+**Status: deployed and verified — August 4, 2026; canonical hub-to-StopPoint direct matching remains**
 
 The deployed Journey Planner exposes too much of TfL's raw response structure.
 It can show duplicate alternatives, repeat the same disruption under several
@@ -429,12 +429,15 @@ legs, give station-entry and exit walking legs the same weight as train legs,
 and label a journey “0 changes” while rendering three technical legs. This is
 accurate at API level but difficult for a passenger to scan quickly.
 
-The local implementation now returns normalized passenger journeys, requests a
+The deployed implementation now returns normalized passenger journeys, requests a
 single temporal direction, removes passenger-equivalent routes, consolidates
 disruptions, and calculates changes from transport legs. The dashboard uses one
 debounced accessible destination combobox, keeps direct departure advice
-primary, and progressively reveals alternative-route detail. Azure and live
-browser acceptance evidence remain pending deployment.
+primary, and progressively reveals alternative-route detail. Live Azure checks
+confirmed fresh departure-board data, deterministic exact-name ranking, and
+meaningful departure-time variants. TfL returned `HUBBKG` for the exact Barking
+search while direct-route data uses its Underground StopPoint ID, so canonical
+parent/child matching remains before direct-search acceptance is complete.
 
 The live departure board remains the primary experience. When a direct train is
 available, show the direct line, platform, and next suitable trains first. Hide
