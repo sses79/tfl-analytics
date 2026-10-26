@@ -126,8 +126,8 @@ Notes:
    `Claude · implement labeled issue` run start.
 3. Confirm the run creates branch `claude/issue-<n>-…`, pushes commits, and opens a
    **PR whose base is `dev`** (not `main`), linking the issue.
-4. Confirm the PR automatically triggers `ci.yml` + `security.yml` and that
-   `backend` / `dashboard` / `infrastructure` / `secrets` / `dependencies` run.
+4. Confirm the PR automatically triggers `ci.yml` and that
+   `backend` / `dashboard` / `infrastructure` run.
 5. Review the diff, merge into `dev`, and confirm the issue auto-closes.
 6. Negative check: label an issue with something else (e.g. `bug`) and confirm
    **no** Claude run starts (the `if` label gate holds).

@@ -8,16 +8,6 @@ the [manual deployment runbook](./manual-deployment.md).
 
 ## Workflows
 
-### Security
-
-`.github/workflows/security.yml` runs:
-
-- Gitleaks against full Git history.
-- NuGet vulnerable-package analysis.
-- Production npm dependency audit.
-
-It also runs weekly.
-
 ### CI
 
 `.github/workflows/ci.yml` contains three independent jobs:
@@ -52,18 +42,27 @@ for the complete release process.
 
 ## Pull Request Requirements
 
-The protected `main` branch requires a pull request and successful security
-checks. The CI jobs should also pass before merge:
+The protected `main` branch requires a pull request and these successful CI
+checks before merge:
 
 ```text
 backend
 dashboard
 infrastructure
-secrets
-dependencies
 ```
 
 Never bypass a failed check by pushing directly to `main`.
+
+## Security Scanning
+
+There is no GitHub Actions security workflow. GitHub secret scanning, push
+protection, and Dependabot vulnerability alerts remain enabled on the
+repository. Run the Gitleaks history scan and the NuGet and npm dependency
+audits locally before merging dependency or configuration changes:
+
+```bash
+./scripts/security-scan.sh
+```
 
 ## Local Equivalents
 
@@ -104,7 +103,7 @@ docker compose \
 
 CI uses no Azure client secret, deployment token, TfL key, or Datadog key.
 
-The security workflow must remain read-only:
+Workflows must remain read-only:
 
 ```yaml
 permissions:

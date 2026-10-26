@@ -48,8 +48,9 @@ The public GitHub repository has:
 - Secret scanning enabled.
 - Push protection enabled.
 - Dependabot vulnerability alerts enabled.
-- Dependabot security updates enabled.
-- A scheduled and pull-request security workflow.
+- Dependabot security updates disabled; dependency fixes are applied manually.
+
+There is no GitHub Actions security workflow. Run the local scan below instead.
 
 GitHub non-provider secret patterns and validity checks were requested but
 remain unavailable or disabled for the current repository/account configuration.
