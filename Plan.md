@@ -96,7 +96,8 @@ were deployed and verified on August 3, 2026.
 
 Phase 5D passenger journey normalization, destination-combobox search, duplicate
 removal, progressive route detail, and accessibility-warning consolidation were
-implemented locally on August 4, 2026 and await deployment verification.
+deployed and verified on August 4, 2026. TfL canonical hub-to-StopPoint matching
+for direct destination search remains a focused follow-up.
 
 Remaining Phase 5 validation:
 
